@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 /// Material Design 3 adaptive breakpoints.
 /// - compact  : < 600  → phone portrait
 /// - medium   : 600–839 → phone landscape / small tablet
@@ -7,6 +8,7 @@ abstract final class AppBreakpoints {
   static const double compact = 600;
   static const double expanded = 840;
 }
+
 abstract final class AppSpacing {
   static const double s0 = 0;
   static const double s2 = 2;
@@ -111,6 +113,9 @@ abstract final class AppInsets {
 }
 
 abstract final class AppCorners {
+  static const BorderRadius r4 = BorderRadius.all(
+    Radius.circular(AppRadius.r4),
+  );
   static const BorderRadius r8 = BorderRadius.all(
     Radius.circular(AppRadius.r8),
   );

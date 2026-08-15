@@ -2,9 +2,21 @@ import 'package:flutter/material.dart';
 
 abstract final class AppPalette {
   static const Color transparent = Colors.transparent;
-  static const Color white = Colors.white;
-  static const Color black = Colors.black;
 
+  // Primary
+  static const Color black = Color(0xFF000000);
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color primaryBlue = Color(0xFF18588C);
+  static const Color medGray = Color(0xFFC8C8C8);
+
+  // Secondary
+  static const Color green = Color(0xFF87C879);
+  static const Color surfaceLight = Color(0xFFF7F7F7);
+  static const Color secondaryBlue = Color(0xFF206EB0);
+  static const Color yellow = Color(0xFFEACA58);
+  static const Color cyan = Color(0xFF58E8EA);
+
+  // Existing Palette
   static const Color primaryTeal = Color(0xFF009688);
   static const Color secondaryMint = Color(0xFF03DAC6);
   static const Color success = Color(0xFF16A34A);
@@ -16,6 +28,7 @@ abstract final class AppPalette {
   static const Color chartPink = Color(0xFFE91E8C);
 
   static const Color tooltipDark = Color(0xFF2C2C2C);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
 }
 
 abstract final class AppLightColors {

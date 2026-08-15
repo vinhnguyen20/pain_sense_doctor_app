@@ -5,6 +5,7 @@ export 'package:app_doctor/core/config/theme/design_tokens.dart';
 export 'package:app_doctor/core/config/theme/color_system.dart';
 export 'package:app_doctor/core/config/theme/color_roles.dart';
 export 'package:app_doctor/core/config/theme/responsive_extension.dart';
+export 'package:app_doctor/core/config/theme/app_typography.dart';
 
 extension ThemeX on BuildContext {
   ThemeData get theme => Theme.of(this);
