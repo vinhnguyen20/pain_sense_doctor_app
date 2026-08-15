@@ -1,13 +1,166 @@
 import 'dart:async';
 
+import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/common/widgets/error_retry_view.dart';
-import 'package:app_doctor/core/services/auth/token_service.dart';
+import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
-import 'package:app_doctor/presentations/pages/home/widgets/patient_card.dart';
+import 'package:app_doctor/presentations/pages/home/widgets/patient_table_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:app_doctor/core/config/theme/theme_extension.dart';
+
+class ClinicianHomeView extends StatelessWidget {
+  final List<Patient> patients;
+  final String doctorName;
+  final ValueChanged<String>? onSearchChanged;
+  final Future<void> Function()? onRefresh;
+  final ScrollController? scrollController;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
+  final bool isLoadingMore;
+  final bool hasMore;
+
+  const ClinicianHomeView({
+    super.key,
+    required this.patients,
+    required this.doctorName,
+    this.onSearchChanged,
+    this.onRefresh,
+    this.scrollController,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content;
+
+    if (isLoading) {
+      content = const Center(child: CircularProgressIndicator());
+    } else if (errorMessage != null) {
+      content = ErrorRetryView(
+        message: errorMessage!,
+        onRetry: onRetry ?? () {},
+      );
+    } else {
+      content = ListView.separated(
+        controller: scrollController,
+        padding: const EdgeInsets.only(
+          bottom: 20,
+        ), // Bottom padding for scrolling
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount:
+            patients.length +
+            (isLoadingMore || !hasMore && patients.isNotEmpty ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 20),
+        itemBuilder: (context, index) {
+          if (index < patients.length) {
+            return PatientTableRow(patient: patients[index]);
+          } else {
+            if (isLoadingMore) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'No more patients',
+                    style: AppTypography.defaultBody2.copyWith(
+                      color: AppPalette.medGray,
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+        },
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppPalette.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            30,
+            30,
+            30,
+            0,
+          ), // Kept 30px padding, removed bottom to allow list scroll
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClinicianHeader(
+                doctorName: doctorName,
+                onSearchChanged: onSearchChanged,
+                onNotificationPressed: () {},
+              ),
+              const SizedBox(height: 30),
+              Text(
+                'Welcome to your patient dashboard.',
+                style: AppTypography.titleBig1.copyWith(
+                  color: AppPalette.secondaryBlue,
+                ),
+              ),
+              const SizedBox(height: 30),
+              const _PatientTableHeader(),
+              const SizedBox(height: 14),
+              Expanded(
+                child: onRefresh != null && !isLoading && errorMessage == null
+                    ? RefreshIndicator(onRefresh: onRefresh!, child: content)
+                    : content,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientTableHeader extends StatelessWidget {
+  const _PatientTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final headerStyle = AppTypography.defaultBody2.copyWith(
+      color: AppPalette.secondaryBlue,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 18,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Text('Name/Age', style: headerStyle),
+            ),
+          ),
+          Expanded(flex: 14, child: Text('Pain Type', style: headerStyle)),
+          Expanded(
+            flex: 24,
+            child: Text('Activity Tracker', style: headerStyle),
+          ),
+          Expanded(flex: 18, child: Text('Contact', style: headerStyle)),
+          const Expanded(flex: 26, child: SizedBox()),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// PHASE 2: REAL API INTEGRATION
+// ================================================================
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -17,7 +170,6 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
 
@@ -50,171 +202,26 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void dispose() {
     _debounce?.cancel();
-    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  Widget _buildPatientGrid(BuildContext context, List<Patient> patients) {
-    if (!context.isTablet) {
-      return Column(
-        children: patients
-            .map(
-              (p) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.s12),
-                child: PatientCard(patient: p),
-              ),
-            )
-            .toList(),
-      );
-    }
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        final cardWidth = (constraints.maxWidth - AppSpacing.s12) / 2;
-        return Wrap(
-          spacing: AppSpacing.s12,
-          runSpacing: AppSpacing.s12,
-          children: patients
-              .map(
-                (p) => SizedBox(
-                  width: cardWidth,
-                  child: PatientCard(patient: p),
-                ),
-              )
-              .toList(),
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final patientsState = ref.watch(patientsProvider);
-    final tokenAsync = ref.watch(tokenServiceProvider);
-    final token = tokenAsync.asData?.value;
-    print('HomePage - Access Token: $token');
 
-    return Scaffold(
-      backgroundColor: context.background,
-      body: SafeArea(
-        child: Padding(
-          padding: context.responsive(
-            mobile: AppInsets.screenHorizontal,
-            tablet: const EdgeInsets.symmetric(horizontal: AppSpacing.s32),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.s12),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/logo/ps_logo.jpg', height: 48),
-                  const SizedBox(width: AppSpacing.s8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Patient Monitor', style: context.titleMedium),
-                        Text(
-                          'Track low back pain for your patients',
-                          style: context.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s12),
-
-              _SearchBar(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-              ),
-              const SizedBox(height: AppSpacing.s12),
-
-              Expanded(
-                child: patientsState.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : patientsState.error != null
-                    ? ErrorRetryView(
-                        message: patientsState.error!,
-                        onRetry: () =>
-                            ref.read(patientsProvider.notifier).refresh(),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () =>
-                            ref.read(patientsProvider.notifier).refresh(),
-                        child: ListView(
-                          controller: _scrollController,
-                          children: [
-                            _buildPatientGrid(context, patientsState.patients),
-
-                            if (patientsState.isLoadingMore)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: AppSpacing.s16,
-                                ),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-
-                            if (!patientsState.hasMore &&
-                                patientsState.patients.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpacing.s16,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'No more patients',
-                                    style: context.bodyMedium?.copyWith(
-                                      color: context.onSurface.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            const SizedBox(height: AppSpacing.s16),
-                          ],
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SearchBar({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: context.bodyMedium,
-      decoration: InputDecoration(
-        hintText: 'Search patients...',
-        hintStyle: context.bodyMedium?.copyWith(
-          color: context.onSurface.withValues(alpha: 0.4),
-        ),
-        prefixIcon: Icon(
-          Icons.search,
-          color: context.onSurface.withValues(alpha: 0.4),
-          size: AppSize.inputIcon,
-        ),
-      ),
+    return ClinicianHomeView(
+      patients: patientsState.patients,
+      doctorName:
+          'Dr. Cameron Taylor', // Placeholder, API does not expose doctor name in context
+      onSearchChanged: _onSearchChanged,
+      scrollController: _scrollController,
+      isLoading: patientsState.isLoading,
+      errorMessage: patientsState.error,
+      isLoadingMore: patientsState.isLoadingMore,
+      hasMore: patientsState.hasMore,
+      onRetry: () => ref.read(patientsProvider.notifier).refresh(),
+      onRefresh: () => ref.read(patientsProvider.notifier).refresh(),
     );
   }
 }
