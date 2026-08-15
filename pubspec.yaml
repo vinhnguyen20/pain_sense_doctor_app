@@ -52,5 +52,5 @@ flutter:
   assets:
     - .env
     - assets/images/icon/icon.png
-    - assets/images/logo/logo_full_color.jpg
+    - assets/images/logo/ps_logo_full.png
     - assets/images/logo/ps_logo.jpg

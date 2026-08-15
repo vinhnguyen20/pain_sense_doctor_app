@@ -1,4 +1,5 @@
 import 'package:app_doctor/core/providers/storage_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'token_service.g.dart';
@@ -15,7 +16,12 @@ class TokenService extends _$TokenService {
   }
 
   Future<String?> _readAccessToken() async {
-    return ref.read(secureStorageProvider).read(key: _accessTokenKey);
+    try {
+      return await ref.read(secureStorageProvider).read(key: _accessTokenKey);
+    } catch (e) {
+      debugPrint('TokenService _readAccessToken error: $e');
+      return null;
+    }
   }
 
   Future<void> saveTokens({
@@ -46,10 +52,23 @@ class TokenService extends _$TokenService {
   }
 
   Future<String?> getAccessToken() => _readAccessToken();
-  Future<String?> getRefreshToken() =>
-      ref.read(secureStorageProvider).read(key: _refreshTokenKey);
-  Future<String?> getCustomToken() =>
-      ref.read(secureStorageProvider).read(key: _customTokenKey);
+  Future<String?> getRefreshToken() async {
+    try {
+      return await ref.read(secureStorageProvider).read(key: _refreshTokenKey);
+    } catch (e) {
+      debugPrint('TokenService getRefreshToken error: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getCustomToken() async {
+    try {
+      return await ref.read(secureStorageProvider).read(key: _customTokenKey);
+    } catch (e) {
+      debugPrint('TokenService getCustomToken error: $e');
+      return null;
+    }
+  }
 
   Future<bool> hasValidSession() async {
     final token = await _readAccessToken();

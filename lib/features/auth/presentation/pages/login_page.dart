@@ -59,7 +59,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/images/logo/logo_full_color.jpg',
+                        'assets/images/logo/ps_logo_full.png',
                         width: MediaQuery.sizeOf(context).width * 0.5,
                       ),
                       const SizedBox(height: 20),
