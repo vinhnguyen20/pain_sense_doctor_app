@@ -1,3 +1,4 @@
+import 'package:app_doctor/common/widgets/sidebar_navigation.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,10 +19,25 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 840;
+
+    if (isDesktop) {
+      return Scaffold(
+        body: Row(
+          children: [
+            SidebarNavigation(navigationShell: widget.navigationShell),
+            Expanded(child: widget.navigationShell),
+          ],
+        ),
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
+        if (didPop) {
+          return;
+        }
 
         final now = DateTime.now();
         final isDoubleBack =
@@ -44,8 +60,8 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
   Widget _buildBottomNavBar(BuildContext context) {
     const items = [
-      _NavItem(icon: Icons.home, label: 'Home', route: '/home'),
-      _NavItem(icon: Icons.settings, label: 'Settings', route: '/setting'),
+      _MobileNavItem(icon: Icons.home, label: 'Home'),
+      _MobileNavItem(icon: Icons.settings, label: 'Settings'),
     ];
 
     return Container(
@@ -60,19 +76,42 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
         ],
       ),
       child: SafeArea(
-        child: Container(
+        child: SizedBox(
           height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (index) {
               final isSelected = index == widget.navigationShell.currentIndex;
+
               return Expanded(
-                child: _buildNavItem(
-                  context: context,
-                  item: items[index],
-                  index: index,
-                  isSelected: isSelected,
+                child: InkWell(
+                  onTap: () {
+                    widget.navigationShell.goBranch(
+                      index,
+                      initialLocation:
+                          index == widget.navigationShell.currentIndex,
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        items[index].icon,
+                        size: 24,
+                        color: isSelected
+                            ? context.colors.primary
+                            : AppPalette.medGray,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        items[index].label,
+                        style: AppTypography.captionBody2.copyWith(
+                          color: isSelected
+                              ? context.colors.primary
+                              : AppPalette.medGray,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),
@@ -81,59 +120,11 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
       ),
     );
   }
-
-  Widget _buildNavItem({
-    required BuildContext context,
-    required _NavItem item,
-    required int index,
-    required bool isSelected,
-  }) {
-    return InkWell(
-      onTap: () {
-        widget.navigationShell.goBranch(
-          index,
-          initialLocation: index == widget.navigationShell.currentIndex,
-        );
-      },
-      child: Container(
-        height: 70,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? context.colors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              item.icon,
-              color: isSelected ? Colors.white : Colors.grey.shade400,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey.shade400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-class _NavItem {
+class _MobileNavItem {
   final IconData icon;
   final String label;
-  final String route;
 
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.route,
-  });
+  const _MobileNavItem({required this.icon, required this.label});
 }
