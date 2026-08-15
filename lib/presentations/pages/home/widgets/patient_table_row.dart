@@ -1,3 +1,4 @@
+import 'package:app_doctor/common/widgets/activity_tracker.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/core/utils/utils.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
@@ -14,6 +15,21 @@ class PatientTableRow extends StatelessWidget {
     final statusColor = colorFromHex(patient.trackingLogs?.color);
 
     final painType = patient.trackingLogs?.lbpScore ?? 'Pattern 1';
+
+    List<double?> activityValues;
+    switch (patient.fullName) {
+      case 'John Smith':
+        activityValues = const [44.0, 28.0, null, 28.0, 44.0, 44.0, 36.0];
+        break;
+      case 'Nora Miscavish':
+        activityValues = const [36.0, 44.0, 36.0, 28.0, null, null, null];
+        break;
+      case 'Stan Chow':
+        activityValues = const [36.0, 44.0, 36.0, 44.0, 44.0, 44.0, 44.0];
+        break;
+      default:
+        activityValues = const [36.0, 44.0, 36.0, 36.0, 44.0, 44.0, 36.0];
+    }
 
     return SizedBox(
       width: double.infinity,
@@ -54,7 +70,7 @@ class PatientTableRow extends StatelessWidget {
                     ),
                     Expanded(
                       flex: 24,
-                      child: _ActivityTracker(patientName: patient.fullName),
+                      child: ActivityTracker(values: activityValues),
                     ),
                     Expanded(
                       flex: 18,
@@ -236,82 +252,6 @@ class _PatientActions extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ActivityTracker extends StatelessWidget {
-  final String patientName;
-
-  const _ActivityTracker({required this.patientName});
-
-  static const List<String> _days = ['T', 'F', 'S', 'S', 'M', 'T', 'W'];
-
-  List<double> get _activity {
-    switch (patientName) {
-      case 'John Smith':
-        return const [44, 28, 0, 28, 44, 44, 36];
-      case 'Nora Miscavish':
-        return const [36, 44, 36, 28, 0, 0, 0];
-      case 'Stan Chow':
-        return const [36, 44, 36, 44, 44, 44, 44];
-      default:
-        return const [36, 44, 36, 36, 44, 44, 36];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final activity = _activity;
-
-    return SizedBox(
-      height: 66,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(_days.length, (index) {
-          final value = activity[index];
-
-          return Padding(
-            padding: EdgeInsets.only(right: index == _days.length - 1 ? 0 : 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 44,
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: value == 0
-                        ? Container(
-                            width: 14,
-                            height: 14,
-                            decoration: const BoxDecoration(
-                              color: AppPalette.yellow,
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        : Container(
-                            width: 16,
-                            height: value,
-                            decoration: BoxDecoration(
-                              color: AppPalette.secondaryBlue,
-                              borderRadius: BorderRadius.circular(49),
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _days[index],
-                  style: AppTypography.captionBody1.copyWith(
-                    color: AppPalette.secondaryBlue,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ),
     );
   }
 }
