@@ -148,4 +148,3 @@ DeleteAppointmentUseCase deleteAppointmentUseCase(Ref ref) {
 UpdateAppointmentUseCase updateAppointmentUseCase(Ref ref) {
   return UpdateAppointmentUseCase(ref.read(appointmentRepositoryProvider));
 }
-

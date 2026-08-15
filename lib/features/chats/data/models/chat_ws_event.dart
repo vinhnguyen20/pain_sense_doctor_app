@@ -33,5 +33,8 @@ final class ChatWsConversationUpdated extends ChatWsEvent {
 final class ChatWsMessageRead extends ChatWsEvent {
   final String conversationId;
   final String readerId;
-  const ChatWsMessageRead({required this.conversationId, required this.readerId});
+  const ChatWsMessageRead({
+    required this.conversationId,
+    required this.readerId,
+  });
 }

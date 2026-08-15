@@ -23,8 +23,7 @@ class _AdherenceMetricsCardState extends State<AdherenceMetricsCard> {
         .toList();
   }
 
-  String _displayName(String key) =>
-      GoalType.fromString(key).displayName;
+  String _displayName(String key) => GoalType.fromString(key).displayName;
 
   @override
   Widget build(BuildContext context) {

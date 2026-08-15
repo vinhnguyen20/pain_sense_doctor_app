@@ -60,10 +60,7 @@ class AuthInterceptor extends Interceptor {
         return handler.next(err);
       }
 
-      final retryResponse = await _retryRequest(
-        err.requestOptions,
-        newToken,
-      );
+      final retryResponse = await _retryRequest(err.requestOptions, newToken);
 
       if (retryResponse.statusCode == 401) {
         _forceLogout();

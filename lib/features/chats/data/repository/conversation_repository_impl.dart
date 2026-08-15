@@ -6,6 +6,7 @@ import 'package:app_doctor/features/chats/data/datasources/chat_remote_datasourc
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
 import 'package:app_doctor/features/chats/domain/entites/message.dart';
 import 'package:app_doctor/features/chats/domain/repository/conversation_repository.dart';
+
 class ConversationRepositoryImpl implements ConversationRepository {
   final ChatRemoteDataSource remoteDataSource;
 

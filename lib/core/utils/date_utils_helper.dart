@@ -8,8 +8,10 @@ class DateUtilsHelper {
         '${date.year}';
   }
 
-  static String formatDateMDY(DateTime? date,
-      {String placeholder = 'mm/dd/yyyy'}) {
+  static String formatDateMDY(
+    DateTime? date, {
+    String placeholder = 'mm/dd/yyyy',
+  }) {
     if (date == null) return placeholder;
     return '${date.month.toString().padLeft(2, '0')}/'
         '${date.day.toString().padLeft(2, '0')}/'
@@ -27,8 +29,18 @@ class DateUtilsHelper {
     try {
       final d = DateTime.parse(isoString);
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${d.day} ${months[d.month - 1]} ${d.year}';
     } catch (_) {
@@ -40,15 +52,16 @@ class DateUtilsHelper {
   static String formatRelativeDate(DateTime date) {
     final now = DateTime.now();
     final local = date.toLocal();
-    final difference = DateTime(now.year, now.month, now.day)
-        .difference(DateTime(local.year, local.month, local.day))
-        .inDays;
+    final difference = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).difference(DateTime(local.year, local.month, local.day)).inDays;
     if (difference == 0) return 'Today';
     if (difference == 1) return 'Yesterday';
     if (difference < 7) return DateFormat('EEEE').format(local);
     return DateFormat('MMM d, yyyy').format(local);
   }
-
 
   /// `TimeOfDay` → `"HH:mm"`
   static String formatTimeOfDay(TimeOfDay time) {
@@ -56,9 +69,11 @@ class DateUtilsHelper {
         '${time.minute.toString().padLeft(2, '0')}';
   }
 
-  /// `"HH:mm"` ( `"HH:mm:ss"`) 
-  static TimeOfDay parseTimeOfDay(String hhmm,
-      {TimeOfDay fallback = const TimeOfDay(hour: 7, minute: 0)}) {
+  /// `"HH:mm"` ( `"HH:mm:ss"`)
+  static TimeOfDay parseTimeOfDay(
+    String hhmm, {
+    TimeOfDay fallback = const TimeOfDay(hour: 7, minute: 0),
+  }) {
     final parts = hhmm.trim().split(':');
     if (parts.length < 2) return fallback;
     final hour = int.tryParse(parts[0]);
@@ -66,8 +81,6 @@ class DateUtilsHelper {
     if (hour == null || minute == null) return fallback;
     return TimeOfDay(hour: hour, minute: minute);
   }
-
-
 
   static DateTime normalizeDate(DateTime value) {
     return DateTime(value.year, value.month, value.day);

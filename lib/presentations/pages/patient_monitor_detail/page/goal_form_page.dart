@@ -147,7 +147,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
         _goalItemDescCtrls[category]!.text = item.desc;
       }
       final yogaItems = widget.originalGoalItems!
-          .where((item) => GoalCategory.fromGoalType(item.type) == GoalCategory.yoga)
+          .where(
+            (item) => GoalCategory.fromGoalType(item.type) == GoalCategory.yoga,
+          )
           .toList();
       if (yogaItems.isNotEmpty) {
         final userExercises = yogaItems.first.userExercises ?? const [];
@@ -284,7 +286,8 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
     return selectedIds.map((id) {
       final trimmedId = id.trim();
-      return existingById[trimmedId] ?? _createDefaultExercisePlan(trimmedId, startDate);
+      return existingById[trimmedId] ??
+          _createDefaultExercisePlan(trimmedId, startDate);
     }).toList();
   }
 
@@ -821,7 +824,10 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
       return;
     }
     if (endDate.isBefore(startDate)) {
-      AppSnackbar.error(context, 'End Date must be the same or after Start Date.');
+      AppSnackbar.error(
+        context,
+        'End Date must be the same or after Start Date.',
+      );
       return;
     }
     if (_goal.id == null || _goal.id!.isEmpty) {
@@ -858,7 +864,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     for (final category in selectedCategories) {
       final title = _goalItemTitleCtrls[category]!.text.trim();
       final description = _goalItemDescCtrls[category]!.text.trim();
-      final parsedTarget = _parseNumericTarget(_goalItemTargetCtrls[category]!.text);
+      final parsedTarget = _parseNumericTarget(
+        _goalItemTargetCtrls[category]!.text,
+      );
       if (title.isEmpty) {
         AppSnackbar.error(context, 'Please enter title for ${category.label}.');
         return;
@@ -883,7 +891,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
           unit: category.unit,
           label: title,
           desc: description,
-          userExerciseIds: category == GoalCategory.yoga ? selectedExerciseIds : null,
+          userExerciseIds: category == GoalCategory.yoga
+              ? selectedExerciseIds
+              : null,
         ),
       );
     }
@@ -900,16 +910,18 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
     setState(() => _isSubmitting = true);
     try {
-      final response = await ref.read(diaryRepositoryProvider).updateUserGoal(
-        UpdateUserGoalRequest(
-          goalId: _goal.id!,
-          patientId: widget.patientId,
-          startDate: startDate,
-          endDate: endDate,
-          exercises: exercises,
-          goalItems: goalItems,
-        ),
-      );
+      final response = await ref
+          .read(diaryRepositoryProvider)
+          .updateUserGoal(
+            UpdateUserGoalRequest(
+              goalId: _goal.id!,
+              patientId: widget.patientId,
+              startDate: startDate,
+              endDate: endDate,
+              exercises: exercises,
+              goalItems: goalItems,
+            ),
+          );
       if (!mounted) return;
       if (response.isSuccess) {
         AppSnackbar.success(context, 'Goal updated successfully.');
@@ -1077,10 +1089,7 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
           ).isBefore(normalizedStart)) {
         adjustedEnd = normalizedStart;
       }
-      _goal = _goal.copyWith(
-        startDate: normalizedStart,
-        endDate: adjustedEnd,
-      );
+      _goal = _goal.copyWith(startDate: normalizedStart, endDate: adjustedEnd);
     });
   }
 
@@ -1092,9 +1101,7 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     });
   }
 
-  Widget _buildYogaSection({
-    required List<Exercise> availableExercises,
-  }) {
+  Widget _buildYogaSection({required List<Exercise> availableExercises}) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -1167,7 +1174,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
         ),
         const SizedBox(height: AppSpacing.s14),
         GoalDateRow(
-          label: optionalEndDate && !_isYoga ? 'End Date (optional)' : 'End Date',
+          label: optionalEndDate && !_isYoga
+              ? 'End Date (optional)'
+              : 'End Date',
           date: _goal.endDate,
           readOnly: _isReadOnly,
           firstDate: _goal.startDate ?? DateTime(2020),
@@ -1296,12 +1305,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
               ],
 
               if (_isYoga) ...[
-                _buildYogaSection(
-                  availableExercises: availableExercises,
-                ),
+                _buildYogaSection(availableExercises: availableExercises),
                 const SizedBox(height: AppSpacing.s12),
               ],
-
 
               const SizedBox(height: AppSpacing.s12),
 

@@ -365,7 +365,9 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
         unawaited(_refreshLatestMessage());
 
       case ChatWsDisconnected(:final error, :final isAuthError):
-        debugPrint('[WS_CHAT] Disconnected error=$error isAuthError=$isAuthError');
+        debugPrint(
+          '[WS_CHAT] Disconnected error=$error isAuthError=$isAuthError',
+        );
         state = state.copyWith(
           isConnectingWs: false,
           isWsConnected: false,
@@ -530,5 +532,4 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       if (chatId != null && chatId.isNotEmpty) chatId,
     };
   }
-
 }

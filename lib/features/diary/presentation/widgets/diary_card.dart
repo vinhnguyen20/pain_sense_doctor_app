@@ -35,8 +35,7 @@ class _DateHeader extends StatelessWidget {
 
   const _DateHeader({required this.date});
 
-  String _formatDate(DateTime date) =>
-      DateUtilsHelper.formatRelativeDate(date);
+  String _formatDate(DateTime date) => DateUtilsHelper.formatRelativeDate(date);
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +147,6 @@ class PatientActivityCard extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-
                           ],
                         ),
                       ),

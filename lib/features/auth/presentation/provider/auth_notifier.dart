@@ -121,7 +121,6 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-
   Future<String> getInitialRoute() async {
     try {
       final hasSession = await ref

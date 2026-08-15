@@ -45,7 +45,9 @@ class _ReliefComponentsCardState extends State<ReliefComponentsCard> {
     final entries = _entries;
     final isEmpty = entries.isEmpty;
     const maxY = 100.0;
-    final values = entries.map((e) => e.value.avgPercent.clamp(0.0, 100.0)).toList();
+    final values = entries
+        .map((e) => e.value.avgPercent.clamp(0.0, 100.0))
+        .toList();
 
     final selectedIndex = _touchedIndex >= 0 && _touchedIndex < entries.length
         ? _touchedIndex
@@ -109,8 +111,9 @@ class _ReliefComponentsCardState extends State<ReliefComponentsCard> {
                           context.dashboardColors.tooltipBackground,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final entry = entries[groupIndex];
-                        final displayName =
-                            GoalType.fromString(entry.key).displayName;
+                        final displayName = GoalType.fromString(
+                          entry.key,
+                        ).displayName;
                         return BarTooltipItem(
                           '$displayName\n${entry.value.avgPercent.toInt()}% · ${entry.value.totalDays}d',
                           TextStyle(
@@ -147,9 +150,9 @@ class _ReliefComponentsCardState extends State<ReliefComponentsCard> {
                           if (index < 0 || index >= entries.length) {
                             return const SizedBox.shrink();
                           }
-                          final label = GoalType.fromString(entries[index].key)
-                              .displayName
-                              .replaceAll(' / ', '\n');
+                          final label = GoalType.fromString(
+                            entries[index].key,
+                          ).displayName.replaceAll(' / ', '\n');
                           return Padding(
                             padding: const EdgeInsets.only(top: AppSpacing.s6),
                             child: Text(

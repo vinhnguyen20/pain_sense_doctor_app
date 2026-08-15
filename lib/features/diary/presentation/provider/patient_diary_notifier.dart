@@ -134,10 +134,7 @@ class PatientDiaryNotifier extends _$PatientDiaryNotifier {
           hasMore: paginated.hasMore,
         );
       } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: response.message,
-        );
+        state = state.copyWith(isLoading: false, error: response.message);
       }
     } catch (error) {
       state = state.copyWith(

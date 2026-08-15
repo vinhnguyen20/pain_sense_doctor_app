@@ -78,7 +78,8 @@ class SelectedExerciseSessionsEditor extends StatelessWidget {
               goalEndDate: goalEndDate,
               onDoctorInstructionChanged: (value) =>
                   onDoctorInstructionChanged(plan.exerciseId, value),
-              onAddScheduleDay: (date) => onAddScheduleDay(plan.exerciseId, date),
+              onAddScheduleDay: (date) =>
+                  onAddScheduleDay(plan.exerciseId, date),
               onRemoveScheduleDay: (dayIndex) =>
                   onRemoveScheduleDay(plan.exerciseId, dayIndex),
               onScheduleDateChanged: (dayIndex, date) =>
@@ -418,11 +419,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
               if (widget.canRemoveDay)
                 GestureDetector(
                   onTap: widget.onRemoveDay,
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 18,
-                    color: cs.error,
-                  ),
+                  child: Icon(Icons.close_rounded, size: 18, color: cs.error),
                 ),
             ],
           ),

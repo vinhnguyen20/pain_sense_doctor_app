@@ -34,30 +34,27 @@ class PatientDiaryActivity extends Equatable {
 
   @override
   List<Object?> get props => [
-        label,
-        type,
-        desc,
-        unit,
-        minTarget,
-        actual,
-        percent,
-        emoji,
-        display,
-        userExercises,
-        adherence,
-        startDate,
-        endDate,
-      ];
+    label,
+    type,
+    desc,
+    unit,
+    minTarget,
+    actual,
+    percent,
+    emoji,
+    display,
+    userExercises,
+    adherence,
+    startDate,
+    endDate,
+  ];
 }
 
 class DiaryExercise extends Equatable {
   final String exerciseId;
   final String exerciseName;
 
-  const DiaryExercise({
-    required this.exerciseId,
-    required this.exerciseName,
-  });
+  const DiaryExercise({required this.exerciseId, required this.exerciseName});
 
   @override
   List<Object?> get props => [exerciseId, exerciseName];

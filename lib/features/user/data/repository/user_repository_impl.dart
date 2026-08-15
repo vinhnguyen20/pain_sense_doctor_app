@@ -62,5 +62,4 @@ class UserRepositoryImpl implements UserRepository {
       return ApiResponse.failure(e, stackTrace);
     }
   }
-
 }

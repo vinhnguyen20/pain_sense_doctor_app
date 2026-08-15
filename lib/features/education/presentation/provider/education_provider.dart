@@ -33,4 +33,3 @@ GetUserExercisesUseCase getUserExercisesUseCase(Ref ref) {
   final repository = ref.watch(exerciseRepositoryProvider);
   return GetUserExercisesUseCase(repository);
 }
-

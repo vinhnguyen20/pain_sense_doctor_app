@@ -23,7 +23,9 @@ class LbpScoreCard extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.r16)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.r16),
+        ),
       ),
       builder: (_) => SafeArea(
         child: Padding(
@@ -45,7 +47,9 @@ class LbpScoreCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.s20),
               Text(
                 'What is LBP Score?',
-                style: context.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: context.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSpacing.s12),
               Text(

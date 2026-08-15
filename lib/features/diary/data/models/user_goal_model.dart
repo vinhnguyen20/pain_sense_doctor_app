@@ -94,7 +94,8 @@ class UserGoalModel {
       selectedExercisePlans = plans;
     } else {
       // Fallback: use userExerciseIds (last segment = real exercise ID)
-      selectedExerciseIds = yogaItem?.userExerciseIds
+      selectedExerciseIds =
+          yogaItem?.userExerciseIds
               ?.map((id) => id.contains('+') ? id.split('+').first : id)
               .toList() ??
           const [];

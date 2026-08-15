@@ -37,7 +37,8 @@ class UserExerciseScheduleConfig {
       UserExerciseScheduleConfig(
         exerciseDate: DateTime.parse(json['exercise_date'] as String),
         sessionsCount: (json['sessions_count'] as num?)?.toInt() ?? 1,
-        slots: (json['slots'] as List<dynamic>?)
+        slots:
+            (json['slots'] as List<dynamic>?)
                 ?.map(
                   (e) => UserExerciseScheduleSlot.fromJson(
                     e as Map<String, dynamic>,
@@ -72,7 +73,8 @@ class UserExerciseItem {
         id: json['id'] as String? ?? '',
         exerciseId: json['exercise_id'] as String?,
         name: json['name'] as String?,
-        scheduleConfig: (json['schedule_config'] as List<dynamic>?)
+        scheduleConfig:
+            (json['schedule_config'] as List<dynamic>?)
                 ?.map(
                   (e) => UserExerciseScheduleConfig.fromJson(
                     e as Map<String, dynamic>,
