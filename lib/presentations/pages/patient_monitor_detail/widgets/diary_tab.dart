@@ -79,7 +79,7 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-                 if (state.isLoading && state.entries.isEmpty)
+          if (state.isLoading && state.entries.isEmpty)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             )
