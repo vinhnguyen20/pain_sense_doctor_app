@@ -1,12 +1,11 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
-import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class PatientDashboardSidebar extends StatelessWidget {
-  final Patient patient;
+  final StatefulNavigationShell navigationShell;
 
-  const PatientDashboardSidebar({super.key, required this.patient});
+  const PatientDashboardSidebar({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -33,38 +32,36 @@ class PatientDashboardSidebar extends StatelessWidget {
                   _NavItem(
                     icon: Icons.menu_rounded,
                     label: 'Overview',
-                    isSelected: true,
-                    onTap: () {},
+                    isSelected: navigationShell.currentIndex == 0,
+                    onTap: () => navigationShell.goBranch(0),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Connect',
-                    isSelected: false,
-                    onTap: () {
-                      // Uses existing route for Patient Monitor details if needed
-                    },
+                    isSelected: navigationShell.currentIndex == 1,
+                    onTap: () => navigationShell.goBranch(1),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.accessibility_new_rounded,
                     label: 'Exercises',
-                    isSelected: false,
-                    onTap: () {},
+                    isSelected: navigationShell.currentIndex == 2,
+                    onTap: () => navigationShell.goBranch(2),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.flag_outlined,
                     label: 'Goals',
-                    isSelected: false,
-                    onTap: () {},
+                    isSelected: navigationShell.currentIndex == 3,
+                    onTap: () => navigationShell.goBranch(3),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
-                    isSelected: false,
-                    onTap: () {},
+                    isSelected: navigationShell.currentIndex == 4,
+                    onTap: () => navigationShell.goBranch(4),
                   ),
                   const Spacer(),
                   _NavItem(

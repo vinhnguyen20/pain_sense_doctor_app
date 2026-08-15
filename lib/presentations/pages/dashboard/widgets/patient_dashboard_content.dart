@@ -32,11 +32,12 @@ class PatientDashboardContent extends ConsumerWidget {
                   'This is ${patient.firstName}\'s patient overview.',
                   style: AppTypography.titleBig1.copyWith(
                     color: AppPalette.secondaryBlue,
+                    height: 1.0,
                   ),
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
-                  height: 274,
+                  height: 273,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -84,47 +85,63 @@ class PatientOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppPalette.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppPalette.medGray),
+        border: Border.all(color: AppPalette.medGray, width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: AppPalette.surfaceLight,
-            child: Icon(
-              Icons.person,
-              size: 40,
-              color: AppPalette.secondaryBlue,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            patient.fullName,
-            style: AppTypography.titleBig1.copyWith(
-              color: AppPalette.secondaryBlue,
-            ),
-          ),
-          const SizedBox(height: 24),
           SizedBox(
-            width: double.infinity,
-            height: 44,
+            width: 152,
+            child: Column(
+              children: [
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/avatar/avatar.png',
+                    width: 152,
+                    height: 152,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  patient.fullName,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.titleBig1.copyWith(
+                    color: AppPalette.secondaryBlue,
+                    height: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 136,
+            height: 31,
             child: ElevatedButton(
               onPressed: () {
                 context.pushNamed('patient-monitor-detail', extra: patient);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.white,
-                foregroundColor: AppPalette.secondaryBlue,
+                backgroundColor: AppPalette.secondaryBlue,
+                foregroundColor: AppPalette.white,
                 elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 6,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppPalette.medGray),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                textStyle: AppTypography.buttonLarge.copyWith(
+                  fontSize: 16,
+                  height: 1.0,
                 ),
               ),
               child: const Text('Details'),

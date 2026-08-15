@@ -6,6 +6,7 @@ import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.d
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
+import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
@@ -70,14 +71,64 @@ class AppRouter {
             return PatientMonitorDetail(patient: patient);
           },
         ),
-        GoRoute(
-          path: '/patient-dashboard',
-          name: 'patient-dashboard',
-          builder: (context, state) {
-            final patient = state.extra as Patient;
-
-            return PatientDashboard(patient: patient);
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return PatientDashboardScaffold(navigationShell: navigationShell);
           },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/patient-dashboard',
+                  name: 'patient-dashboard',
+                  builder: (context, state) {
+                    final patient = state.extra as Patient;
+                    return PatientDashboardPage(patient: patient);
+                  },
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/patient-connect',
+                  name: 'patient-connect',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Connect'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/patient-exercises',
+                  name: 'patient-exercises',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Exercises'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/patient-goals',
+                  name: 'patient-goals',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Goals'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/patient-settings',
+                  name: 'patient-settings',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Settings'))),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: '/image-viewer',
