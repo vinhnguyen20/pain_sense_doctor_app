@@ -1,4 +1,3 @@
-import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -65,80 +64,119 @@ class SevenDayTrendCard extends ConsumerWidget {
 
     final postureLine = LineChartBarData(
       spots: postureSpots,
-      isCurved: true,
+      isCurved: false,
       color: postureColor,
       barWidth: 3,
-      isStrokeCapRound: true,
-      dotData: const FlDotData(show: false),
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, percent, barData, index) {
+          return FlDotCirclePainter(
+            radius: 5.5,
+            color: postureColor,
+            strokeWidth: 0,
+          );
+        },
+      ),
     );
 
     final adherenceLine = LineChartBarData(
       spots: adherenceSpots,
-      isCurved: true,
+      isCurved: false,
       color: adherenceColor,
       barWidth: 3,
-      isStrokeCapRound: true,
-      dotData: const FlDotData(show: false),
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, percent, barData, index) {
+          return FlDotCirclePainter(
+            radius: 5.5,
+            color: adherenceColor,
+            strokeWidth: 0,
+          );
+        },
+      ),
     );
 
     return Column(
       children: [
         SizedBox(
-          height: 200, 
-          child: LineChart(
-            LineChartData(
-              lineBarsData: [postureLine, adherenceLine],
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 25,
-                    reservedSize: 32,
-                    getTitlesWidget: (value, meta) {
-                      if (value == 0) return const SizedBox();
-                      return Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          fontFamily: 'Cabin',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF206EB0),
-                        ),
-                      );
-                    },
+          height: 220, 
+          child: Padding(
+            padding: const EdgeInsets.only(right: 10), // Prevent right marker clipping
+            child: LineChart(
+              LineChartData(
+                clipData: const FlClipData.none(),
+                lineBarsData: [postureLine, adherenceLine],
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(
+                  show: true,
+                  border: const Border(
+                    left: BorderSide(
+                      color: Color(0xFFC8C8C8),
+                      width: 1,
+                    ),
+                    bottom: BorderSide(
+                      color: Color(0xFFC8C8C8),
+                      width: 1,
+                    ),
+                    right: BorderSide.none,
+                    top: BorderSide.none,
                   ),
                 ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < 0 || index >= 7) return const SizedBox();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          dateLabels[index],
-                          style: const TextStyle(
-                            fontFamily: 'Cabin',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Color(0xFF206EB0),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 25,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        if (value == 0) return const SizedBox();
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            value.toInt().toString(),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              fontFamily: 'Cabin',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF206EB0),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index < 0 || index >= 7) return const SizedBox();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            dateLabels[index],
+                            style: const TextStyle(
+                              fontFamily: 'Cabin',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF206EB0),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
+                minY: 0,
+                maxY: 100,
+                minX: 0,
+                maxX: 6,
               ),
-              minY: 0,
-              maxY: 100,
-              minX: 0,
-              maxX: 6,
             ),
           ),
         ),
@@ -161,12 +199,28 @@ class _LegendItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 20,
-          height: 3,
-          color: color,
+        SizedBox(
+          width: 30,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 20,
+                height: 3,
+                color: color,
+              ),
+              Container(
+                width: 11,
+                height: 11,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 10),
         Text(
           label,
           style: const TextStyle(
