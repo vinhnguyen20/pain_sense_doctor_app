@@ -91,7 +91,9 @@ class PatientUserGoalsNotifier extends _$PatientUserGoalsNotifier {
 
     if (response.isFailure) throw Exception(response.message);
 
-    final paginated = response.data!;
+    final paginated = response.data;
+    if (paginated == null) return [];
+
     _nextCursor = paginated.nextCursor?.isEmpty == true
         ? null
         : paginated.nextCursor;

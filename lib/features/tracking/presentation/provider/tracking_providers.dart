@@ -45,5 +45,5 @@ final patientTrackingSummary7DaysProvider =
         throw result.message;
       }
 
-      return result.data!;
+      return result.data ?? [];
     }, retry: (retryCount, error) => null);

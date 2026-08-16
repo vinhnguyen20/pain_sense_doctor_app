@@ -15,7 +15,7 @@ class TrackingRepositoryImpl implements TrackingRepository {
       final result = await _dataSource.getPatientTrackingSummary7Days(
         patientId: patientId,
       );
-      return ApiResponse.success(result.data!);
+      return result;
     } catch (e, stackTrace) {
       return ApiResponse.failure(e, stackTrace);
     }
