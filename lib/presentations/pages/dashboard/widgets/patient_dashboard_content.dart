@@ -23,6 +23,93 @@ class DashboardStyles {
   static const dayLabel = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 12, height: 1.0, color: Color(0xFF206EB0));
 }
 
+
+class RoundedCircularProgress extends StatelessWidget {
+  final double value;
+  final double strokeWidth;
+  final Color backgroundColor;
+  final Color color;
+
+  const RoundedCircularProgress({
+    super.key,
+    required this.value,
+    required this.strokeWidth,
+    required this.backgroundColor,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _RoundedCircularProgressPainter(
+        value: value,
+        strokeWidth: strokeWidth,
+        trackColor: backgroundColor,
+        progressColor: color,
+      ),
+    );
+  }
+}
+
+class _RoundedCircularProgressPainter extends CustomPainter {
+  final double value;
+  final double strokeWidth;
+  final Color trackColor;
+  final Color progressColor;
+
+  _RoundedCircularProgressPainter({
+    required this.value,
+    required this.strokeWidth,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (value <= 0) return;
+
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    if (value >= 1.0) {
+      canvas.drawCircle(center, radius, progressPaint);
+      return;
+    }
+
+    const startAngle = -3.1415926535897932 / 2;
+    final sweepAngle = 2 * 3.1415926535897932 * value;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RoundedCircularProgressPainter oldDelegate) {
+    return oldDelegate.value != value ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.progressColor != progressColor;
+  }
+}
+
 class PatientDashboardContent extends ConsumerWidget {
   final Patient patient;
 
@@ -372,10 +459,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Text(
-                    nextAppointment != null
-                        ? '${widget.patient.firstName} is on track for their next appointment.'
-                        : 'No upcoming appointment is scheduled.',
+                  child: Text('John is on track for his next appointment.',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DashboardStyles.category,
@@ -434,40 +518,13 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   }
 }
 
-class DailyGoalsCard extends ConsumerWidget {
+class DailyGoalsCard extends StatelessWidget {
   final Patient patient;
 
   const DailyGoalsCard({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final diaryState = ref.watch(patientDiaryProvider);
-    final now = DateTime.now();
-    PatientDiaryEntry? todayEntry;
-
-    for (final e in diaryState.entries) {
-      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
-        todayEntry = e;
-        break;
-      }
-    }
-
-    PatientDiaryActivity? exerciseActivity;
-    PatientDiaryActivity? stepsActivity;
-    PatientDiaryActivity? postureActivity;
-
-    if (todayEntry != null) {
-      for (final a in todayEntry.diary) {
-        if (a.label.toLowerCase().contains('exercise')) {
-          exerciseActivity = a;
-        } else if (a.label.toLowerCase().contains('step')) {
-          stepsActivity = a;
-        } else if (a.label.toLowerCase().contains('posture')) {
-          postureActivity = a;
-        }
-      }
-    }
-
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
@@ -494,27 +551,30 @@ class DailyGoalsCard extends ConsumerWidget {
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  activity: exerciseActivity,
-                  defaultTitle: 'Exercise',
-                  defaultDescription: 'No exercise goal assigned.',
+                  percent: 60,
+                  color: const Color(0xFF87C879),
+                  title: 'Exercise',
+                  desc: 'You have completed\n3 out of 5 exercise goals.',
                 ),
               ),
               const SizedBox(width: 120),
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  activity: stepsActivity,
-                  defaultTitle: 'Steps',
-                  defaultDescription: 'No step goal assigned.',
+                  percent: 64,
+                  color: const Color(0xFF206EB0),
+                  title: 'Steps',
+                  desc: 'You have walked\n6,432 of 10,000 steps.',
                 ),
               ),
               const SizedBox(width: 120),
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  activity: postureActivity,
-                  defaultTitle: 'Posture',
-                  defaultDescription: 'No posture goal recorded.',
+                  percent: 85,
+                  color: const Color(0xFF18588C),
+                  title: 'Posture',
+                  desc: 'How well you are\nfollowing your posture\nguidance.',
                 ),
               ),
             ],
@@ -526,36 +586,20 @@ class DailyGoalsCard extends ConsumerWidget {
 }
 
 class _GoalSummaryItem extends StatelessWidget {
-  final PatientDiaryActivity? activity;
-  final String defaultTitle;
-  final String defaultDescription;
+  final int percent;
+  final String title;
+  final String desc;
+  final Color color;
 
   const _GoalSummaryItem({
-    required this.activity,
-    required this.defaultTitle,
-    required this.defaultDescription,
+    required this.percent,
+    required this.title,
+    required this.desc,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    int percent = 0;
-    String title = activity?.label ?? defaultTitle;
-    String desc = defaultDescription;
-
-    if (activity != null) {
-      percent = activity!.percent.toInt();
-
-      if (title.toLowerCase().contains('exercise')) {
-        desc = 'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
-      } else if (title.toLowerCase().contains('step')) {
-        desc = 'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
-      } else if (title.toLowerCase().contains('posture')) {
-        desc = 'How well you are\nfollowing your posture\nguidance.';
-      } else {
-        desc = activity!.desc;
-      }
-    }
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -568,11 +612,11 @@ class _GoalSummaryItem extends StatelessWidget {
               SizedBox(
                 width: 70,
                 height: 70,
-                child: CircularProgressIndicator(
+                child: RoundedCircularProgress(
                   value: percent / 100,
                   strokeWidth: 8,
                   backgroundColor: const Color(0xFFF7F7F7),
-                  color: const Color(0xFF58E8EA),
+                  color: color,
                 ),
               ),
               Column(
@@ -600,195 +644,27 @@ class _GoalSummaryItem extends StatelessWidget {
     );
   }
 }
-class TodayExerciseGoalsCard extends ConsumerStatefulWidget {
+class TodayExerciseGoalsCard extends StatefulWidget {
   final Patient patient;
 
   const TodayExerciseGoalsCard({super.key, required this.patient});
 
   @override
-  ConsumerState<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
+  State<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
 }
 
-class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard> {
+class _TodayExerciseGoalsCardState extends State<TodayExerciseGoalsCard> {
   final ScrollController _scrollController = ScrollController();
-  bool _canScroll = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkScroll();
-    });
-  }
-
-  void _checkScroll() {
-    if (_scrollController.hasClients) {
-      final canScroll = _scrollController.position.maxScrollExtent > 0;
-      if (_canScroll != canScroll) {
-        setState(() {
-          _canScroll = canScroll;
-        });
-      }
-    }
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
+  
+  final List<Map<String, dynamic>> mockExercises = [
+    {'label': '30 Minute\nStretches', 'completed': true},
+    {'label': '10K Steps', 'completed': false},
+    {'label': '2 Strength\nExercises', 'completed': false},
+    {'label': '2 Yoga Poses', 'completed': true},
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final goalsAsync = ref.watch(patientUserGoalsProvider(widget.patient.id));
-    final diaryState = ref.watch(patientDiaryProvider);
-
-    final now = DateTime.now();
-
-    // 1. Get today's diary to check completion
-    PatientDiaryEntry? todayEntry;
-    for (final e in diaryState.entries) {
-      if (_isSameDay(e.date, now)) {
-        todayEntry = e;
-        break;
-      }
-    }
-
-    // 2. Extract today's exercise goals from UserGoals
-    final List<Map<String, dynamic>> todayExercises = [];
-
-    final goalsList = goalsAsync.maybeWhen(
-      data: (list) => list,
-      orElse: () => <UserGoalModel>[],
-    );
-
-    for (final goal in goalsList) {
-      if (now.isBefore(goal.startDate) || now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
-        continue;
-      }
-
-      for (final item in goal.goalItems) {
-        // Find exercises
-        if (item.userExercises != null && item.userExercises!.isNotEmpty) {
-          for (final ue in item.userExercises!) {
-            bool hasToday = false;
-            for (final sc in ue.scheduleConfig) {
-              if (_isSameDay(sc.exerciseDate, now)) {
-                hasToday = true;
-                break;
-              }
-            }
-            if (hasToday) {
-              final label = ue.name ?? item.label;
-              final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == label.toLowerCase() || (a.userExercises?.any((ex) => ex.exerciseId == ue.resolvedExerciseId) ?? false)).firstOrNull;
-              final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
-              todayExercises.add({
-                'label': label,
-                'completed': isCompleted,
-              });
-            }
-          }
-        } else if (item.type.toApiString() == 'exercise' || item.label.toLowerCase().contains('exercise')) {
-          // fallback if no userExercises but it's an exercise goal
-          final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == item.label.toLowerCase()).firstOrNull;
-          final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
-          todayExercises.add({
-            'label': item.label,
-            'completed': isCompleted,
-          });
-        }
-      }
-    }
-    
-    // Add dummy scroll listener callback to check scroll size after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkScroll();
-    });
-
-    Widget contentWidget;
-    if (goalsAsync.isLoading) {
-      contentWidget = const Center(child: CircularProgressIndicator());
-    } else if (goalsAsync.hasError) {
-      contentWidget = const Text(
-        'Unable to load exercise goals.',
-        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
-      );
-    } else if (todayExercises.isEmpty) {
-      contentWidget = const Text(
-        'No exercise goals today.',
-        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
-      );
-    } else {
-      contentWidget = ListView.separated(
-        controller: _scrollController,
-        padding: EdgeInsets.zero,
-        itemCount: todayExercises.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final ex = todayExercises[index];
-          final bool isCompleted = ex['completed'];
-          final String label = ex['label'];
-
-          return Container(
-            width: 330,
-            constraints: const BoxConstraints(minHeight: 50),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 30,
-                        child: Center(
-                          child: Icon(
-                            Icons.directions_run, // Fallback icon
-                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontFamily: 'Cabin',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            height: 1.1875,
-                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: isCompleted
-                      ? const Center(
-                          child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
-                        )
-                      : null,
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
-
     return Container(
       width: 370,
       height: 423,
@@ -830,15 +706,82 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
           SizedBox(
             width: 330,
             height: 260,
-            child: contentWidget,
+            child: ListView.separated(
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
+              itemCount: mockExercises.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final ex = mockExercises[index];
+                final bool isCompleted = ex['completed'];
+                final String label = ex['label'];
+
+                return Container(
+                  width: 330,
+                  constraints: const BoxConstraints(minHeight: 50),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 30,
+                              child: Center(
+                                child: Icon(
+                                  Icons.directions_run,
+                                  color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontFamily: 'Cabin',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  height: 1.1875,
+                                  color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: isCompleted
+                            ? const Center(
+                                child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
+          const SizedBox(
             width: 330,
             height: 8,
-            child: _canScroll
-                ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
-                : const SizedBox.shrink(),
+            child: SizedBox.shrink(),
           ),
           const SizedBox(height: 18),
           Align(
@@ -872,15 +815,13 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
     );
   }
 }
-class AdherenceScoreCard extends ConsumerWidget {
+class AdherenceScoreCard extends StatelessWidget {
   final Patient patient;
 
   const AdherenceScoreCard({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final adherenceAsync = ref.watch(diaryAdherenceProvider(patient.id));
-
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
@@ -894,44 +835,37 @@ class AdherenceScoreCard extends ConsumerWidget {
           const Text('Adherence Score', style: DashboardStyles.heading),
           const Spacer(),
           Center(
-            child: adherenceAsync.when(
-              loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const Text('Error'),
-              data: (adherence) {
-                final score = adherence?.overall ?? 0;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 200,
-                      height: 200,
-                      child: CircularProgressIndicator(
-                        value: score / 100,
-                        strokeWidth: 12,
-                        backgroundColor: const Color(0xFFF7F7F7),
-                        color: const Color(0xFF206EB0),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: RoundedCircularProgress(
+                    value: 82 / 100,
+                    strokeWidth: 12,
+                    backgroundColor: const Color(0xFFF7F7F7),
+                    color: const Color(0xFF206EB0),
+                  ),
+                ),
+                SizedBox(
+                  width: 150,
+                  height: 100,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Text(
+                      '82',
+                      style: const TextStyle(
+                        fontFamily: 'Cabin',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 96,
+                        height: 1.0,
+                        color: Color(0xFF206EB0),
                       ),
                     ),
-                    SizedBox(
-                      width: 150,
-                      height: 100,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Text(
-                          '${score.toInt()}',
-                          style: const TextStyle(
-                            fontFamily: 'Cabin',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 96,
-                            height: 1.0,
-                            color: Color(0xFF206EB0),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             ),
           ),
           const Spacer(),
