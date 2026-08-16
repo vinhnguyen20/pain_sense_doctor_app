@@ -1,3 +1,4 @@
+import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
@@ -599,83 +600,249 @@ class _GoalSummaryItem extends StatelessWidget {
     );
   }
 }
-class TodayExerciseGoalsCard extends ConsumerWidget {
+class TodayExerciseGoalsCard extends ConsumerStatefulWidget {
   final Patient patient;
 
   const TodayExerciseGoalsCard({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final diaryState = ref.watch(patientDiaryProvider);
-    final now = DateTime.now();
-    PatientDiaryEntry? todayEntry;
+  ConsumerState<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
+}
 
+class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard> {
+  final ScrollController _scrollController = ScrollController();
+  bool _canScroll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScroll();
+    });
+  }
+
+  void _checkScroll() {
+    if (_scrollController.hasClients) {
+      final canScroll = _scrollController.position.maxScrollExtent > 0;
+      if (_canScroll != canScroll) {
+        setState(() {
+          _canScroll = canScroll;
+        });
+      }
+    }
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final goalsAsync = ref.watch(patientUserGoalsProvider(widget.patient.id));
+    final diaryState = ref.watch(patientDiaryProvider);
+
+    final now = DateTime.now();
+
+    // 1. Get today's diary to check completion
+    PatientDiaryEntry? todayEntry;
     for (final e in diaryState.entries) {
-      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
+      if (_isSameDay(e.date, now)) {
         todayEntry = e;
         break;
       }
     }
 
-    final List<PatientDiaryActivity> exerciseGoals = [];
-    if (todayEntry != null) {
-      for (final a in todayEntry.diary) {
-        if (a.label.toLowerCase().contains('exercise')) {
-          exerciseGoals.add(a);
+    // 2. Extract today's exercise goals from UserGoals
+    final List<Map<String, dynamic>> todayExercises = [];
+
+    final goalsList = goalsAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => <UserGoalModel>[],
+    );
+
+    for (final goal in goalsList) {
+      if (now.isBefore(goal.startDate) || now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
+        continue;
+      }
+
+      for (final item in goal.goalItems) {
+        // Find exercises
+        if (item.userExercises != null && item.userExercises!.isNotEmpty) {
+          for (final ue in item.userExercises!) {
+            bool hasToday = false;
+            for (final sc in ue.scheduleConfig) {
+              if (_isSameDay(sc.exerciseDate, now)) {
+                hasToday = true;
+                break;
+              }
+            }
+            if (hasToday) {
+              final label = ue.name ?? item.label;
+              final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == label.toLowerCase() || (a.userExercises?.any((ex) => ex.exerciseId == ue.resolvedExerciseId) ?? false)).firstOrNull;
+              final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
+              todayExercises.add({
+                'label': label,
+                'completed': isCompleted,
+              });
+            }
+          }
+        } else if (item.type.toApiString() == 'exercise' || item.label.toLowerCase().contains('exercise')) {
+          // fallback if no userExercises but it's an exercise goal
+          final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == item.label.toLowerCase()).firstOrNull;
+          final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
+          todayExercises.add({
+            'label': item.label,
+            'completed': isCompleted,
+          });
         }
       }
     }
+    
+    // Add dummy scroll listener callback to check scroll size after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScroll();
+    });
+
+    Widget contentWidget;
+    if (goalsAsync.isLoading) {
+      contentWidget = const Center(child: CircularProgressIndicator());
+    } else if (goalsAsync.hasError) {
+      contentWidget = const Text(
+        'Unable to load exercise goals.',
+        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+      );
+    } else if (todayExercises.isEmpty) {
+      contentWidget = const Text(
+        'No exercise goals today.',
+        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+      );
+    } else {
+      contentWidget = ListView.separated(
+        controller: _scrollController,
+        padding: EdgeInsets.zero,
+        itemCount: todayExercises.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final ex = todayExercises[index];
+          final bool isCompleted = ex['completed'];
+          final String label = ex['label'];
+
+          return Container(
+            width: 330,
+            constraints: const BoxConstraints(minHeight: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 30,
+                        child: Center(
+                          child: Icon(
+                            Icons.directions_run, // Fallback icon
+                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: 'Cabin',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            height: 1.1875,
+                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: isCompleted
+                      ? const Center(
+                          child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
     return Container(
-      padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
+      width: 370,
+      height: 423,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppPalette.white,
-        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
-        border: Border.all(color: AppPalette.medGray),
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFC8C8C8), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Today's Exercise Goals", style: DashboardStyles.heading),
-          const SizedBox(height: 16),
-          Expanded(
-            child: exerciseGoals.isEmpty
-                ? const Align(alignment: Alignment.topCenter, child: Text('No exercise goals today.', style: DashboardStyles.body))
-                : ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: exerciseGoals.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final a = exerciseGoals[index];
-                      final isCompleted = a.percent >= 100.0;
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              a.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DashboardStyles.body.copyWith(
-                                fontWeight: isCompleted ? FontWeight.normal : FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          if (isCompleted)
-                            Text(
-                              'completed',
-                              style: DashboardStyles.body.copyWith(fontSize: 12),
-                            ),
-                        ],
-                      );
-                    },
+          SizedBox(
+            width: 330,
+            height: 24,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(Icons.fitness_center, size: 24, color: Color(0xFF206EB0)),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  "Today's Exercise Goals",
+                  style: TextStyle(
+                    fontFamily: 'Cabin',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 20,
+                    color: Color(0xFF206EB0),
+                    letterSpacing: 0,
+                    height: 1.0,
                   ),
+                ),
+              ],
+            ),
           ),
-          if (exerciseGoals.length > 4)
-            const Center(child: Icon(Icons.keyboard_arrow_down, color: AppPalette.medGray)),
-          const SizedBox(height: 8),
-          Center(
+          const SizedBox(height: 20),
+          SizedBox(
+            width: 330,
+            height: 260,
+            child: contentWidget,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: 330,
+            height: 8,
+            child: _canScroll
+                ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.center,
             child: SizedBox(
               width: 136,
               height: 31,
@@ -683,14 +850,20 @@ class TodayExerciseGoalsCard extends ConsumerWidget {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF206EB0),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
+                  foregroundColor: const Color(0xFFFFFFFF),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  minimumSize: const Size(136, 31),
+                ),
+                child: const Text(
+                  'Edit',
+                  style: TextStyle(
+                    fontFamily: 'Cabin',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: Color(0xFFFFFFFF),
                   ),
                 ),
-                child: const Text('Edit', style: DashboardStyles.button),
               ),
             ),
           ),
