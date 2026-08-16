@@ -840,7 +840,7 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                 ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
                 : const SizedBox.shrink(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Align(
             alignment: Alignment.center,
             child: SizedBox(
