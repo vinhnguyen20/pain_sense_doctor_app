@@ -171,7 +171,7 @@ class _PatientScheduleContent extends StatelessWidget {
           const SizedBox(height: 23),
           _PrimaryButton(
             label: 'Create An Appointment',
-            width: 240,
+            width: 270,
             onTap: onCreateAppointment,
           ),
           const SizedBox(height: 23),
@@ -599,6 +599,7 @@ class _CreateAppointmentFormState
     return SizedBox(
       width: 1148,
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.only(top: 43, bottom: 30),
         child: Column(
           children: [

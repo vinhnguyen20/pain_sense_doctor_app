@@ -52,7 +52,7 @@ class ClinicianHomeView extends StatelessWidget {
       content = ListView.separated(
         controller: scrollController,
         padding: const EdgeInsets.only(bottom: 20),
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(), keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         itemCount:
             patients.length +
             (isLoadingMore || !hasMore && patients.isNotEmpty ? 1 : 0),

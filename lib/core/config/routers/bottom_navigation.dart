@@ -22,13 +22,19 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
     final isDesktop = MediaQuery.sizeOf(context).width >= 768;
 
     if (isDesktop) {
-      return Scaffold(
-        backgroundColor: AppPalette.white,
-        body: Row(
-          children: [
-            SidebarNavigation(navigationShell: widget.navigationShell),
-            Expanded(child: widget.navigationShell),
-          ],
+      return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: Scaffold(
+          backgroundColor: AppPalette.white,
+          body: Row(
+            children: [
+              SidebarNavigation(navigationShell: widget.navigationShell),
+              Expanded(child: widget.navigationShell),
+            ],
+          ),
         ),
       );
     }

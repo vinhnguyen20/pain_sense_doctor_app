@@ -13,18 +13,23 @@ class SidebarNavigation extends StatelessWidget {
       width: 232,
       color: AppPalette.backgroundLight,
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 132.392,
-            height: 60,
-            child: Image.asset(
-              'assets/images/logo/ps_logo_full.png',
-              fit: BoxFit.contain,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 132.392,
+              height: 60,
+              child: Image.asset(
+                'assets/images/logo/ps_logo_full.png',
+                fit: BoxFit.contain,
+              ),
             ),
-          ),
-          const SizedBox(height: 40),
+            const SizedBox(height: 40),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
           _NavItem(
             icon: Icons.menu_rounded,
             label: 'Overview',
@@ -79,7 +84,12 @@ class SidebarNavigation extends StatelessWidget {
               navigationShell?.goBranch(5, initialLocation: false);
             },
           ),
-        ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
