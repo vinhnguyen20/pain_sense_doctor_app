@@ -145,7 +145,7 @@ class PatientOverviewCard extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   patient.fullName,
                   textAlign: TextAlign.center,
@@ -156,7 +156,7 @@ class PatientOverviewCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           SizedBox(
             width: PatientDashboardDimensions.buttonWidth,
             height: 31,
