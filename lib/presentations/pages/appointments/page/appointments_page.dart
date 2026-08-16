@@ -51,6 +51,7 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
   }
 
   void _openPatientSchedule(Patient patient) {
+    FocusManager.instance.primaryFocus?.unfocus();
     context.pushNamed('patient-appointments', extra: patient);
   }
 

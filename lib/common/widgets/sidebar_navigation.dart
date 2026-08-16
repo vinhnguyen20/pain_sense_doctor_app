@@ -36,6 +36,7 @@ class SidebarNavigation extends StatelessWidget {
             isSelected:
                 navigationShell == null || navigationShell!.currentIndex == 0,
             onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
               navigationShell?.goBranch(0, initialLocation: false);
             },
           ),
@@ -45,6 +46,7 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Connect',
             isSelected: navigationShell?.currentIndex == 1,
             onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
               navigationShell?.goBranch(1, initialLocation: false);
             },
           ),
@@ -54,6 +56,7 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Exercises',
             isSelected: navigationShell?.currentIndex == 2,
             onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
               navigationShell?.goBranch(2, initialLocation: false);
             },
           ),
@@ -63,6 +66,7 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Goals',
             isSelected: navigationShell?.currentIndex == 3,
             onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
               navigationShell?.goBranch(3, initialLocation: false);
             },
           ),
@@ -72,7 +76,8 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Schedule',
             isSelected: navigationShell?.currentIndex == 4,
             onTap: () {
-              navigationShell?.goBranch(4, initialLocation: false);
+              FocusManager.instance.primaryFocus?.unfocus();
+              navigationShell?.goBranch(4, initialLocation: true);
             },
           ),
           const SizedBox(height: 20),
@@ -81,6 +86,7 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Settings',
             isSelected: navigationShell?.currentIndex == 5,
             onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
               navigationShell?.goBranch(5, initialLocation: false);
             },
           ),

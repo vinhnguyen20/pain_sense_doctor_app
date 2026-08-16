@@ -1,3 +1,5 @@
+import 'package:go_router/go_router.dart';
+
 import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/appointment.dart';
@@ -48,14 +50,28 @@ class _PatientAppointmentsPageState
                     children: [
                       const ClinicianHeader(doctorName: 'Dr. Cameron Taylor'),
                       const SizedBox(height: 30),
-                      Text(
-                        widget.patient.fullName.trim().isEmpty
-                            ? 'Patient Schedule'
-                            : widget.patient.fullName.trim(),
-                        style: AppTypography.titleBig1.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1,
-                        ),
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              context.goNamed('appointments');
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
+                              child: Icon(Icons.arrow_back, color: AppPalette.secondaryBlue, size: 28),
+                            ),
+                          ),
+                          Text(
+                            widget.patient.fullName.trim().isEmpty
+                                ? 'Patient Schedule'
+                                : widget.patient.fullName.trim(),
+                            style: AppTypography.titleBig1.copyWith(
+                              color: AppPalette.secondaryBlue,
+                              height: 1,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 30),
                       Expanded(
@@ -78,6 +94,7 @@ class _PatientAppointmentsPageState
                                   });
                                 },
                                 onCancel: () {
+                                  FocusManager.instance.primaryFocus?.unfocus();
                                   setState(() {
                                     _showCreateForm = false;
                                   });

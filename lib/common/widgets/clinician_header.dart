@@ -33,19 +33,33 @@ class ClinicianHeader extends StatelessWidget {
             alignment: Alignment.center,
             child: TextField(
               onChanged: onSearchChanged,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
+              maxLines: 1,
+              textAlignVertical: TextAlignVertical.center,
               cursorColor: AppPalette.secondaryBlue,
               style: AppTypography.titleBig1.copyWith(
                 color: AppPalette.secondaryBlue,
+                height: 1.0,
+              ),
+              strutStyle: const StrutStyle(
+                fontFamily: 'Cabin',
+                fontSize: 20,
+                height: 1.0,
+                forceStrutHeight: true,
               ),
               decoration: InputDecoration(
                 hintText: 'Search Patients...',
                 hintStyle: AppTypography.titleBig1.copyWith(
                   color: AppPalette.medGray,
+                  height: 1.0,
                 ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
               ),
             ),
           ),
