@@ -31,7 +31,7 @@ class ActivityTracker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final warningColor = inactiveColor ?? AppPalette.surfaceLight;
+    final warningColor = inactiveColor ?? AppPalette.backgroundLight;
 
     return SizedBox(
       height: maxBarHeight + labelGap + 18,

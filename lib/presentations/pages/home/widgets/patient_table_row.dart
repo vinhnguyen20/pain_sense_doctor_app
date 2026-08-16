@@ -40,76 +40,70 @@ class PatientTableRow extends StatelessWidget {
           color: AppPalette.surfaceLight,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 1000),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 66,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 18,
-                          child: _PatientIdentity(
-                            patient: patient,
-                            statusColor: statusColor,
-                          ),
-                        ),
-                        Expanded(
-                          flex: 14,
-                          child: Text(
-                            painType,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.defaultBody2.copyWith(
-                              color: AppPalette.secondaryBlue,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 24,
-                          child: ActivityTracker(
-                            values: activityValues,
-                            barWidth: 16,
-                            maxBarHeight: 44,
-                          ),
-                        ),
-                        Expanded(
-                          flex: 18,
-                          child: _ContactInformation(
-                            phone: patient.phone,
-                            email: patient.email,
-                          ),
-                        ),
-                      ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 66,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 18,
+                      child: _PatientIdentity(
+                        patient: patient,
+                        statusColor: statusColor,
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      flex: 14,
+                      child: Text(
+                        painType,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.defaultBody2.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 24,
+                      child: ActivityTracker(
+                        values: activityValues,
+                        barWidth: 16,
+                        maxBarHeight: 44,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 18,
+                      child: _ContactInformation(
+                        phone: patient.phone,
+                        email: patient.email,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 40),
-                SizedBox(
-                  width: 304,
-                  height: 50,
-                  child: _PatientActions(
-                    onDetails: () {
-                      context.pushNamed(
-                        'patient-monitor-detail',
-                        extra: patient,
-                      );
-                    },
-                    onDashboard: () {
-                      context.pushNamed('patient-dashboard', extra: patient);
-                    },
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(width: 40),
+            SizedBox(
+              width: 304,
+              height: 50,
+              child: _PatientActions(
+                onDetails: () {
+                  context.pushNamed(
+                    'patient-monitor-detail',
+                    extra: patient,
+                  );
+                },
+                onDashboard: () {
+                  context.pushNamed('patient-dashboard', extra: patient);
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
