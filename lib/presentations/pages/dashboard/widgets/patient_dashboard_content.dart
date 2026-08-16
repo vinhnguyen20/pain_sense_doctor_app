@@ -316,7 +316,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
 
     validAppts.sort((a, b) {
       final da =
-          DateTime.tryParse(a.schedule.date) ??
+          _parseRobustDate(a.schedule.date) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       final db =
           DateTime.tryParse(b.schedule.date) ??
@@ -325,7 +325,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
     });
 
     for (final a in validAppts) {
-      final d = DateTime.tryParse(a.schedule.date);
+      final d = _parseRobustDate(a.schedule.date);
       if (d == null) continue;
 
       if (d.isBefore(now) && !DateUtils.isSameDay(d, now)) {
@@ -414,7 +414,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         lastAppointment != null
-                            ? _formatMonthDay(DateTime.tryParse(lastAppointment.schedule.date) ?? DateTime.now()) : '—',
+                            ? _formatMonthDay(_parseRobustDate(lastAppointment.schedule.date) ?? DateTime.now()) : '—',
                         style: DashboardStyles.category,
                       ),
                       Text(
@@ -438,7 +438,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         nextAppointment != null
-                            ? _formatMonthDay(DateTime.tryParse(nextAppointment.schedule.date) ?? DateTime.now()) : '—',
+                            ? _formatMonthDay(_parseRobustDate(nextAppointment.schedule.date) ?? DateTime.now()) : '—',
                         style: DashboardStyles.category,
                       ),
                       Text(
@@ -459,7 +459,10 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Text('John is on track for his next appointment.',
+                  child: Text(
+                    nextAppointment != null
+                        ? '${widget.patient.firstName} is on track for their next appointment.'
+                        : 'No upcoming appointment is scheduled.',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DashboardStyles.category,
@@ -499,6 +502,19 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
     );
   }
 
+  
+  DateTime? _parseRobustDate(String dateStr) {
+    var d = DateTime.tryParse(dateStr);
+    if (d != null) return d;
+    final parts = dateStr.split('/');
+    if (parts.length == 3) {
+      if (parts[2].length == 4) {
+        return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
+      }
+    }
+    return null;
+  }
+
   String _formatMonthDay(DateTime date) {
     const months = [
       'Jan',
@@ -518,13 +534,40 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   }
 }
 
-class DailyGoalsCard extends StatelessWidget {
+class DailyGoalsCard extends ConsumerWidget {
   final Patient patient;
 
   const DailyGoalsCard({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final diaryState = ref.watch(patientDiaryProvider);
+    final now = DateTime.now();
+    PatientDiaryEntry? todayEntry;
+
+    for (final e in diaryState.entries) {
+      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
+        todayEntry = e;
+        break;
+      }
+    }
+
+    PatientDiaryActivity? exerciseActivity;
+    PatientDiaryActivity? stepsActivity;
+    PatientDiaryActivity? postureActivity;
+
+    if (todayEntry != null) {
+      for (final a in todayEntry.diary) {
+        if (a.label.toLowerCase().contains('exercise')) {
+          exerciseActivity = a;
+        } else if (a.label.toLowerCase().contains('step')) {
+          stepsActivity = a;
+        } else if (a.label.toLowerCase().contains('posture')) {
+          postureActivity = a;
+        }
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
@@ -551,30 +594,27 @@ class DailyGoalsCard extends StatelessWidget {
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  percent: 60,
-                  color: const Color(0xFF87C879),
-                  title: 'Exercise',
-                  desc: 'You have completed\n3 out of 5 exercise goals.',
+                  activity: exerciseActivity,
+                  defaultTitle: 'Exercise',
+                  defaultDescription: 'No exercise goal assigned.',
                 ),
               ),
               const SizedBox(width: 120),
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  percent: 64,
-                  color: const Color(0xFF206EB0),
-                  title: 'Steps',
-                  desc: 'You have walked\n6,432 of 10,000 steps.',
+                  activity: stepsActivity,
+                  defaultTitle: 'Steps',
+                  defaultDescription: 'No step goal assigned.',
                 ),
               ),
               const SizedBox(width: 120),
               SizedBox(
                 width: 250,
                 child: _GoalSummaryItem(
-                  percent: 85,
-                  color: const Color(0xFF18588C),
-                  title: 'Posture',
-                  desc: 'How well you are\nfollowing your posture\nguidance.',
+                  activity: postureActivity,
+                  defaultTitle: 'Posture',
+                  defaultDescription: 'No posture goal recorded.',
                 ),
               ),
             ],
@@ -586,20 +626,41 @@ class DailyGoalsCard extends StatelessWidget {
 }
 
 class _GoalSummaryItem extends StatelessWidget {
-  final int percent;
-  final String title;
-  final String desc;
-  final Color color;
+  final PatientDiaryActivity? activity;
+  final String defaultTitle;
+  final String defaultDescription;
 
   const _GoalSummaryItem({
-    required this.percent,
-    required this.title,
-    required this.desc,
-    required this.color,
+    required this.activity,
+    required this.defaultTitle,
+    required this.defaultDescription,
   });
 
   @override
   Widget build(BuildContext context) {
+    int percent = 0;
+    String title = activity?.label ?? defaultTitle;
+    String desc = defaultDescription;
+    Color color = const Color(0xFF58E8EA);
+
+    if (title.toLowerCase().contains('exercise')) color = const Color(0xFF87C879);
+    if (title.toLowerCase().contains('step')) color = const Color(0xFF206EB0);
+    if (title.toLowerCase().contains('posture')) color = const Color(0xFF18588C);
+
+    if (activity != null) {
+      percent = activity!.percent.toInt();
+
+      if (title.toLowerCase().contains('exercise')) {
+        desc = 'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
+      } else if (title.toLowerCase().contains('step')) {
+        desc = 'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
+      } else if (title.toLowerCase().contains('posture')) {
+        desc = 'How well you are\nfollowing your posture\nguidance.';
+      } else {
+        desc = activity!.desc;
+      }
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -644,27 +705,195 @@ class _GoalSummaryItem extends StatelessWidget {
     );
   }
 }
-class TodayExerciseGoalsCard extends StatefulWidget {
+class TodayExerciseGoalsCard extends ConsumerStatefulWidget {
   final Patient patient;
 
   const TodayExerciseGoalsCard({super.key, required this.patient});
 
   @override
-  State<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
+  ConsumerState<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
 }
 
-class _TodayExerciseGoalsCardState extends State<TodayExerciseGoalsCard> {
+class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard> {
   final ScrollController _scrollController = ScrollController();
-  
-  final List<Map<String, dynamic>> mockExercises = [
-    {'label': '30 Minute\nStretches', 'completed': true},
-    {'label': '10K Steps', 'completed': false},
-    {'label': '2 Strength\nExercises', 'completed': false},
-    {'label': '2 Yoga Poses', 'completed': true},
-  ];
+  bool _canScroll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScroll();
+    });
+  }
+
+  void _checkScroll() {
+    if (_scrollController.hasClients) {
+      final canScroll = _scrollController.position.maxScrollExtent > 0;
+      if (_canScroll != canScroll) {
+        setState(() {
+          _canScroll = canScroll;
+        });
+      }
+    }
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final goalsAsync = ref.watch(patientUserGoalsProvider(widget.patient.id));
+    final diaryState = ref.watch(patientDiaryProvider);
+
+    final now = DateTime.now();
+
+    // 1. Get today's diary to check completion
+    PatientDiaryEntry? todayEntry;
+    for (final e in diaryState.entries) {
+      if (_isSameDay(e.date, now)) {
+        todayEntry = e;
+        break;
+      }
+    }
+
+    // 2. Extract today's exercise goals from UserGoals
+    final List<Map<String, dynamic>> todayExercises = [];
+
+    final goalsList = goalsAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => <UserGoalModel>[],
+    );
+
+    for (final goal in goalsList) {
+      if (now.isBefore(goal.startDate) || now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
+        continue;
+      }
+
+      for (final item in goal.goalItems) {
+        // Find exercises
+        if (item.userExercises != null && item.userExercises!.isNotEmpty) {
+          for (final ue in item.userExercises!) {
+            bool hasToday = false;
+            for (final sc in ue.scheduleConfig) {
+              if (_isSameDay(sc.exerciseDate, now)) {
+                hasToday = true;
+                break;
+              }
+            }
+            if (hasToday) {
+              final label = ue.name ?? item.label;
+              final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == label.toLowerCase() || (a.userExercises?.any((ex) => ex.exerciseId == ue.resolvedExerciseId) ?? false)).firstOrNull;
+              final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
+              todayExercises.add({
+                'label': label,
+                'completed': isCompleted,
+              });
+            }
+          }
+        } else if (item.type.toApiString() == 'exercise' || item.label.toLowerCase().contains('exercise')) {
+          // fallback if no userExercises but it's an exercise goal
+          final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == item.label.toLowerCase()).firstOrNull;
+          final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
+          todayExercises.add({
+            'label': item.label,
+            'completed': isCompleted,
+          });
+        }
+      }
+    }
+    
+    // Add dummy scroll listener callback to check scroll size after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScroll();
+    });
+
+    Widget contentWidget;
+    if (goalsAsync.isLoading) {
+      contentWidget = const Center(child: CircularProgressIndicator());
+    } else if (goalsAsync.hasError) {
+      contentWidget = const Text(
+        'Unable to load exercise goals.',
+        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+      );
+    } else if (todayExercises.isEmpty) {
+      contentWidget = const Text(
+        'No exercise goals today.',
+        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+      );
+    } else {
+      contentWidget = ListView.separated(
+        controller: _scrollController,
+        padding: EdgeInsets.zero,
+        itemCount: todayExercises.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final ex = todayExercises[index];
+          final bool isCompleted = ex['completed'];
+          final String label = ex['label'];
+
+          return Container(
+            width: 330,
+            constraints: const BoxConstraints(minHeight: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 30,
+                        child: Center(
+                          child: Icon(
+                            Icons.directions_run, // Fallback icon
+                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: 'Cabin',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            height: 1.1875,
+                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: isCompleted
+                      ? const Center(
+                          child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
     return Container(
       width: 370,
       height: 423,
@@ -706,82 +935,15 @@ class _TodayExerciseGoalsCardState extends State<TodayExerciseGoalsCard> {
           SizedBox(
             width: 330,
             height: 260,
-            child: ListView.separated(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              itemCount: mockExercises.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final ex = mockExercises[index];
-                final bool isCompleted = ex['completed'];
-                final String label = ex['label'];
-
-                return Container(
-                  width: 330,
-                  constraints: const BoxConstraints(minHeight: 50),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 30,
-                              child: Center(
-                                child: Icon(
-                                  Icons.directions_run,
-                                  color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  fontFamily: 'Cabin',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  height: 1.1875,
-                                  color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: isCompleted
-                            ? const Center(
-                                child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
-                              )
-                            : null,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+            child: contentWidget,
           ),
           const SizedBox(height: 20),
-          const SizedBox(
+          SizedBox(
             width: 330,
             height: 8,
-            child: SizedBox.shrink(),
+            child: _canScroll
+                ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
+                : const SizedBox.shrink(),
           ),
           const SizedBox(height: 18),
           Align(
@@ -815,13 +977,15 @@ class _TodayExerciseGoalsCardState extends State<TodayExerciseGoalsCard> {
     );
   }
 }
-class AdherenceScoreCard extends StatelessWidget {
+class AdherenceScoreCard extends ConsumerWidget {
   final Patient patient;
 
   const AdherenceScoreCard({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adherenceAsync = ref.watch(diaryAdherenceProvider(patient.id));
+
     return Container(
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
@@ -835,37 +999,44 @@ class AdherenceScoreCard extends StatelessWidget {
           const Text('Adherence Score', style: DashboardStyles.heading),
           const Spacer(),
           Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: RoundedCircularProgress(
-                    value: 82 / 100,
-                    strokeWidth: 12,
+            child: adherenceAsync.when(
+              loading: () => const CircularProgressIndicator(),
+              error: (_, __) => const Text('Error'),
+              data: (adherence) {
+                final score = adherence?.overall ?? 0;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: RoundedCircularProgress(
+                    value: score / 100,
+                    strokeWidth: 20,
                     backgroundColor: const Color(0xFFF7F7F7),
                     color: const Color(0xFF206EB0),
                   ),
-                ),
-                SizedBox(
-                  width: 150,
-                  height: 100,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: Text(
-                      '82',
-                      style: const TextStyle(
-                        fontFamily: 'Cabin',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 96,
-                        height: 1.0,
-                        color: Color(0xFF206EB0),
+                    ),
+                    SizedBox(
+                      width: 150,
+                      height: 100,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(
+                          '${score.toInt()}',
+                          style: const TextStyle(
+                            fontFamily: 'Cabin',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 96,
+                            height: 1.0,
+                            color: Color(0xFF206EB0),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
           const Spacer(),
