@@ -722,6 +722,7 @@ class _CreateAppointmentFormState
               ),
               child: TextField(
                 controller: _notesController,
+                onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                 expands: true,
                 maxLines: null,
                 minLines: null,
