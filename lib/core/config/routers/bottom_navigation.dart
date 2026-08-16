@@ -23,6 +23,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
     if (isDesktop) {
       return Scaffold(
+        backgroundColor: AppPalette.white,
         body: Row(
           children: [
             SidebarNavigation(navigationShell: widget.navigationShell),
@@ -35,9 +36,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          return;
-        }
+        if (didPop) return;
 
         final now = DateTime.now();
         final isDoubleBack =
@@ -60,8 +59,13 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
   Widget _buildBottomNavBar(BuildContext context) {
     const items = [
-      _MobileNavItem(icon: Icons.home, label: 'Home'),
-      _MobileNavItem(icon: Icons.settings, label: 'Settings'),
+      _MobileNavItem(icon: Icons.home, label: 'Home', branchIndex: 0),
+      _MobileNavItem(
+        icon: Icons.calendar_month_outlined,
+        label: 'Schedule',
+        branchIndex: 4,
+      ),
+      _MobileNavItem(icon: Icons.settings, label: 'Settings', branchIndex: 5),
     ];
 
     return Container(
@@ -79,23 +83,25 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
         child: SizedBox(
           height: 70,
           child: Row(
-            children: List.generate(items.length, (index) {
-              final isSelected = index == widget.navigationShell.currentIndex;
+            children: items.map((item) {
+              final isSelected =
+                  item.branchIndex == widget.navigationShell.currentIndex;
 
               return Expanded(
                 child: InkWell(
                   onTap: () {
                     widget.navigationShell.goBranch(
-                      index,
+                      item.branchIndex,
                       initialLocation:
-                          index == widget.navigationShell.currentIndex,
+                          item.branchIndex ==
+                          widget.navigationShell.currentIndex,
                     );
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        items[index].icon,
+                        item.icon,
                         size: 24,
                         color: isSelected
                             ? context.colors.primary
@@ -103,7 +109,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        items[index].label,
+                        item.label,
                         style: AppTypography.captionBody2.copyWith(
                           color: isSelected
                               ? context.colors.primary
@@ -114,7 +120,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
                   ),
                 ),
               );
-            }),
+            }).toList(),
           ),
         ),
       ),
@@ -125,6 +131,11 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 class _MobileNavItem {
   final IconData icon;
   final String label;
+  final int branchIndex;
 
-  const _MobileNavItem({required this.icon, required this.label});
+  const _MobileNavItem({
+    required this.icon,
+    required this.label,
+    required this.branchIndex,
+  });
 }

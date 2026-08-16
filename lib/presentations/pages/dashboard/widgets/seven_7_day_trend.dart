@@ -152,7 +152,7 @@ class SevenDayTrendCard extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 1,
-                      reservedSize: 42,
+                      reservedSize: 32,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index < 0 || index >= 7) return const SizedBox();

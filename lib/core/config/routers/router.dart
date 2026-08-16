@@ -3,13 +3,14 @@ import 'package:app_doctor/core/config/routers/router_notifier.dart';
 import 'package:app_doctor/features/auth/presentation/pages/login_page.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
-import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
-import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
+import 'package:app_doctor/features/user/domain/entities/patient.dart';
+import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
-import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
-import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
+import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
+import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
+import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
 import 'package:app_doctor/presentations/pages/settings/page/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,11 +68,13 @@ class AppRouter {
           name: 'patient-monitor-detail',
           builder: (context, state) {
             final patient = state.extra as Patient?;
+
             if (patient == null) {
               return const Scaffold(
                 body: Center(child: Text('Patient not found')),
               );
             }
+
             return PatientMonitorDetail(patient: patient);
           },
         ),
@@ -87,11 +90,13 @@ class AppRouter {
                   name: 'patient-dashboard',
                   builder: (context, state) {
                     final patient = state.extra as Patient?;
+
                     if (patient == null) {
                       return const Scaffold(
                         body: Center(child: Text('Patient not found')),
                       );
                     }
+
                     return PatientDashboardPage(patient: patient);
                   },
                 ),
@@ -143,6 +148,7 @@ class AppRouter {
           path: '/image-viewer',
           pageBuilder: (context, state) {
             final extra = state.extra as ImageViewerArgs;
+
             return CustomTransitionPage(
               fullscreenDialog: true,
               opaque: false,
@@ -169,6 +175,45 @@ class AppRouter {
                   path: '/home',
                   name: 'home',
                   builder: (context, state) => const HomePage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/connect',
+                  name: 'clinician-connect',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Connect'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/exercises',
+                  name: 'clinician-exercises',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Exercises'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/goals',
+                  name: 'clinician-goals',
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('Goals'))),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/appointments',
+                  name: 'appointments',
+                  builder: (context, state) => const AppointmentsPage(),
                 ),
               ],
             ),

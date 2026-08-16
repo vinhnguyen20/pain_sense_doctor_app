@@ -944,7 +944,7 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
             height: 260,
             child: contentWidget,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           SizedBox(
             width: 330,
             height: 8,
@@ -952,7 +952,7 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                 ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
                 : const SizedBox.shrink(),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           Align(
             alignment: Alignment.center,
             child: SizedBox(
