@@ -20,6 +20,7 @@ class ClinicianHomeView extends StatelessWidget {
   final VoidCallback? onRetry;
   final bool isLoadingMore;
   final bool hasMore;
+  final ValueChanged<Patient>? onPatientDetails;
 
   const ClinicianHomeView({
     super.key,
@@ -33,6 +34,7 @@ class ClinicianHomeView extends StatelessWidget {
     this.onRetry,
     this.isLoadingMore = false,
     this.hasMore = true,
+    this.onPatientDetails,
   });
 
   @override
@@ -49,9 +51,7 @@ class ClinicianHomeView extends StatelessWidget {
     } else {
       content = ListView.separated(
         controller: scrollController,
-        padding: const EdgeInsets.only(
-          bottom: 20,
-        ), // Bottom padding for scrolling
+        padding: const EdgeInsets.only(bottom: 20),
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount:
             patients.length +
@@ -59,27 +59,34 @@ class ClinicianHomeView extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 20),
         itemBuilder: (context, index) {
           if (index < patients.length) {
-            return PatientTableRow(patient: patients[index]);
-          } else {
-            if (isLoadingMore) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            } else {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: Text(
-                    'No more patients',
-                    style: AppTypography.defaultBody2.copyWith(
-                      color: AppPalette.medGray,
-                    ),
-                  ),
-                ),
-              );
-            }
+            final patient = patients[index];
+
+            return PatientTableRow(
+              patient: patient,
+              onDetails: onPatientDetails == null
+                  ? null
+                  : () => onPatientDetails!(patient),
+            );
           }
+
+          if (isLoadingMore) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                'No more patients',
+                style: AppTypography.defaultBody2.copyWith(
+                  color: AppPalette.medGray,
+                ),
+              ),
+            ),
+          );
         },
       );
     }
@@ -97,6 +104,7 @@ class ClinicianHomeView extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                 width: width,
+                height: constraints.maxHeight,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
                   child: Column(
@@ -183,10 +191,6 @@ class _PatientTableHeader extends StatelessWidget {
   }
 }
 
-// ================================================================
-// PHASE 2: REAL API INTEGRATION
-// ================================================================
-
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -201,16 +205,21 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       final state = ref.read(patientsProvider);
+
       if (!state.isLoading && state.patients.isEmpty) {
         ref.read(patientsProvider.notifier).fetchPatients();
       }
     });
+
     _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(patientsProvider.notifier).loadMore();
@@ -219,6 +228,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onSearchChanged(String value) {
     _debounce?.cancel();
+
     _debounce = Timer(const Duration(milliseconds: 500), () {
       ref.read(patientsProvider.notifier).search(value);
     });
@@ -237,8 +247,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return ClinicianHomeView(
       patients: patientsState.patients,
-      doctorName:
-          'Dr. Cameron Taylor', // Placeholder, API does not expose doctor name in context
+      doctorName: 'Dr. Cameron Taylor',
       onSearchChanged: _onSearchChanged,
       scrollController: _scrollController,
       isLoading: patientsState.isLoading,

@@ -7,16 +7,17 @@ import 'package:go_router/go_router.dart';
 
 class PatientTableRow extends StatelessWidget {
   final Patient patient;
+  final VoidCallback? onDetails;
 
-  const PatientTableRow({super.key, required this.patient});
+  const PatientTableRow({super.key, required this.patient, this.onDetails});
 
   @override
   Widget build(BuildContext context) {
     final statusColor = colorFromHex(patient.trackingLogs?.color);
-
     final painType = patient.trackingLogs?.lbpScore ?? 'Pattern 1';
 
     List<double?> activityValues;
+
     switch (patient.fullName) {
       case 'John Smith':
         activityValues = const [44.0, 28.0, null, 28.0, 44.0, 44.0, 36.0];
@@ -92,12 +93,14 @@ class PatientTableRow extends StatelessWidget {
               width: 304,
               height: 50,
               child: _PatientActions(
-                onDetails: () {
-                  context.pushNamed(
-                    'patient-monitor-detail',
-                    extra: patient,
-                  );
-                },
+                onDetails:
+                    onDetails ??
+                    () {
+                      context.pushNamed(
+                        'patient-monitor-detail',
+                        extra: patient,
+                      );
+                    },
                 onDashboard: () {
                   context.pushNamed('patient-dashboard', extra: patient);
                 },
