@@ -66,8 +66,12 @@ class AppRouter {
           path: '/patient-monitor-detail',
           name: 'patient-monitor-detail',
           builder: (context, state) {
-            final patient = state.extra as Patient;
-
+            final patient = state.extra as Patient?;
+            if (patient == null) {
+              return const Scaffold(
+                body: Center(child: Text('Patient not found')),
+              );
+            }
             return PatientMonitorDetail(patient: patient);
           },
         ),
@@ -82,7 +86,12 @@ class AppRouter {
                   path: '/patient-dashboard',
                   name: 'patient-dashboard',
                   builder: (context, state) {
-                    final patient = state.extra as Patient;
+                    final patient = state.extra as Patient?;
+                    if (patient == null) {
+                      return const Scaffold(
+                        body: Center(child: Text('Patient not found')),
+                      );
+                    }
                     return PatientDashboardPage(patient: patient);
                   },
                 ),

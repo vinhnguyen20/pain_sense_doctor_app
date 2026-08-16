@@ -19,7 +19,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.sizeOf(context).width >= 840;
+    final isDesktop = MediaQuery.sizeOf(context).width >= 768;
 
     if (isDesktop) {
       return Scaffold(
