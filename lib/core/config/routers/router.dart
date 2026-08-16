@@ -5,6 +5,7 @@ import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dar
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
+import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
@@ -34,8 +35,13 @@ class AppRouter {
 
         if (authState.isInitial) return null;
 
-        if (authState.isAuthenticated && isOnLogin) return '/home';
-        if (authState.isUnauthenticated && !isOnLogin) return '/login';
+        if (authState.isAuthenticated && isOnLogin) {
+          return '/home';
+        }
+
+        if (authState.isUnauthenticated && !isOnLogin) {
+          return '/login';
+        }
 
         return null;
       },
@@ -214,6 +220,23 @@ class AppRouter {
                   path: '/appointments',
                   name: 'appointments',
                   builder: (context, state) => const AppointmentsPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'patient',
+                      name: 'patient-appointments',
+                      builder: (context, state) {
+                        final patient = state.extra as Patient?;
+
+                        if (patient == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Patient not found')),
+                          );
+                        }
+
+                        return PatientAppointmentsPage(patient: patient);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
