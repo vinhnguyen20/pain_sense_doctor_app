@@ -21,58 +21,80 @@ class PatientDashboardContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        const minContentWidth = 1208.0;
+
+        final contentWidth = constraints.maxWidth < minContentWidth
+            ? minContentWidth
+            : constraints.maxWidth;
+
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: constraints.maxWidth - 60),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This is ${patient.firstName}\'s patient overview.',
-                  style: AppTypography.titleBig1.copyWith(
-                    color: AppPalette.secondaryBlue,
-                    height: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  height: 273,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        width: 380,
-                        child: PatientOverviewCard(patient: patient),
-                      ),
-                      const SizedBox(width: 30),
-                      Expanded(child: AppointmentTimeline(patient: patient)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-                DailyGoalsCard(patient: patient),
-                const SizedBox(height: 30),
-                SizedBox(
-                  height: 420,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: TodayExerciseGoalsCard(patient: patient)),
-                      const SizedBox(width: 20),
-                      Expanded(child: AdherenceScoreCard(patient: patient)),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: SevenDayOverviewContainer(patient: patient),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: contentWidth,
+            height: constraints.maxHeight,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(30),
+              child: PatientDashboardBody(patient: patient),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class PatientDashboardBody extends ConsumerWidget {
+  final Patient patient;
+
+  const PatientDashboardBody({super.key, required this.patient});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'This is ${patient.firstName}\'s patient overview.',
+          style: AppTypography.titleBig1.copyWith(
+            color: AppPalette.secondaryBlue,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 30),
+        SizedBox(
+          height: 273,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 380,
+                child: PatientOverviewCard(patient: patient),
+              ),
+              const SizedBox(width: 30),
+              SizedBox(
+                width: 589,
+                child: AppointmentTimeline(patient: patient),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 30),
+        DailyGoalsCard(patient: patient),
+        const SizedBox(height: 30),
+        SizedBox(
+          height: 420,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: TodayExerciseGoalsCard(patient: patient)),
+              const SizedBox(width: 30),
+              Expanded(child: AdherenceScoreCard(patient: patient)),
+              const SizedBox(width: 30),
+              Expanded(child: SevenDayOverviewContainer(patient: patient)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -160,117 +182,181 @@ class AppointmentTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<double?> activityValues;
-    switch (patient.fullName) {
-      case 'John Smith':
-        activityValues = const [44.0, 28.0, null, 28.0, 44.0, 44.0, 36.0];
-        break;
-      case 'Nora Miscavish':
-        activityValues = const [36.0, 44.0, 36.0, 28.0, null, null, null];
-        break;
-      case 'Stan Chow':
-        activityValues = const [36.0, 44.0, 36.0, 44.0, 44.0, 44.0, 44.0];
-        break;
-      default:
-        activityValues = const [36.0, 44.0, 36.0, 36.0, 44.0, 44.0, 36.0];
-    }
+    const activityValues = <double?>[
+      36.0,
+      44.0,
+      28.0,
+      44.0,
+      36.0,
+      28.0,
+      44.0, // Today
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ];
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppPalette.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppPalette.medGray),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'July 2',
-                      style: AppTypography.captionBody1.copyWith(
-                        color: AppPalette.medGray,
-                      ),
-                    ),
-                    Text(
-                      'Last Appt.',
-                      style: AppTypography.defaultBody2.copyWith(
-                        color: AppPalette.secondaryBlue,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+    const barColors = [
+      AppPalette.secondaryBlue,
+      AppPalette.secondaryBlue,
+      AppPalette.secondaryBlue,
+      AppPalette.secondaryBlue,
+      AppPalette.secondaryBlue,
+      AppPalette.secondaryBlue,
+      Colors.cyan, // Today
+      AppPalette.medGray,
+      AppPalette.medGray,
+      AppPalette.medGray,
+      AppPalette.medGray,
+      AppPalette.medGray,
+      AppPalette.medGray,
+    ];
+
+    return SizedBox(
+      width: 589,
+      height: 273,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ActivityTracker(
+                labels: const [
+                  'S',
+                  'M',
+                  'T',
+                  'W',
+                  'T',
+                  'F',
+                  'S',
+                  'S',
+                  'M',
+                  'T',
+                  'W',
+                  'T',
+                  'F',
+                ],
+                values: activityValues,
+                barColors: barColors,
+                expand: true,
+                barWidth: 20,
+                maxBarHeight: 55,
               ),
-              Column(
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: Row(
                 children: [
-                  ActivityTracker(values: activityValues),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Today',
-                    style: AppTypography.captionBody1.copyWith(
-                      color: AppPalette.secondaryBlue,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'July 2',
+                          style: AppTypography.titleBig1.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1.0,
+                          ),
+                        ),
+                        Text(
+                          'Last Appt.',
+                          style: AppTypography.defaultBody2.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        'Today',
+                        style: AppTypography.titleBig1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'July 14',
+                          style: AppTypography.titleBig1.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1.0,
+                          ),
+                        ),
+                        Text(
+                          'Next Appt.',
+                          style: AppTypography.defaultBody2.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'July 14',
-                      style: AppTypography.captionBody1.copyWith(
-                        color: AppPalette.medGray,
-                      ),
-                    ),
-                    Text(
-                      'Next Appt.',
-                      style: AppTypography.defaultBody2.copyWith(
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${patient.firstName} is on track for his next appointment.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.titleBig1.copyWith(
                         color: AppPalette.secondaryBlue,
-                        fontWeight: FontWeight.w600,
+                        height: 1.0,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${patient.firstName} is on track for his next appointment.',
-                style: AppTypography.defaultBody2.copyWith(
-                  color: AppPalette.secondaryBlue,
-                ),
-              ),
-              SizedBox(
-                height: 44,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppPalette.secondaryBlue,
-                    foregroundColor: AppPalette.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Schedule'),
-                ),
+                  const SizedBox(width: 20),
+                  SizedBox(
+                    width: 136,
+                    height: 31,
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 6,
+                        ),
+                        backgroundColor: AppPalette.secondaryBlue,
+                        foregroundColor: AppPalette.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        'Schedule',
+                        style: AppTypography.defaultBody2.copyWith(
+                          color: AppPalette.white,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

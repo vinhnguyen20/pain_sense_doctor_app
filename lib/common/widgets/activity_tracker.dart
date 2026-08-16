@@ -11,6 +11,8 @@ class ActivityTracker extends StatelessWidget {
   final double labelGap;
   final Color? barColor;
   final Color? inactiveColor;
+  final List<Color>? barColors;
+  final bool expand;
 
   const ActivityTracker({
     super.key,
@@ -23,25 +25,32 @@ class ActivityTracker extends StatelessWidget {
     this.labelGap = 4,
     this.barColor,
     this.inactiveColor,
+    this.barColors,
+    this.expand = false,
   }) : assert(values.length == labels.length);
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = barColor ?? AppPalette.secondaryBlue;
-    final warningColor = inactiveColor ?? AppPalette.yellow;
+    final warningColor = inactiveColor ?? AppPalette.surfaceLight;
 
     return SizedBox(
       height: maxBarHeight + labelGap + 18,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: expand
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: List.generate(values.length, (index) {
           final value = values[index];
           final isInactive = value == null || value <= 0;
+          final activeColor = barColors != null && index < barColors!.length
+              ? barColors![index]
+              : (barColor ?? AppPalette.secondaryBlue);
 
           return Padding(
             padding: EdgeInsets.only(
-              right: index == values.length - 1 ? 0 : itemGap,
+              right: expand || index == values.length - 1 ? 0 : itemGap,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
