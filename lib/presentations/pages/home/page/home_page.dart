@@ -87,38 +87,53 @@ class ClinicianHomeView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppPalette.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            30,
-            30,
-            30,
-            0,
-          ), // Kept 30px padding, removed bottom to allow list scroll
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClinicianHeader(
-                doctorName: doctorName,
-                onSearchChanged: onSearchChanged,
-                onNotificationPressed: () {},
-              ),
-              const SizedBox(height: 30),
-              Text(
-                'Welcome to your patient dashboard.',
-                style: AppTypography.titleBig1.copyWith(
-                  color: AppPalette.secondaryBlue,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth < 1208
+                ? 1208.0
+                : constraints.maxWidth;
+
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: width,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClinicianHeader(
+                        doctorName: doctorName,
+                        onSearchChanged: onSearchChanged,
+                        onNotificationPressed: () {},
+                      ),
+                      const SizedBox(height: 30),
+                      Text(
+                        'Welcome to your patient dashboard.',
+                        style: AppTypography.titleBig1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      const _PatientTableHeader(),
+                      const SizedBox(height: 14),
+                      Expanded(
+                        child:
+                            onRefresh != null &&
+                                !isLoading &&
+                                errorMessage == null
+                            ? RefreshIndicator(
+                                onRefresh: onRefresh!,
+                                child: content,
+                              )
+                            : content,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 30),
-              const _PatientTableHeader(),
-              const SizedBox(height: 14),
-              Expanded(
-                child: onRefresh != null && !isLoading && errorMessage == null
-                    ? RefreshIndicator(onRefresh: onRefresh!, child: content)
-                    : content,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -139,19 +154,29 @@ class _PatientTableHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            flex: 18,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 34),
-              child: Text('Name/Age', style: headerStyle),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 18,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 34),
+                    child: Text('Name/Age', style: headerStyle),
+                  ),
+                ),
+                Expanded(
+                  flex: 14,
+                  child: Text('Pain Type', style: headerStyle),
+                ),
+                Expanded(
+                  flex: 24,
+                  child: Text('Activity Tracker', style: headerStyle),
+                ),
+                Expanded(flex: 18, child: Text('Contact', style: headerStyle)),
+              ],
             ),
           ),
-          Expanded(flex: 14, child: Text('Pain Type', style: headerStyle)),
-          Expanded(
-            flex: 24,
-            child: Text('Activity Tracker', style: headerStyle),
-          ),
-          Expanded(flex: 18, child: Text('Contact', style: headerStyle)),
-          const Expanded(flex: 26, child: SizedBox()),
+          const SizedBox(width: 40),
+          const SizedBox(width: 304),
         ],
       ),
     );

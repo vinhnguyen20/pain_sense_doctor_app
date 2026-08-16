@@ -223,7 +223,7 @@ class _PatientActions extends StatelessWidget {
           child: Container(
             width: 182,
             height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: AppPalette.secondaryBlue,
               borderRadius: BorderRadius.circular(20),
@@ -238,13 +238,16 @@ class _PatientActions extends StatelessWidget {
                   color: AppPalette.white,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  'Dashboard',
-                  maxLines: 1,
-                  softWrap: false,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.buttonLarge.copyWith(
-                    color: AppPalette.white,
+                Flexible(
+                  child: Text(
+                    'Dashboard',
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.buttonLarge.copyWith(
+                      color: AppPalette.white,
+                    ),
                   ),
                 ),
               ],

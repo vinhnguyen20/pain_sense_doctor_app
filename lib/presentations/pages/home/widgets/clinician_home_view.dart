@@ -27,7 +27,7 @@ class ClinicianHomeView extends StatelessWidget {
       color: AppPalette.white,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 840;
+          final isDesktop = constraints.maxWidth >= 768;
 
           if (!isDesktop) {
             return _buildMobile(context);
@@ -42,7 +42,7 @@ class ClinicianHomeView extends StatelessWidget {
             child: SizedBox(
               width: width,
               height: constraints.maxHeight,
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(30),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,16 +62,15 @@ class ClinicianHomeView extends StatelessWidget {
                     const SizedBox(height: 20),
                     const _PatientTableHeader(),
                     const SizedBox(height: 14),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: EdgeInsets.zero,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: patients.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 20),
-                        itemBuilder: (context, index) {
-                          return PatientTableRow(patient: patients[index]);
-                        },
-                      ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: patients.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 20),
+                      itemBuilder: (context, index) {
+                        return PatientTableRow(patient: patients[index]);
+                      },
                     ),
                   ],
                 ),
