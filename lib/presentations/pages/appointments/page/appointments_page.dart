@@ -50,8 +50,15 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
     });
   }
 
-  void _openPatientSchedule(Patient patient) {
+  Future<void> _openPatientSchedule(Patient patient) async {
     FocusManager.instance.primaryFocus?.unfocus();
+
+    await Future<void>.delayed(
+      const Duration(milliseconds: 100),
+    );
+
+    if (!mounted) return;
+
     context.pushNamed('patient-appointments', extra: patient);
   }
 

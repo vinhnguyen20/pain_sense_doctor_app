@@ -24,6 +24,14 @@ class _PatientAppointmentsPageState
   bool _showCreateForm = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appointmentState = ref.watch(
       appointmentsByPatientProvider(widget.patient.id),
@@ -175,31 +183,87 @@ class _PatientScheduleContent extends StatelessWidget {
         .map((item) => item.appointment)
         .toList();
 
-    return SizedBox(
-      width: 1148,
-      child: Column(
-        children: [
-          const SizedBox(height: 43),
-          _AppointmentTimeline(
-            appointments: state.appointments,
-            lastAppointment: lastAppointment,
-            nextAppointment: nextAppointment,
+    final sections = <Widget>[];
+
+    if (state.isLoading && state.appointments.isEmpty) {
+      sections.add(
+        const Padding(
+          padding: EdgeInsets.only(top: 60),
+          child: Center(
+            child: CircularProgressIndicator(color: AppPalette.secondaryBlue),
           ),
-          const SizedBox(height: 23),
-          _PrimaryButton(
-            label: 'Create An Appointment',
-            width: 270,
-            onTap: onCreateAppointment,
+        ),
+      );
+    } else if (state.error != null && state.appointments.isEmpty) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 60),
+          child: Center(
+            child: _PrimaryButton(label: 'Retry', width: 136, onTap: onRefresh),
           ),
-          const SizedBox(height: 23),
-          Expanded(
-            child: _AppointmentList(
-              state: state,
-              appointments: upcoming,
-              onRefresh: onRefresh,
+        ),
+      );
+    } else if (upcoming.isEmpty) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 90),
+          child: Center(
+            child: Text(
+              'No upcoming appointments.',
+              style: _title20(AppPalette.primaryBlue),
             ),
           ),
-        ],
+        ),
+      );
+    } else {
+      final groups = _groupAppointments(upcoming);
+      for (final group in groups) {
+        sections.add(
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(group.label, style: _title20(AppPalette.secondaryBlue)),
+          ),
+        );
+        sections.add(const SizedBox(height: 10));
+        
+        for (var i = 0; i < group.appointments.length; i++) {
+          sections.add(
+            _ScheduleCard(appointment: group.appointments[i]),
+          );
+          if (i < group.appointments.length - 1) {
+            sections.add(const SizedBox(height: 10));
+          }
+        }
+        sections.add(const SizedBox(height: 10));
+      }
+    }
+
+    return SizedBox(
+      width: 1148,
+      child: RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.only(top: 43, bottom: 30),
+          children: [
+            _AppointmentTimeline(
+              appointments: state.appointments,
+              lastAppointment: lastAppointment,
+              nextAppointment: nextAppointment,
+            ),
+            const SizedBox(height: 23),
+            Center(
+              child: _PrimaryButton(
+                label: 'Create An Appointment',
+                width: 270,
+                onTap: onCreateAppointment,
+              ),
+            ),
+            const SizedBox(height: 23),
+            ...sections,
+          ],
+        ),
       ),
     );
   }
@@ -365,86 +429,6 @@ class _AppointmentDateLabel extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AppointmentList extends StatelessWidget {
-  final AppointmentState state;
-  final List<Appointment> appointments;
-  final Future<void> Function() onRefresh;
-
-  const _AppointmentList({
-    required this.state,
-    required this.appointments,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.isLoading && state.appointments.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppPalette.secondaryBlue),
-      );
-    }
-
-    if (state.error != null && state.appointments.isEmpty) {
-      return Center(
-        child: _PrimaryButton(label: 'Retry', width: 136, onTap: onRefresh),
-      );
-    }
-
-    if (appointments.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: onRefresh,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const SizedBox(height: 90),
-            Center(
-              child: Text(
-                'No upcoming appointments.',
-                style: _title20(AppPalette.primaryBlue),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final groups = _groupAppointments(appointments);
-
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 20),
-        itemCount: groups.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final group = groups[index];
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(group.label, style: _title20(AppPalette.secondaryBlue)),
-              const SizedBox(height: 10),
-              ...List.generate(group.appointments.length, (appointmentIndex) {
-                final appointment = group.appointments[appointmentIndex];
-
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: appointmentIndex == group.appointments.length - 1
-                        ? 0
-                        : 10,
-                  ),
-                  child: _ScheduleCard(appointment: appointment),
-                );
-              }),
-            ],
-          );
-        },
-      ),
     );
   }
 }
