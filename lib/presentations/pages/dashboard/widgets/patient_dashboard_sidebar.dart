@@ -121,7 +121,12 @@ class _NavItem extends StatelessWidget {
                   child: Text(
                     label,
                     maxLines: 1,
-                    style: AppTypography.buttonLarge.copyWith(color: color),
+                    style: const TextStyle(
+                      fontFamily: 'Cabin',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0,
+                    ).copyWith(color: color),
                   ),
                 ),
               ],

@@ -112,7 +112,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           trackingAsync.when(
             loading: () => const _LoadingCard(),
             error: (e, _) => _ErrorCard(message: e.toString()),
-            data: (items) => SevenDayTrendCard(items: items),
+            data: (items) => SevenDayTrendCard(patientId: widget.patient.id),
           ),
           const SizedBox(height: AppSpacing.s16),
         ],

@@ -12,11 +12,17 @@ class PatientDashboardScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.background,
-      body: Row(
-        children: [
-          PatientDashboardSidebar(navigationShell: navigationShell),
-          Expanded(child: navigationShell),
-        ],
+      body: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Row(
+            children: [
+              PatientDashboardSidebar(navigationShell: navigationShell),
+              Expanded(child: navigationShell),
+            ],
+          ),
+        ),
       ),
     );
   }

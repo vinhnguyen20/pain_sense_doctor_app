@@ -14,6 +14,14 @@ import 'seven_7_day_trend.dart';
 import 'patient_dashboard_dimensions.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 
+class DashboardStyles {
+  static const heading = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 20, height: 1.0, color: Color(0xFF206EB0));
+  static const category = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 24, height: 1.0, color: Color(0xFF206EB0));
+  static const body = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.normal, fontSize: 16, height: 1.0, color: Color(0xFF18588C));
+  static const button = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 16, height: 1.0, color: Colors.white);
+  static const dayLabel = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 12, height: 1.0, color: Color(0xFF206EB0));
+}
+
 class PatientDashboardContent extends ConsumerWidget {
   final Patient patient;
 
@@ -57,10 +65,7 @@ class PatientDashboardBody extends ConsumerWidget {
       children: [
         Text(
           'This is ${patient.firstName}\'s patient overview.',
-          style: AppTypography.titleBig1.copyWith(
-            color: AppPalette.secondaryBlue,
-            height: 1.0,
-          ),
+          style: DashboardStyles.category,
         ),
         const SizedBox(height: PatientDashboardDimensions.sectionGap),
         SizedBox(
@@ -146,10 +151,7 @@ class PatientOverviewCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.titleBig1.copyWith(
-                    color: AppPalette.secondaryBlue,
-                    height: 1.0,
-                  ),
+                  style: DashboardStyles.category,
                 ),
               ],
             ),
@@ -324,24 +326,12 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         lastAppointment != null
-                            ? _formatMonthDay(
-                                DateTime.tryParse(
-                                      lastAppointment.schedule.date,
-                                    ) ??
-                                    DateTime.now(),
-                              )
-                            : '--',
-                        style: AppTypography.titleBig1.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1.0,
-                        ),
+                            ? _formatMonthDay(DateTime.tryParse(lastAppointment.schedule.date) ?? DateTime.now()) : '—',
+                        style: DashboardStyles.category,
                       ),
                       Text(
                         'Last Appt.',
-                        style: AppTypography.defaultBody2.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1.0,
-                        ),
+                        style: DashboardStyles.body.copyWith(color: AppPalette.secondaryBlue),
                       ),
                     ],
                   ),
@@ -350,10 +340,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                   child: Center(
                     child: Text(
                       'Today',
-                      style: AppTypography.titleBig1.copyWith(
-                        color: AppPalette.secondaryBlue,
-                        height: 1.0,
-                      ),
+                      style: DashboardStyles.category,
                     ),
                   ),
                 ),
@@ -363,24 +350,12 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         nextAppointment != null
-                            ? _formatMonthDay(
-                                DateTime.tryParse(
-                                      nextAppointment.schedule.date,
-                                    ) ??
-                                    DateTime.now(),
-                              )
-                            : '--',
-                        style: AppTypography.titleBig1.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1.0,
-                        ),
+                            ? _formatMonthDay(DateTime.tryParse(nextAppointment.schedule.date) ?? DateTime.now()) : '—',
+                        style: DashboardStyles.category,
                       ),
                       Text(
                         'Next Appt.',
-                        style: AppTypography.defaultBody2.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1.0,
-                        ),
+                        style: DashboardStyles.body.copyWith(color: AppPalette.secondaryBlue),
                       ),
                     ],
                   ),
@@ -402,10 +377,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                         : 'No upcoming appointment is scheduled.',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleBig1.copyWith(
-                      color: AppPalette.secondaryBlue,
-                      height: 1.0,
-                    ),
+                    style: DashboardStyles.category,
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -430,10 +402,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     ),
                     child: Text(
                       'Schedule',
-                      style: AppTypography.buttonLarge.copyWith(
-                        fontSize: 16,
-                        height: 1.0,
-                      ),
+                      style: DashboardStyles.button,
                     ),
                   ),
                 ),
@@ -476,9 +445,7 @@ class DailyGoalsCard extends ConsumerWidget {
     PatientDiaryEntry? todayEntry;
 
     for (final e in diaryState.entries) {
-      if (e.date.year == now.year &&
-          e.date.month == now.month &&
-          e.date.day == now.day) {
+      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
         todayEntry = e;
         break;
       }
@@ -505,9 +472,7 @@ class DailyGoalsCard extends ConsumerWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(
-          PatientDashboardDimensions.cardRadius,
-        ),
+        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
@@ -515,38 +480,41 @@ class DailyGoalsCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text(
-                'Daily Goals',
-                style: AppTypography.titleBig1.copyWith(
-                  color: AppPalette.secondaryBlue,
-                  fontSize: 20,
-                  height: 1.0,
-                ),
-              ),
+              const Icon(Icons.flag_outlined, size: 24, color: Color(0xFF206EB0)),
+              const SizedBox(width: 10),
+              const Text('Daily Goals', style: DashboardStyles.heading),
             ],
           ),
           const SizedBox(height: 10),
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _GoalSummaryItem(
-                activity: exerciseActivity,
-                defaultTitle: 'Exercise',
-                defaultDescription:
-                    'You have completed\n0 out of 0 exercise goals.',
+              SizedBox(
+                width: 250,
+                child: _GoalSummaryItem(
+                  activity: exerciseActivity,
+                  defaultTitle: 'Exercise',
+                  defaultDescription: 'No exercise goal assigned.',
+                ),
               ),
-              const SizedBox(width: PatientDashboardDimensions.firstRowGap),
-              _GoalSummaryItem(
-                activity: stepsActivity,
-                defaultTitle: 'Steps',
-                defaultDescription: 'You have walked\n0 of 0 steps.',
+              const SizedBox(width: 120),
+              SizedBox(
+                width: 250,
+                child: _GoalSummaryItem(
+                  activity: stepsActivity,
+                  defaultTitle: 'Steps',
+                  defaultDescription: 'No step goal assigned.',
+                ),
               ),
-              const SizedBox(width: PatientDashboardDimensions.firstRowGap),
-              _GoalSummaryItem(
-                activity: postureActivity,
-                defaultTitle: 'Posture',
-                defaultDescription:
-                    'How well you are\nfollowing your posture\nguidance.',
+              const SizedBox(width: 120),
+              SizedBox(
+                width: 250,
+                child: _GoalSummaryItem(
+                  activity: postureActivity,
+                  defaultTitle: 'Posture',
+                  defaultDescription: 'No posture goal recorded.',
+                ),
               ),
             ],
           ),
@@ -577,11 +545,9 @@ class _GoalSummaryItem extends StatelessWidget {
       percent = activity!.percent.toInt();
 
       if (title.toLowerCase().contains('exercise')) {
-        desc =
-            'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
+        desc = 'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
       } else if (title.toLowerCase().contains('step')) {
-        desc =
-            'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
+        desc = 'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
       } else if (title.toLowerCase().contains('posture')) {
         desc = 'How well you are\nfollowing your posture\nguidance.';
       } else {
@@ -611,49 +577,21 @@ class _GoalSummaryItem extends StatelessWidget {
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    '$percent',
-                    style: AppTypography.titleBig1.copyWith(
-                      color: AppPalette.secondaryBlue,
-                      fontSize: 32,
-                      height: 1.0,
-                    ),
-                  ),
-                  Text(
-                    '%',
-                    style: AppTypography.titleBig1.copyWith(
-                      color: AppPalette.secondaryBlue,
-                      fontSize: 14,
-                      height: 1.0,
-                    ),
-                  ),
+                  Text('$percent', style: const TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 24, height: 1.0, color: Color(0xFF206EB0))),
+                  const Text('%', style: TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 12, height: 1.0, color: Color(0xFF206EB0))),
                 ],
               ),
             ],
           ),
         ),
         const SizedBox(width: 20),
-        SizedBox(
-          width: 152,
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: AppTypography.titleBig1.copyWith(
-                  color: AppPalette.secondaryBlue,
-                  fontSize: 24,
-                  height: 1.0,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                desc,
-                style: AppTypography.defaultBody2.copyWith(
-                  color: const Color(0xFF18588C),
-                  height: 1.3,
-                ),
-              ),
+              Text(title, style: DashboardStyles.category),
+              const SizedBox(height: 10),
+              Text(desc, style: DashboardStyles.body),
             ],
           ),
         ),
@@ -661,7 +599,6 @@ class _GoalSummaryItem extends StatelessWidget {
     );
   }
 }
-
 class TodayExerciseGoalsCard extends ConsumerWidget {
   final Patient patient;
 
@@ -674,9 +611,7 @@ class TodayExerciseGoalsCard extends ConsumerWidget {
     PatientDiaryEntry? todayEntry;
 
     for (final e in diaryState.entries) {
-      if (e.date.year == now.year &&
-          e.date.month == now.month &&
-          e.date.day == now.day) {
+      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
         todayEntry = e;
         break;
       }
@@ -695,32 +630,21 @@ class TodayExerciseGoalsCard extends ConsumerWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(
-          PatientDashboardDimensions.cardRadius,
-        ),
+        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Today's Exercise Goals",
-            style: AppTypography.titleBig1.copyWith(
-              color: AppPalette.secondaryBlue,
-              fontSize: 20,
-              height: 1.0,
-            ),
-          ),
+          const Text("Today's Exercise Goals", style: DashboardStyles.heading),
           const SizedBox(height: 16),
           Expanded(
             child: exerciseGoals.isEmpty
-                ? const Text('No exercise goals today.')
+                ? const Align(alignment: Alignment.topCenter, child: Text('No exercise goals today.', style: DashboardStyles.body))
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: exerciseGoals.length > 4
-                        ? 4
-                        : exerciseGoals.length,
+                    itemCount: exerciseGoals.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final a = exerciseGoals[index];
@@ -733,57 +657,40 @@ class TodayExerciseGoalsCard extends ConsumerWidget {
                               a.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.defaultBody2.copyWith(
-                                color: AppPalette.secondaryBlue,
-                                fontWeight: isCompleted
-                                    ? FontWeight.normal
-                                    : FontWeight.w700,
-                                height: 1.0,
+                              style: DashboardStyles.body.copyWith(
+                                fontWeight: isCompleted ? FontWeight.normal : FontWeight.w700,
                               ),
                             ),
                           ),
                           if (isCompleted)
                             Text(
                               'completed',
-                              style: AppTypography.titleBig2.copyWith(
-                                color: AppPalette.secondaryBlue,
-                                fontSize: 12,
-                                height: 1.0,
-                              ),
+                              style: DashboardStyles.body.copyWith(fontSize: 12),
                             ),
                         ],
                       );
                     },
                   ),
           ),
-          const SizedBox(height: 16),
-          const Center(
-            child: Icon(Icons.keyboard_arrow_down, color: AppPalette.medGray),
-          ),
+          if (exerciseGoals.length > 4)
+            const Center(child: Icon(Icons.keyboard_arrow_down, color: AppPalette.medGray)),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            height: 31,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.white,
-                foregroundColor: AppPalette.secondaryBlue,
-                elevation: 0,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    PatientDashboardDimensions.buttonRadius,
+          Center(
+            child: SizedBox(
+              width: 136,
+              height: 31,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF206EB0),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  side: const BorderSide(color: AppPalette.medGray),
                 ),
-              ),
-              child: Text(
-                'Edit',
-                style: AppTypography.buttonLarge.copyWith(
-                  fontSize: 16,
-                  height: 1.0,
-                ),
+                child: const Text('Edit', style: DashboardStyles.button),
               ),
             ),
           ),
@@ -792,7 +699,6 @@ class TodayExerciseGoalsCard extends ConsumerWidget {
     );
   }
 }
-
 class AdherenceScoreCard extends ConsumerWidget {
   final Patient patient;
 
@@ -806,22 +712,13 @@ class AdherenceScoreCard extends ConsumerWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(
-          PatientDashboardDimensions.cardRadius,
-        ),
+        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Adherence Score',
-            style: AppTypography.titleBig1.copyWith(
-              color: AppPalette.secondaryBlue,
-              fontSize: 20,
-              height: 1.0,
-            ),
-          ),
+          const Text('Adherence Score', style: DashboardStyles.heading),
           const Spacer(),
           Center(
             child: adherenceAsync.when(
@@ -833,21 +730,30 @@ class AdherenceScoreCard extends ConsumerWidget {
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                      width: 140,
-                      height: 140,
+                      width: 200,
+                      height: 200,
                       child: CircularProgressIndicator(
                         value: score / 100,
                         strokeWidth: 12,
-                        backgroundColor: AppPalette.surfaceLight,
-                        color: const Color(0xFF58E8EA),
+                        backgroundColor: const Color(0xFFF7F7F7),
+                        color: const Color(0xFF206EB0),
                       ),
                     ),
-                    Text(
-                      '${score.toInt()}',
-                      style: AppTypography.titleBig1.copyWith(
-                        color: AppPalette.secondaryBlue,
-                        fontSize: 48,
-                        height: 1.0,
+                    SizedBox(
+                      width: 150,
+                      height: 100,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(
+                          '${score.toInt()}',
+                          style: const TextStyle(
+                            fontFamily: 'Cabin',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 96,
+                            height: 1.0,
+                            color: Color(0xFF206EB0),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -856,48 +762,39 @@ class AdherenceScoreCard extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          Text(
-            'Your patient is adhering to most of their prescribed activities.',
-            textAlign: TextAlign.center,
-            style: AppTypography.defaultBody2.copyWith(
-              color: AppPalette.medGray,
-              height: 1.0,
-            ),
+          const Text(
+            'This number represents how well your patient is\nsticking to their assigned goals and exercises.',
+            textAlign: TextAlign.left,
+            style: DashboardStyles.body,
           ),
         ],
       ),
     );
   }
 }
-
-class SevenDayOverviewContainer extends ConsumerWidget {
+class SevenDayOverviewContainer extends StatelessWidget {
   final Patient patient;
 
   const SevenDayOverviewContainer({super.key, required this.patient});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(
-      patientTrackingSummary7DaysProvider(patient.id),
-    );
-
+  Widget build(BuildContext context) {
     return Container(
+      width: 370,
+      height: 423,
+      padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
         border: Border.all(color: AppPalette.medGray),
       ),
-      child: summaryAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (items) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: SingleChildScrollView(
-              child: SevenDayTrendCard(items: items),
-            ),
-          );
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('7-Day Overview', style: DashboardStyles.heading),
+          const SizedBox(height: 20),
+          Expanded(child: SevenDayTrendCard(patientId: patient.id)),
+        ],
       ),
     );
   }
