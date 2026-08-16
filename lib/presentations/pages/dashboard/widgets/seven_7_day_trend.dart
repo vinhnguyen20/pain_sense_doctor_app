@@ -129,7 +129,7 @@ class SevenDayTrendCard extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 25,
-                      reservedSize: 32,
+                      reservedSize: 42,
                       getTitlesWidget: (value, meta) {
                         if (value == 0) return const SizedBox();
                         return Padding(
@@ -152,7 +152,7 @@ class SevenDayTrendCard extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 1,
-                      reservedSize: 32,
+                      reservedSize: 42,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index < 0 || index >= 7) return const SizedBox();

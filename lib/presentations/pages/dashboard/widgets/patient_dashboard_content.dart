@@ -319,7 +319,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
           _parseRobustDate(a.schedule.date) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       final db =
-          DateTime.tryParse(b.schedule.date) ??
+          _parseRobustDate(b.schedule.date) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return da.compareTo(db);
     });
@@ -506,12 +506,19 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   DateTime? _parseRobustDate(String dateStr) {
     var d = DateTime.tryParse(dateStr);
     if (d != null) return d;
-    final parts = dateStr.split('/');
-    if (parts.length == 3) {
-      if (parts[2].length == 4) {
-        return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
-      }
+    
+    // Handle dd/MM/yyyy or MM/dd/yyyy
+    var parts = dateStr.split('/');
+    if (parts.length == 3 && parts[2].length == 4) {
+      return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
     }
+    
+    // Handle dd-MM-yyyy or MM-dd-yyyy
+    parts = dateStr.split('-');
+    if (parts.length == 3 && parts[2].length == 4) {
+      return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
+    }
+    
     return null;
   }
 
