@@ -1,13 +1,13 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
-import 'package:app_doctor/features/chats/domain/entites/last_message.dart';
 import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
 import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_chat_content.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_contacts_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 class PatientConnectPage extends ConsumerStatefulWidget {
   final Patient? patient;
@@ -19,6 +19,8 @@ class PatientConnectPage extends ConsumerStatefulWidget {
 }
 
 class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
+  PatientConnectTab _selectedTab = PatientConnectTab.chat;
+
   @override
   void initState() {
     super.initState();
@@ -81,49 +83,26 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                       children: [
                         _PatientIdentityHeader(patient: patient),
                         const SizedBox(height: 20),
-                        const Center(child: PatientConnectTabs()),
+                        Center(
+                          child: PatientConnectTabs(
+                            selectedTab: _selectedTab,
+                            onChanged: (tab) {
+                              setState(() => _selectedTab = tab);
+                            },
+                          ),
+                        ),
                         const SizedBox(height: 30),
-                        if (patient != null)
-                          ChatSummaryCard(
-                            avatarAsset: 'assets/images/avatar/avatar.png',
-                            name: patient.fullName,
-                            role: 'Patient',
-                            message: _messageText(patientConversation),
-                            conversation: patientConversation,
+                        if (_selectedTab == PatientConnectTab.contacts)
+                          const PatientContactsContent()
+                        else if (_selectedTab == PatientConnectTab.chat) ...[
+                          PatientChatContent(
                             patient: patient,
-                            onChat: patientConversation == null
-                                ? null
-                                : () => _openChat(patientConversation, patient),
+                            patientConversation: patientConversation,
+                            otherConversations: otherConversations,
+                            onChat: _openChat,
                           ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Other Clinicians',
-                          style: AppTypography.titleSmall1.copyWith(
-                            color: AppPalette.secondaryBlue,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: AppPalette.secondaryBlue,
-                        ),
-                        const SizedBox(height: 10),
-                        if (otherConversations.isNotEmpty)
-                          ...otherConversations.map(
-                            (conversation) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: ChatSummaryCard(
-                                avatarAsset: 'assets/images/avatar/avatar.png',
-                                name: conversation.name,
-                                role: 'Clinician',
-                                message: _messageText(conversation),
-                                conversation: conversation,
-                                onChat: () => _openChat(conversation, null),
-                              ),
-                            ),
-                          ),
+                        ] else
+                          const SizedBox.shrink(),
                       ],
                     ),
                   ),
@@ -134,11 +113,6 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
         ),
       ),
     );
-  }
-
-  String _messageText(Conversation? conversation) {
-    final text = conversation?.lastMessage?.text.trim();
-    return text == null || text.isEmpty ? 'No recent message' : text;
   }
 
   Conversation? _conversationForPatient(
@@ -196,8 +170,17 @@ class _PatientIdentityHeader extends StatelessWidget {
   }
 }
 
+enum PatientConnectTab { chat, contacts, appointments }
+
 class PatientConnectTabs extends StatelessWidget {
-  const PatientConnectTabs({super.key});
+  final PatientConnectTab selectedTab;
+  final ValueChanged<PatientConnectTab>? onChanged;
+
+  const PatientConnectTabs({
+    super.key,
+    this.selectedTab = PatientConnectTab.chat,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -208,13 +191,13 @@ class PatientConnectTabs extends StatelessWidget {
         color: AppPalette.surfaceLight,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          _TabItem(label: 'Chat', isSelected: true),
+          _TabItem(label: 'Chat', tab: PatientConnectTab.chat),
           SizedBox(width: 40),
-          _TabItem(label: 'Contacts'),
+          _TabItem(label: 'Contacts', tab: PatientConnectTab.contacts),
           SizedBox(width: 40),
-          _TabItem(label: 'Appointments'),
+          _TabItem(label: 'Appointments', tab: PatientConnectTab.appointments),
         ],
       ),
     );
@@ -223,160 +206,35 @@ class PatientConnectTabs extends StatelessWidget {
 
 class _TabItem extends StatelessWidget {
   final String label;
-  final bool isSelected;
+  final PatientConnectTab tab;
 
-  const _TabItem({required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      height: 50,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isSelected ? AppPalette.secondaryBlue : Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.defaultBody1.copyWith(
-          color: isSelected ? AppPalette.white : AppPalette.medGray,
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
-
-class ChatSummaryCard extends StatelessWidget {
-  final String avatarAsset;
-  final String name;
-  final String role;
-  final String message;
-  final Conversation? conversation;
-  final Patient? patient;
-  final VoidCallback? onChat;
-
-  const ChatSummaryCard({
-    super.key,
-    required this.avatarAsset,
-    required this.name,
-    required this.role,
-    required this.message,
-    this.conversation,
-    this.patient,
-    this.onChat,
-  });
+  const _TabItem({required this.label, required this.tab});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onChat,
-      borderRadius: BorderRadius.circular(20),
+    final tabs = context.findAncestorWidgetOfExactType<PatientConnectTabs>();
+    final isSelected = tabs?.selectedTab == tab;
+
+    return GestureDetector(
+      onTap: tabs?.onChanged == null ? null : () => tabs!.onChanged!(tab),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        width: 200,
+        height: 50,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppPalette.surfaceLight,
+          color: isSelected ? AppPalette.secondaryBlue : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _Avatar(size: 80, asset: avatarAsset),
-            const SizedBox(width: 40),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _nameStyle,
-                  ),
-                  const SizedBox(height: 9),
-                  Text(
-                    role,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _bodyStyle,
-                  ),
-                  const SizedBox(height: 9),
-                  Text(
-                    message,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _messageStyle,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 20),
-            _DateTimeGroup(lastMessage: conversation?.lastMessage),
-          ],
+        child: Text(
+          label,
+          style: AppTypography.defaultBody1.copyWith(
+            color: isSelected ? AppPalette.white : AppPalette.medGray,
+            height: 1,
+          ),
         ),
       ),
     );
   }
-
-  static final _nameStyle = AppTypography.titleSmall1.copyWith(
-    color: AppPalette.secondaryBlue,
-    height: 1,
-  );
-  static final _bodyStyle = AppTypography.defaultBody2.copyWith(
-    color: AppPalette.secondaryBlue,
-    height: 1,
-  );
-  static final _messageStyle = AppTypography.defaultBody2.copyWith(
-    color: AppPalette.secondaryBlue,
-    fontStyle: FontStyle.italic,
-    height: 1,
-  );
-}
-
-class _DateTimeGroup extends StatelessWidget {
-  final LastMessage? lastMessage;
-
-  const _DateTimeGroup({required this.lastMessage});
-
-  @override
-  Widget build(BuildContext context) {
-    final sentAt = lastMessage?.sentAt;
-    final date = sentAt == null
-        ? 'No date'
-        : DateFormat('yyyy/MM/dd').format(sentAt.toLocal());
-    final time = sentAt == null
-        ? 'No time'
-        : DateFormat('h:mm a').format(sentAt.toLocal());
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          date,
-          style: _dateStyle,
-          textAlign: TextAlign.right,
-          maxLines: 1,
-          softWrap: false,
-        ),
-        const SizedBox(height: 11),
-        Text(
-          time,
-          style: _dateStyle,
-          textAlign: TextAlign.right,
-          maxLines: 1,
-          softWrap: false,
-        ),
-      ],
-    );
-  }
-
-  static final _dateStyle = AppTypography.titleBig1.copyWith(
-    color: AppPalette.secondaryBlue,
-    height: 1,
-  );
 }
 
 class _Avatar extends StatelessWidget {
