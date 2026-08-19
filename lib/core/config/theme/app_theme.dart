@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_doctor/core/config/theme/app_typography.dart';
 import 'package:app_doctor/core/config/theme/color_system.dart';
 import 'package:app_doctor/core/config/theme/design_tokens.dart';
 
@@ -159,6 +160,7 @@ class AppTheme {
   // Light Theme
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
+    fontFamily: AppTypography.fontFamily,
     brightness: Brightness.light,
     primaryColor: lightPrimary,
     scaffoldBackgroundColor: lightBackground,
@@ -231,6 +233,7 @@ class AppTheme {
   // Dark Theme
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
+    fontFamily: AppTypography.fontFamily,
     brightness: Brightness.dark,
     primaryColor: darkPrimary,
     scaffoldBackgroundColor: darkBackground,

@@ -56,3 +56,27 @@ flutter:
     - assets/images/logo/ps_logo_full_white.png
     - assets/images/logo/ps_logo.jpg
     - assets/images/avatar/avatar.png
+
+  fonts:
+    - family: Cabin
+      fonts:
+        - asset: assets/fonts/Cabin/static/Cabin-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Cabin/static/Cabin-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Cabin/static/Cabin-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Cabin/static/Cabin-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Cabin/static/Cabin-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cabin/static/Cabin-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/Cabin/static/Cabin-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cabin/static/Cabin-BoldItalic.ttf
+          weight: 700
+          style: italic
