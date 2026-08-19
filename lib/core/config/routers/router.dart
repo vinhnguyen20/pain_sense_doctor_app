@@ -2,6 +2,8 @@ import 'package:app_doctor/core/config/routers/bottom_navigation.dart';
 import 'package:app_doctor/core/config/routers/router_notifier.dart';
 import 'package:app_doctor/features/auth/presentation/pages/login_page.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
+import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
+import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
@@ -76,7 +78,12 @@ class AppRouter {
           path: '/patient-monitor-detail',
           name: 'patient-monitor-detail',
           builder: (context, state) {
-            final patient = state.extra as Patient?;
+            Patient? patient;
+            if (state.extra is Patient) {
+              patient = state.extra as Patient;
+            } else if (state.extra is Map) {
+              patient = (state.extra as Map)['patient'] as Patient?;
+            }
 
             if (patient == null) {
               return const Scaffold(
@@ -98,8 +105,13 @@ class AppRouter {
                   path: '/patient-dashboard',
                   name: 'patient-dashboard',
                   builder: (context, state) {
-                    final patient = state.extra as Patient? ??
-                        ref.read(selectedPatientProvider);
+                    Patient? patient;
+                    if (state.extra is Patient) {
+                      patient = state.extra as Patient;
+                    } else if (state.extra is Map) {
+                      patient = (state.extra as Map)['patient'] as Patient?;
+                    }
+                    patient ??= ref.read(selectedPatientProvider);
 
                     if (patient == null) {
                       return const Scaffold(
@@ -118,10 +130,44 @@ class AppRouter {
                   path: '/patient-connect',
                   name: 'patient-connect',
                   builder: (context, state) {
-                    final patient = state.extra as Patient? ??
-                        ref.read(selectedPatientProvider);
+                    Patient? patient;
+                    if (state.extra is Patient) {
+                      patient = state.extra as Patient;
+                    } else if (state.extra is Map) {
+                      patient = (state.extra as Map)['patient'] as Patient?;
+                    }
+                    patient ??= ref.read(selectedPatientProvider);
                     return PatientConnectPage(patient: patient);
                   },
+                  routes: [
+                    GoRoute(
+                      path: 'chat',
+                      name: 'patient-connect-chat',
+                      builder: (context, state) {
+                        Conversation? conversation;
+                        Patient? patient;
+                        if (state.extra is Map) {
+                          final map = state.extra as Map;
+                          conversation = map['conversation'] as Conversation?;
+                          patient = map['patient'] as Patient?;
+                        } else if (state.extra is Conversation) {
+                          conversation = state.extra as Conversation;
+                        }
+                        patient ??= ref.read(selectedPatientProvider);
+
+                        if (conversation == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Conversation not found')),
+                          );
+                        }
+
+                        return ChatRoomPage(
+                          conversation: conversation,
+                          patient: patient,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -197,6 +243,34 @@ class AppRouter {
                   path: '/connect',
                   name: 'clinician-connect',
                   builder: (context, state) => const ClinicianConnectPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'chat',
+                      name: 'clinician-chat',
+                      builder: (context, state) {
+                        Conversation? conversation;
+                        Patient? patient;
+                        if (state.extra is Map) {
+                          final map = state.extra as Map;
+                          conversation = map['conversation'] as Conversation?;
+                          patient = map['patient'] as Patient?;
+                        } else if (state.extra is Conversation) {
+                          conversation = state.extra as Conversation;
+                        }
+
+                        if (conversation == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Conversation not found')),
+                          );
+                        }
+
+                        return ChatRoomPage(
+                          conversation: conversation,
+                          patient: patient,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -231,7 +305,12 @@ class AppRouter {
                       path: 'patient',
                       name: 'patient-appointments',
                       builder: (context, state) {
-                        final patient = state.extra as Patient?;
+                        Patient? patient;
+                        if (state.extra is Patient) {
+                          patient = state.extra as Patient;
+                        } else if (state.extra is Map) {
+                          patient = (state.extra as Map)['patient'] as Patient?;
+                        }
 
                         if (patient == null) {
                           return const Scaffold(

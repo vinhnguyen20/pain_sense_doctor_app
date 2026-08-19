@@ -99,7 +99,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
                     FocusManager.instance.primaryFocus?.unfocus();
                     widget.navigationShell.goBranch(
                       item.branchIndex,
-                      initialLocation: item.branchIndex == 4 ? true : item.branchIndex == widget.navigationShell.currentIndex,
+                      initialLocation: true,
                     );
                   },
                   child: Column(

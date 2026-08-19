@@ -9,7 +9,6 @@ import 'package:app_doctor/features/chats/presentation/provider/chat_providers.d
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -100,7 +99,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   static const Duration _cacheTtl = Duration(seconds: 30);
   static const Duration _cacheWriteDebounce = Duration(milliseconds: 350);
 
-  final String _conversationId;
+  String _conversationId;
+  final String _patientId;
 
   ChatWsDataSource? _wsDs;
   StreamSubscription<ChatWsEvent>? _wsSubscription;
@@ -109,7 +109,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   DateTime? _lastHydratedCacheAt;
 
   ChatRoomNotifier(ChatRoomSession session)
-    : _conversationId = session.conversationId.trim();
+    : _conversationId = session.conversationId.trim(),
+      _patientId = session.patientId.trim();
 
   @override
   ChatRoomState build() {
@@ -125,6 +126,20 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> _initialize() async {
+    if (_conversationId.isEmpty) {
+      if (_patientId.isNotEmpty) {
+        final existing = await ref
+            .read(conversationsProvider.notifier)
+            .getConversationWithParticipant(participantId: _patientId);
+        if (existing != null && existing.id.trim().isNotEmpty) {
+          _conversationId = existing.id.trim();
+        }
+      }
+      if (_conversationId.isEmpty) {
+        return;
+      }
+    }
+
     final hydrated = await _hydrateFromCache();
     if (!hydrated || !_isCacheFresh()) {
       await loadHistory();
@@ -134,6 +149,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> _refreshLatestMessage() async {
+    if (_conversationId.isEmpty) return;
     if (_isDisposed || !ref.mounted) return;
 
     final response = await ref
@@ -160,6 +176,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> loadHistory() async {
+    if (_conversationId.isEmpty) return;
     if (state.isLoadingHistory) return;
 
     state = state.copyWith(
@@ -195,6 +212,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> loadOlderMessages() async {
+    if (_conversationId.isEmpty) return;
     if (state.isLoadingHistory || state.isLoadingMoreHistory) return;
     if (!state.hasMoreHistory) return;
 
@@ -237,11 +255,43 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     final trimmed = text.trim();
     if (trimmed.isEmpty || state.isSending) return;
 
+    state = state.copyWith(isSending: true, clearError: true);
+
+    if (_conversationId.isEmpty) {
+      if (_patientId.isEmpty) {
+        state = state.copyWith(
+          isSending: false,
+          error: 'Patient information is missing',
+        );
+        return;
+      }
+
+      final createdConv = await ref
+          .read(conversationsProvider.notifier)
+          .createConversationAndSendFirstMessage(
+            participantId: _patientId,
+            firstMessage: trimmed,
+          );
+
+      if (createdConv != null && createdConv.id.trim().isNotEmpty) {
+        _conversationId = createdConv.id.trim();
+        await loadHistory();
+        unawaited(_connectWs());
+        state = state.copyWith(isSending: false);
+        return;
+      }
+
+      final convError = ref.read(conversationsProvider).error;
+      state = state.copyWith(
+        isSending: false,
+        error: convError ?? 'Failed to start conversation',
+      );
+      return;
+    }
+
     if (!state.isWsConnected && !state.isConnectingWs) {
       unawaited(_connectWs());
     }
-
-    state = state.copyWith(isSending: true, clearError: true);
 
     final response = await ref
         .read(sendTextMessageUseCaseProvider)
@@ -259,11 +309,41 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   Future<void> sendImage({required File file, String? caption}) async {
     if (state.isSending) return;
 
-    if (!state.isWsConnected && !state.isConnectingWs) {
+    state = state.copyWith(isSending: true, clearError: true);
+
+    if (_conversationId.isEmpty) {
+      if (_patientId.isEmpty) {
+        state = state.copyWith(
+          isSending: false,
+          error: 'Patient information is missing',
+        );
+        return;
+      }
+
+      final createRes = await ref
+          .read(createConversationUseCaseProvider)
+          .call(
+            participantId: _patientId,
+            initialMessageText: caption ?? 'Sent an image',
+          );
+
+      if (createRes.isFailure || createRes.data == null) {
+        state = state.copyWith(
+          isSending: false,
+          error: createRes.message,
+        );
+        return;
+      }
+
+      final createdConv = createRes.data!;
+      _conversationId = createdConv.id.trim();
+      ref.read(conversationsProvider.notifier).upsertConversation(createdConv);
       unawaited(_connectWs());
     }
 
-    state = state.copyWith(isSending: true, clearError: true);
+    if (!state.isWsConnected && !state.isConnectingWs) {
+      unawaited(_connectWs());
+    }
 
     final response = await ref
         .read(uploadMessageFileUseCaseProvider)
@@ -284,6 +364,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> markAsRead() async {
+    if (_conversationId.isEmpty) return;
+
     final response = await ref
         .read(markConversationAsReadUseCaseProvider)
         .call(conversationId: _conversationId);
@@ -307,6 +389,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   }
 
   Future<void> _connectWs() async {
+    if (_conversationId.isEmpty) return;
     if (_isDisposed || !ref.mounted) return;
     if (state.isConnectingWs || state.isWsConnected) return;
 
@@ -470,6 +553,12 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     items.sort((a, b) => a.sentAt.compareTo(b.sentAt));
     state = state.copyWith(messages: items);
     _schedulePersistCache();
+
+    ref.read(conversationsProvider.notifier).updateLastMessage(
+      conversationId: _conversationId,
+      message: message,
+      patientId: _patientId,
+    );
   }
 
   List<Message> _mergeSortedWithoutDuplicates(

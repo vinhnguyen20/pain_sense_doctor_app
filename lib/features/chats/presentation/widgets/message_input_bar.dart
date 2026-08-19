@@ -7,12 +7,14 @@ class MessageInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final void Function(XFile image, String? text)? onSendWithImages;
+  final bool compact;
 
   const MessageInputBar({
     super.key,
     required this.controller,
     required this.onSend,
     this.onSendWithImages,
+    this.compact = false,
   });
 
   @override
@@ -98,6 +100,91 @@ class _MessageInputBarState extends State<MessageInputBar> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.compact) {
+      return SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: Material(
+                color: AppPalette.surfaceLight,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: _showAttachmentOptions,
+                  borderRadius: BorderRadius.circular(16),
+                  child: const Center(
+                    child: Icon(Icons.add, size: 28, color: AppPalette.medGray),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Container(
+                  width: 639,
+                  height: 50,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: AppPalette.surfaceLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Transform.translate(
+                    offset: const Offset(0, -4),
+                    child: TextField(
+                      controller: widget.controller,
+                      onSubmitted: (_) => _handleSend(),
+                      textAlignVertical: TextAlignVertical.center,
+                      style: AppTypography.defaultBody2.copyWith(
+                        color: AppPalette.black,
+                        height: 1.0,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Type your message...',
+                        hintStyle: AppTypography.defaultBody2.copyWith(
+                          color: AppPalette.medGray,
+                          height: 1.0,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: Material(
+                color: AppPalette.secondaryBlue,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: _handleSend,
+                  borderRadius: BorderRadius.circular(16),
+                  child: const Center(
+                    child: Icon(
+                      Icons.send_rounded,
+                      size: 22,
+                      color: AppPalette.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: context.surface,

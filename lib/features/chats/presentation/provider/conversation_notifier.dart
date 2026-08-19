@@ -219,6 +219,59 @@ class ConversationsNotifier extends _$ConversationsNotifier {
     state = state.copyWith(conversations: items);
   }
 
+  void updateLastMessage({
+    required String conversationId,
+    required Message message,
+    String? patientId,
+  }) {
+    final normalizedConvId = conversationId.trim();
+    final normalizedPatientId = patientId?.trim().toLowerCase() ?? '';
+
+    final items = [...state.conversations];
+    var foundIndex = -1;
+
+    if (normalizedConvId.isNotEmpty) {
+      foundIndex = items.indexWhere((c) => c.id.trim() == normalizedConvId);
+    }
+
+    if (foundIndex < 0 && normalizedPatientId.isNotEmpty) {
+      foundIndex = items.indexWhere(
+        (c) => c.participants.any((p) => p.trim().toLowerCase() == normalizedPatientId),
+      );
+    }
+
+    if (foundIndex >= 0) {
+      final existing = items[foundIndex];
+      final updated = _withLastMessageFromMessage(existing, message);
+      items[foundIndex] = updated;
+      _sortConversationsByLatest(items);
+      state = state.copyWith(conversations: items);
+    } else if (normalizedConvId.isNotEmpty || normalizedPatientId.isNotEmpty) {
+      final newConv = Conversation(
+        id: normalizedConvId,
+        name: message.senderId,
+        participants: [
+          if (normalizedPatientId.isNotEmpty) normalizedPatientId,
+          if (message.senderId.isNotEmpty &&
+              message.senderId.toLowerCase() != normalizedPatientId)
+            message.senderId,
+        ],
+        lastMessage: LastMessage(
+          text: _resolveLastMessageText(message),
+          sentAt: message.sentAt,
+          sendBy: message.senderId,
+        ),
+        status: 'active',
+        unreadCountDoctor: 0,
+        unreadCountPatient: 0,
+        unreadInfo: const [],
+      );
+      items.insert(0, newConv);
+      _sortConversationsByLatest(items);
+      state = state.copyWith(conversations: items);
+    }
+  }
+
   Conversation? _findConversationByParticipant({
     required String participantId,
     required List<Conversation> source,

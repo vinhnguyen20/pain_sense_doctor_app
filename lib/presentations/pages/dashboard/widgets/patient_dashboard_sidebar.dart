@@ -33,35 +33,40 @@ class PatientDashboardSidebar extends StatelessWidget {
                     icon: Icons.menu_rounded,
                     label: 'Overview',
                     isSelected: navigationShell.currentIndex == 0,
-                    onTap: () => navigationShell.goBranch(0),
+                    onTap: () =>
+                        navigationShell.goBranch(0, initialLocation: true),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Connect',
                     isSelected: navigationShell.currentIndex == 1,
-                    onTap: () => navigationShell.goBranch(1),
+                    onTap: () =>
+                        navigationShell.goBranch(1, initialLocation: true),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.accessibility_new_rounded,
                     label: 'Exercises',
                     isSelected: navigationShell.currentIndex == 2,
-                    onTap: () => navigationShell.goBranch(2),
+                    onTap: () =>
+                        navigationShell.goBranch(2, initialLocation: true),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.flag_outlined,
                     label: 'Goals',
                     isSelected: navigationShell.currentIndex == 3,
-                    onTap: () => navigationShell.goBranch(3),
+                    onTap: () =>
+                        navigationShell.goBranch(3, initialLocation: true),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
                     isSelected: navigationShell.currentIndex == 4,
-                    onTap: () => navigationShell.goBranch(4),
+                    onTap: () =>
+                        navigationShell.goBranch(4, initialLocation: true),
                   ),
                   const Spacer(),
                   _NavItem(

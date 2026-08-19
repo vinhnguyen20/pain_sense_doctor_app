@@ -1,6 +1,5 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
-import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
 import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
@@ -8,8 +7,10 @@ import 'package:app_doctor/features/user/presentation/provider/user_providers.da
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_chat_content.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_contacts_content.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class PatientConnectPage extends ConsumerStatefulWidget {
   final Patient? patient;
@@ -36,11 +37,9 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
   }
 
   void _openChat(Conversation conversation, Patient? patient) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            ChatRoomPage(conversation: conversation, patient: patient),
-      ),
+    context.go(
+      '/patient-connect/chat',
+      extra: {'conversation': conversation, 'patient': patient},
     );
   }
 
@@ -88,7 +87,7 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _PatientIdentityHeader(patient: patient),
+                        PatientConnectHeader(patient: patient),
                         const SizedBox(height: 20),
                         Center(
                           child: PatientConnectTabs(
@@ -133,54 +132,14 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
     Patient patient,
     List<Conversation> conversations,
   ) {
+    final patientId = patient.id.trim().toLowerCase();
     for (final conversation in conversations) {
-      if (conversation.participants.contains(patient.id)) return conversation;
+      final hasMatch = conversation.participants.any(
+        (p) => p.trim().toLowerCase() == patientId,
+      );
+      if (hasMatch) return conversation;
     }
     return null;
-  }
-}
-
-class _PatientIdentityHeader extends StatelessWidget {
-  final Patient? patient;
-
-  const _PatientIdentityHeader({required this.patient});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: Row(
-        children: [
-          const _Avatar(size: 80),
-          const SizedBox(width: 40),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                patient?.fullName.isNotEmpty == true
-                    ? patient!.fullName
-                    : 'Patient',
-                style: AppTypography.titleBig1.copyWith(
-                  color: AppPalette.secondaryBlue,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                patient?.phone?.trim().isNotEmpty == true
-                    ? patient!.phone!
-                    : 'No phone number',
-                style: AppTypography.defaultBody2.copyWith(
-                  color: AppPalette.secondaryBlue,
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -247,23 +206,6 @@ class _TabItem extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final double size;
-  final String asset;
-
-  const _Avatar({
-    required this.size,
-    this.asset = 'assets/images/avatar/avatar.png',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipOval(
-      child: Image.asset(asset, width: size, height: size, fit: BoxFit.cover),
     );
   }
 }

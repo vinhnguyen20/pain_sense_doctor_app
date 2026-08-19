@@ -9,7 +9,9 @@ import 'package:app_doctor/features/chats/presentation/provider/conversation_not
 import 'package:app_doctor/features/chats/presentation/widgets/chat_message_buble.dart';
 import 'package:app_doctor/features/chats/presentation/widgets/message_input_bar.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
+import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -63,6 +65,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
+    ref.read(conversationsProvider.notifier).fetchConversations(showLoading: false);
     super.dispose();
   }
 
@@ -113,13 +116,22 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   bool _isNearBottom([double threshold = 180]) {
     if (!_scrollController.hasClients) return true;
     final position = _scrollController.position;
+    final isDesktop = widget.patient != null && !widget.embedded;
+    if (isDesktop) {
+      return (position.maxScrollExtent - position.pixels) <= threshold;
+    }
     return position.pixels <= threshold;
   }
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    if (position.pixels < position.maxScrollExtent - 140) return;
+    final isDesktop = widget.patient != null && !widget.embedded;
+    if (isDesktop) {
+      if (position.pixels > 140) return;
+    } else {
+      if (position.pixels < position.maxScrollExtent - 140) return;
+    }
     ref.read(chatRoomProvider(_chatSession).notifier).loadOlderMessages();
   }
 
@@ -127,14 +139,19 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
 
+      final isDesktop = widget.patient != null && !widget.embedded;
+      final target = isDesktop
+          ? _scrollController.position.maxScrollExtent
+          : 0.0;
+
       if (animated) {
         _scrollController.animateTo(
-          0,
+          target,
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
         );
       } else {
-        _scrollController.jumpTo(0);
+        _scrollController.jumpTo(target);
       }
     });
   }
@@ -155,6 +172,14 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     }
   }
 
+  Patient? _resolvePatientFromId(List<Patient> patients, String patientId) {
+    if (patientId.isEmpty) return null;
+    for (final p in patients) {
+      if (p.id == patientId) return p;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<ChatRoomState>(
@@ -171,29 +196,76 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       context,
       liveConversation,
     );
+    final activePatient = widget.patient ??
+        _resolvePatientFromId(
+          ref.watch(patientsProvider).patients,
+          _chatSession.patientId,
+        );
     final isInitialLoading =
         chatState.isLoadingHistory && chatState.messages.isEmpty;
 
     final body = isInitialLoading
         ? const Center(child: CircularProgressIndicator())
         : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (!widget.embedded && activePatient != null) ...[
+                PatientConnectHeader(
+                  patient: activePatient,
+                  showBackButton: true,
+                  onBack: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                ),
+              ],
               Expanded(
                 child: _buildMessages(
                   state: chatState,
                   liveConversation: liveConversation,
+                  patient: activePatient,
                 ),
               ),
+              if (!widget.embedded && activePatient != null)
+                const SizedBox(height: 40),
               MessageInputBar(
                 controller: _messageController,
                 onSend: _sendText,
                 onSendWithImages: _sendImage,
+                compact: !widget.embedded && activePatient != null,
               ),
             ],
           );
 
     if (widget.embedded) {
       return Container(color: context.background, child: body);
+    }
+
+    if (activePatient != null) {
+      return Scaffold(
+        backgroundColor: AppPalette.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth < 1208
+                  ? 1208.0
+                  : constraints.maxWidth;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: width,
+                  height: constraints.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(30),
+                    child: SizedBox(width: width - 60, child: body),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -321,6 +393,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   Widget _buildMessages({
     required ChatRoomState state,
     required Conversation liveConversation,
+    required Patient? patient,
   }) {
     final fallbackMessage = _buildFallbackMessageFromConversation(
       liveConversation,
@@ -356,6 +429,57 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
 
     final showPaginationHeader =
         state.hasMoreHistory || state.isLoadingMoreHistory;
+
+    if (patient != null && !widget.embedded) {
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 972),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (showPaginationHeader)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Center(
+                      child: state.isLoadingMoreHistory
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              'Pull to load older messages',
+                              style: context.labelSmall?.copyWith(
+                                color: context.onSurface.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                for (int i = 0; i < displayMessages.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 20),
+                  ChatMessageBubble(
+                    patient: patient,
+                    compact: true,
+                    key: ValueKey(displayMessages[i].id),
+                    msg: displayMessages[i],
+                    currentUserIds: currentUserIds,
+                    currentRole: currentRole,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: () =>
@@ -400,7 +524,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ChatMessageBubble(
-                  patient: widget.patient,
+                  patient: patient,
+                  compact: false,
                   key: ValueKey(message.id),
                   msg: message,
                   currentUserIds: currentUserIds,

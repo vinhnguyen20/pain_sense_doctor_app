@@ -37,7 +37,7 @@ class SidebarNavigation extends StatelessWidget {
                 navigationShell == null || navigationShell!.currentIndex == 0,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(0, initialLocation: false);
+              navigationShell?.goBranch(0, initialLocation: true);
             },
           ),
           const SizedBox(height: 20),
@@ -47,7 +47,7 @@ class SidebarNavigation extends StatelessWidget {
             isSelected: navigationShell?.currentIndex == 1,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(1, initialLocation: false);
+              navigationShell?.goBranch(1, initialLocation: true);
             },
           ),
           const SizedBox(height: 20),
@@ -57,7 +57,7 @@ class SidebarNavigation extends StatelessWidget {
             isSelected: navigationShell?.currentIndex == 2,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(2, initialLocation: false);
+              navigationShell?.goBranch(2, initialLocation: true);
             },
           ),
           const SizedBox(height: 20),
@@ -67,7 +67,7 @@ class SidebarNavigation extends StatelessWidget {
             isSelected: navigationShell?.currentIndex == 3,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(3, initialLocation: false);
+              navigationShell?.goBranch(3, initialLocation: true);
             },
           ),
           const SizedBox(height: 20),
@@ -87,7 +87,7 @@ class SidebarNavigation extends StatelessWidget {
             isSelected: navigationShell?.currentIndex == 5,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(5, initialLocation: false);
+              navigationShell?.goBranch(5, initialLocation: true);
             },
           ),
                   ],

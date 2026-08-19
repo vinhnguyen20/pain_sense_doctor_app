@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
-import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
 import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
@@ -11,6 +10,7 @@ import 'package:app_doctor/features/user/presentation/provider/user_notifier.dar
 import 'package:app_doctor/presentations/pages/connect/widgets/clinician_chat_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ClinicianConnectPage extends ConsumerStatefulWidget {
   const ClinicianConnectPage({super.key});
@@ -65,11 +65,10 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
     return lastName == null || lastName.isEmpty ? 'Doctor' : 'Dr. $lastName';
   }
 
-  void _openChat(Conversation conversation) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatRoomPage(conversation: conversation),
-      ),
+  void _openChat(Conversation conversation, Patient patient) {
+    context.go(
+      '/connect/chat',
+      extra: {'conversation': conversation, 'patient': patient},
     );
   }
 
@@ -202,7 +201,7 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
 class _PatientChatList extends StatelessWidget {
   final List<Patient> patients;
   final List<Conversation> conversations;
-  final ValueChanged<Conversation> onChat;
+  final void Function(Conversation conversation, Patient patient) onChat;
 
   const _PatientChatList({
     required this.patients,
@@ -211,8 +210,12 @@ class _PatientChatList extends StatelessWidget {
   });
 
   Conversation? _conversationFor(Patient patient) {
+    final patientId = patient.id.trim().toLowerCase();
     for (final conversation in conversations) {
-      if (conversation.participants.contains(patient.id)) return conversation;
+      final hasMatch = conversation.participants.any(
+        (p) => p.trim().toLowerCase() == patientId,
+      );
+      if (hasMatch) return conversation;
     }
     return null;
   }
@@ -228,10 +231,20 @@ class _PatientChatList extends StatelessWidget {
       itemBuilder: (context, index) {
         final patient = patients[index];
         final conversation = _conversationFor(patient);
+        final effectiveConversation = conversation ??
+            Conversation(
+              id: '',
+              name: patient.fullName.isEmpty ? 'Patient' : patient.fullName,
+              participants: [patient.id],
+              status: 'active',
+              unreadCountDoctor: 0,
+              unreadCountPatient: 0,
+              unreadInfo: const [],
+            );
         return ClinicianChatRow(
           patient: patient,
           conversation: conversation,
-          onChat: conversation == null ? null : () => onChat(conversation),
+          onChat: () => onChat(effectiveConversation, patient),
         );
       },
     );

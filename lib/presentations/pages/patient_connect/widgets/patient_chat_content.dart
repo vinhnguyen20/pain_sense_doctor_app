@@ -21,19 +21,30 @@ class PatientChatContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectivePatientConv = patient == null
+        ? null
+        : (patientConversation ??
+            Conversation(
+              id: '',
+              name: patient!.fullName.isEmpty ? 'Patient' : patient!.fullName,
+              participants: [patient!.id],
+              status: 'active',
+              unreadCountDoctor: 0,
+              unreadCountPatient: 0,
+              unreadInfo: const [],
+            ));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (patient != null)
+        if (patient != null && effectivePatientConv != null)
           ChatSummaryCard(
             avatarAsset: 'assets/images/avatar/avatar.png',
             name: patient!.fullName,
             role: 'Patient',
             message: _messageText(patientConversation),
             conversation: patientConversation,
-            onChat: patientConversation == null
-                ? null
-                : () => onChat(patientConversation!, patient),
+            onChat: () => onChat(effectivePatientConv, patient),
           ),
         const SizedBox(height: 10),
         Text(

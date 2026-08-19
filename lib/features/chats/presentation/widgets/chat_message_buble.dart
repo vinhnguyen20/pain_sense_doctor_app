@@ -14,6 +14,7 @@ class ChatMessageBubble extends ConsumerWidget {
   final Set<String> currentUserIds;
   final UserRole? currentRole;
   final Patient? patient;
+  final bool compact;
 
   const ChatMessageBubble({
     super.key,
@@ -21,6 +22,7 @@ class ChatMessageBubble extends ConsumerWidget {
     required this.currentUserIds,
     this.currentRole,
     this.patient,
+    this.compact = false,
   });
 
   @override
@@ -35,6 +37,13 @@ class ChatMessageBubble extends ConsumerWidget {
     );
     final senderName = _senderName(currentPatient: patient, isOwn: isOwn);
     final timeStr = _timeFormatter.format(msg.sentAt);
+
+    if (compact) {
+      return Align(
+        alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
+        child: _CompactBubble(text: _messageText(msg), isOwn: isOwn),
+      );
+    }
 
     return Align(
       alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
@@ -103,6 +112,11 @@ class ChatMessageBubble extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _messageText(Message message) {
+    final text = message.content.text?.trim() ?? '';
+    return text.isNotEmpty ? text : 'Message';
   }
 
   Widget _buildMessageContent(BuildContext context, Message msg, bool isOwn) {
@@ -282,4 +296,68 @@ class ChatMessageBubble extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CompactBubble extends StatelessWidget {
+  final String text;
+  final bool isOwn;
+
+  const _CompactBubble({required this.text, required this.isOwn});
+
+  @override
+  Widget build(BuildContext context) {
+    final bubble = Container(
+      constraints: const BoxConstraints(maxWidth: 680),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: isOwn ? AppPalette.secondaryBlue : AppPalette.surfaceLight,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: AppTypography.defaultBody2.copyWith(
+          color: isOwn ? AppPalette.white : AppPalette.black,
+          height: 1.3,
+        ),
+      ),
+    );
+
+    return CustomPaint(
+      foregroundPainter: _BubbleTailPainter(
+        color: isOwn ? AppPalette.secondaryBlue : AppPalette.surfaceLight,
+        isOwn: isOwn,
+      ),
+      child: Padding(padding: const EdgeInsets.only(bottom: 8), child: bubble),
+    );
+  }
+}
+
+class _BubbleTailPainter extends CustomPainter {
+  final Color color;
+  final bool isOwn;
+
+  const _BubbleTailPainter({required this.color, required this.isOwn});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final path = Path();
+    if (isOwn) {
+      path.moveTo(size.width - 24, size.height - 8);
+      path.lineTo(size.width - 6, size.height);
+      path.lineTo(size.width - 10, size.height - 16);
+    } else {
+      path.moveTo(24, size.height - 8);
+      path.lineTo(6, size.height);
+      path.lineTo(10, size.height - 16);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BubbleTailPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.isOwn != isOwn;
 }
