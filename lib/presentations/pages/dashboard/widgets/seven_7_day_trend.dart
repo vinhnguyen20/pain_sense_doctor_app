@@ -12,7 +12,7 @@ class SevenDayTrendCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingAsync = ref.watch(patientTrackingSummary7DaysProvider(patientId));
-    final diaryState = ref.watch(patientDiaryProvider);
+    final diaryState = ref.watch(patientDiaryProvider(patientId));
 
     if (trackingAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());

@@ -1,3 +1,4 @@
+import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
@@ -294,7 +295,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(patientDiaryProvider.notifier).loadForPatient(widget.patient.id);
+      
     });
   }
 
@@ -335,7 +336,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
       }
     }
 
-    final diaryState = ref.watch(patientDiaryProvider);
+    final diaryState = ref.watch(patientDiaryProvider(widget.patient.id));
     final diaryMap = <String, double>{};
     for (final entry in diaryState.entries) {
       final dateKey =
@@ -548,7 +549,9 @@ class DailyGoalsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final diaryState = ref.watch(patientDiaryProvider);
+    final diaryState = ref.watch(patientDiaryProvider(patient.id));
+    final goalsAsync = ref.watch(patientUserGoalsProvider(patient.id));
+    
     final now = DateTime.now();
     PatientDiaryEntry? todayEntry;
 
@@ -559,19 +562,68 @@ class DailyGoalsCard extends ConsumerWidget {
       }
     }
 
-    PatientDiaryActivity? exerciseActivity;
-    PatientDiaryActivity? stepsActivity;
-    PatientDiaryActivity? postureActivity;
+    final goals = goalsAsync.value ?? [];
+    final activeGoal = goals.isNotEmpty ? goals.first : null;
+    final goalItems = activeGoal?.goalItems ?? [];
 
-    if (todayEntry != null) {
-      for (final a in todayEntry.diary) {
-        if (a.label.toLowerCase().contains('exercise')) {
-          exerciseActivity = a;
-        } else if (a.label.toLowerCase().contains('step')) {
-          stepsActivity = a;
-        } else if (a.label.toLowerCase().contains('posture')) {
-          postureActivity = a;
+    if (goalsAsync.isLoading && goals.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
+        decoration: BoxDecoration(
+          color: AppPalette.white,
+          borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
+          border: Border.all(color: AppPalette.medGray),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Default to empty state if no real goals assigned
+    List<Widget> children = [];
+    if (goalItems.isEmpty) {
+      children = [
+        const SizedBox(
+          width: 250,
+          child: _GoalSummaryItem(
+            goalItem: null,
+            activity: null,
+            defaultTitle: '—',
+            defaultDescription: 'No goal assigned.',
+          ),
+        ),
+      ];
+    } else {
+      children = goalItems.take(3).map((g) {
+        PatientDiaryActivity? activity;
+        if (todayEntry != null) {
+          final keyword = g.type.name.toLowerCase();
+          final gLabel = g.label.toLowerCase();
+          for (final a in todayEntry.diary) {
+             final aLabel = a.label.toLowerCase();
+             if (aLabel.contains(keyword) || aLabel.contains(gLabel)) {
+                activity = a;
+                break;
+             }
+          }
         }
+        return Padding(
+          padding: const EdgeInsets.only(right: 120),
+          child: SizedBox(
+            width: 250,
+            child: _GoalSummaryItem(
+              goalItem: g,
+              activity: activity,
+              defaultTitle: g.label,
+              defaultDescription: g.desc,
+            ),
+          ),
+        );
+      }).toList();
+      // Remove trailing padding from the last element if any
+      if (children.isNotEmpty) {
+        final lastWidget = children.last as Padding;
+        if (lastWidget.child != null) children[children.length - 1] = lastWidget.child!;
       }
     }
 
@@ -597,34 +649,7 @@ class DailyGoalsCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 250,
-                child: _GoalSummaryItem(
-                  activity: exerciseActivity,
-                  defaultTitle: 'Exercise',
-                  defaultDescription: 'No exercise goal assigned.',
-                ),
-              ),
-              const SizedBox(width: 120),
-              SizedBox(
-                width: 250,
-                child: _GoalSummaryItem(
-                  activity: stepsActivity,
-                  defaultTitle: 'Steps',
-                  defaultDescription: 'No step goal assigned.',
-                ),
-              ),
-              const SizedBox(width: 120),
-              SizedBox(
-                width: 250,
-                child: _GoalSummaryItem(
-                  activity: postureActivity,
-                  defaultTitle: 'Posture',
-                  defaultDescription: 'No posture goal recorded.',
-                ),
-              ),
-            ],
+            children: children,
           ),
         ],
       ),
@@ -632,12 +657,16 @@ class DailyGoalsCard extends ConsumerWidget {
   }
 }
 
+
+
 class _GoalSummaryItem extends StatelessWidget {
+  final GoalItemModel? goalItem;
   final PatientDiaryActivity? activity;
   final String defaultTitle;
   final String defaultDescription;
 
   const _GoalSummaryItem({
+    this.goalItem,
     required this.activity,
     required this.defaultTitle,
     required this.defaultDescription,
@@ -751,7 +780,7 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
   @override
   Widget build(BuildContext context) {
     final goalsAsync = ref.watch(patientUserGoalsProvider(widget.patient.id));
-    final diaryState = ref.watch(patientDiaryProvider);
+    final diaryState = ref.watch(patientDiaryProvider(widget.patient.id));
 
     final now = DateTime.now();
 

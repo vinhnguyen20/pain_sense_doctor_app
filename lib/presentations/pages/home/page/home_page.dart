@@ -8,6 +8,7 @@ import 'package:app_doctor/features/user/presentation/provider/patients_notifier
 import 'package:app_doctor/presentations/pages/home/widgets/patient_table_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 
 class ClinicianHomeView extends StatelessWidget {
   final List<Patient> patients;
@@ -244,10 +245,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final patientsState = ref.watch(patientsProvider);
+    final userState = ref.watch(userProvider);
+    final doctorName = userState.user?.lastName != null ? 'Dr. ${userState.user!.lastName}' : 'Doctor';
 
     return ClinicianHomeView(
       patients: patientsState.patients,
-      doctorName: 'Dr. Cameron Taylor',
+      doctorName: doctorName,
       onSearchChanged: _onSearchChanged,
       scrollController: _scrollController,
       isLoading: patientsState.isLoading,

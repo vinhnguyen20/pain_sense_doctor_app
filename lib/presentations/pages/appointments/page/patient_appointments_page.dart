@@ -8,6 +8,7 @@ import 'package:app_doctor/features/chats/presentation/provider/chat_providers.d
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 
 class PatientAppointmentsPage extends ConsumerStatefulWidget {
   final Patient patient;
@@ -33,6 +34,8 @@ class _PatientAppointmentsPageState
 
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userProvider);
+    final doctorName = userState.user?.lastName != null ? 'Dr. ${userState.user!.lastName}' : 'Doctor';
     final appointmentState = ref.watch(
       appointmentsByPatientProvider(widget.patient.id),
     );
@@ -56,7 +59,7 @@ class _PatientAppointmentsPageState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const ClinicianHeader(doctorName: 'Dr. Cameron Taylor'),
+                      ClinicianHeader(doctorName: doctorName),
                       const SizedBox(height: 30),
                       Row(
                         children: [

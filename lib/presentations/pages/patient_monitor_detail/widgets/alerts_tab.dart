@@ -54,8 +54,8 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     if (widget.patientId.trim().isNotEmpty) {
       Future.microtask(
         () => ref
-            .read(patientDiaryProvider.notifier)
-            .loadForPatient(widget.patientId.trim()),
+            .read(patientDiaryProvider(widget.patientId).notifier)
+            .refresh(),
       );
     }
   }
@@ -449,7 +449,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       );
     }
 
-    final diaryState = ref.watch(patientDiaryProvider);
+    final diaryState = ref.watch(patientDiaryProvider(widget.patientId));
 
     if (diaryState.isLoading && diaryState.entries.isEmpty) {
       return const Center(child: CircularProgressIndicator());

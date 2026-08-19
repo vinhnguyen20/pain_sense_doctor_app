@@ -5,6 +5,7 @@ import 'package:app_doctor/features/user/presentation/provider/patients_notifier
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 import 'package:go_router/go_router.dart';
 
 class AppointmentsPage extends ConsumerStatefulWidget {
@@ -71,11 +72,13 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userProvider);
+    final doctorName = userState.user?.lastName != null ? 'Dr. ${userState.user!.lastName}' : 'Doctor';
     final patientsState = ref.watch(patientsProvider);
 
     return ClinicianHomeView(
       patients: patientsState.patients,
-      doctorName: 'Dr. Cameron Taylor',
+      doctorName: doctorName,
       onSearchChanged: _onSearchChanged,
       scrollController: _scrollController,
       isLoading: patientsState.isLoading,

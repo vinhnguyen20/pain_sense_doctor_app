@@ -22,8 +22,8 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
     super.initState();
     Future.microtask(
       () => ref
-          .read(patientDiaryProvider.notifier)
-          .loadForPatient(widget.patientId),
+          .read(patientDiaryProvider(widget.patientId).notifier)
+          .refresh(),
     );
     _scrollController.addListener(_onScroll);
   }
@@ -32,7 +32,7 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.maxScrollExtent <= 0) return;
 
-    final state = ref.read(patientDiaryProvider);
+    final state = ref.read(patientDiaryProvider(widget.patientId));
     final shouldLoadMore =
         _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
@@ -43,7 +43,7 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
       _loadMoreQueued = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        await ref.read(patientDiaryProvider.notifier).loadMore();
+        await ref.read(patientDiaryProvider(widget.patientId).notifier).loadMore();
         if (mounted) {
           _loadMoreQueued = false;
         }
@@ -69,12 +69,12 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
       );
     }
 
-    final state = ref.watch(patientDiaryProvider);
+    final state = ref.watch(patientDiaryProvider(widget.patientId));
 
     return RefreshIndicator(
       onRefresh: () => ref
-          .read(patientDiaryProvider.notifier)
-          .loadForPatient(widget.patientId),
+          .read(patientDiaryProvider(widget.patientId).notifier)
+          .refresh(),
       child: CustomScrollView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -99,8 +99,8 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () => ref
-                          .read(patientDiaryProvider.notifier)
-                          .loadForPatient(widget.patientId),
+                          .read(patientDiaryProvider(widget.patientId).notifier)
+                          .refresh(),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -146,7 +146,7 @@ class _DiaryTabState extends ConsumerState<DiaryTab> {
                         if (!_loadMoreQueued) {
                           _loadMoreQueued = true;
                           ref
-                              .read(patientDiaryProvider.notifier)
+                              .read(patientDiaryProvider(widget.patientId).notifier)
                               .loadMore()
                               .then((_) {
                                 if (mounted) _loadMoreQueued = false;

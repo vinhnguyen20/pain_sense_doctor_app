@@ -14,23 +14,9 @@ class PatientTableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = colorFromHex(patient.trackingLogs?.color);
-    final painType = patient.trackingLogs?.lbpScore ?? 'Pattern 1';
+    final painType = '—';
 
-    List<double?> activityValues;
-
-    switch (patient.fullName) {
-      case 'John Smith':
-        activityValues = const [44.0, 28.0, null, 28.0, 44.0, 44.0, 36.0];
-        break;
-      case 'Nora Miscavish':
-        activityValues = const [36.0, 44.0, 36.0, 28.0, null, null, null];
-        break;
-      case 'Stan Chow':
-        activityValues = const [36.0, 44.0, 36.0, 44.0, 44.0, 44.0, 44.0];
-        break;
-      default:
-        activityValues = const [36.0, 44.0, 36.0, 36.0, 44.0, 44.0, 36.0];
-    }
+    List<double?> activityValues = const [null, null, null, null, null, null, null];
 
     return SizedBox(
       width: double.infinity,

@@ -41,42 +41,29 @@ class PatientDiaryState {
 @riverpod
 class PatientDiaryNotifier extends _$PatientDiaryNotifier {
   static const Duration _cacheTtl = Duration(seconds: 45);
-  String? _currentPatientId;
-  final Map<String, DateTime> _lastFetchedAtByPatient = {};
-  final Map<String, String?> _lastRequestedCursorByPatient = {};
+  DateTime? _lastFetchedAt;
+  String? _lastRequestedCursor;
 
-  bool _isCacheFreshForPatient(String patientId) {
-    final lastFetchedAt = _lastFetchedAtByPatient[patientId];
+  bool get _isCacheFresh {
+    final lastFetchedAt = _lastFetchedAt;
     if (lastFetchedAt == null) return false;
     return DateTime.now().difference(lastFetchedAt) < _cacheTtl;
   }
 
   @override
-  PatientDiaryState build() {
+  PatientDiaryState build(String patientId) {
     ref.keepAlive();
+    fetchPatientDiaries(refresh: true);
     return const PatientDiaryState();
   }
 
   Future<void> fetchPatientDiaries({
     bool refresh = false,
     bool forceRefresh = false,
-    String? patientId,
   }) async {
     if (state.isLoading) return;
 
-    final normalizedPatientId = patientId?.trim();
-    final hasPatientId =
-        normalizedPatientId != null && normalizedPatientId.isNotEmpty;
-    if (hasPatientId) {
-      final patientChanged = normalizedPatientId != _currentPatientId;
-      _currentPatientId = normalizedPatientId;
-      if (patientChanged) {
-        refresh = true;
-      }
-    }
-
-    final effectivePatientId = _currentPatientId;
-    if (effectivePatientId == null || effectivePatientId.isEmpty) {
+    if (patientId.isEmpty) {
       state = const PatientDiaryState(
         entries: [],
         isLoading: false,
@@ -92,9 +79,7 @@ class PatientDiaryNotifier extends _$PatientDiaryNotifier {
         return;
       }
 
-      final lastRequestedCursor =
-          _lastRequestedCursorByPatient[effectivePatientId];
-      if (lastRequestedCursor == currentCursor && state.entries.isNotEmpty) {
+      if (_lastRequestedCursor == currentCursor && state.entries.isNotEmpty) {
         return;
       }
     }
@@ -103,7 +88,7 @@ class PatientDiaryNotifier extends _$PatientDiaryNotifier {
     if (!forceRefresh &&
         isInitialPageFetch &&
         state.entries.isNotEmpty &&
-        _isCacheFreshForPatient(effectivePatientId)) {
+        _isCacheFresh) {
       return;
     }
 
@@ -117,13 +102,13 @@ class PatientDiaryNotifier extends _$PatientDiaryNotifier {
       final response = await ref.read(getPatientDiariesUseCaseProvider)(
         cursor: currentCursor,
         limit: AppConstants.defaultPageSize,
-        patientId: effectivePatientId,
+        patientId: patientId,
       );
 
       if (response.isSuccess && response.data != null) {
         final paginated = response.data!;
-        _lastFetchedAtByPatient[effectivePatientId] = DateTime.now();
-        _lastRequestedCursorByPatient[effectivePatientId] = currentCursor;
+        _lastFetchedAt = DateTime.now();
+        _lastRequestedCursor = currentCursor;
         state = PatientDiaryState(
           entries: refresh
               ? paginated.items
@@ -146,32 +131,6 @@ class PatientDiaryNotifier extends _$PatientDiaryNotifier {
 
   Future<void> refresh() =>
       fetchPatientDiaries(refresh: true, forceRefresh: true);
-
-  Future<void> loadForPatient(String patientId) async {
-    final normalizedPatientId = patientId.trim();
-    if (normalizedPatientId.isEmpty) {
-      state = const PatientDiaryState(
-        entries: [],
-        isLoading: false,
-        error: 'Patient id is missing.',
-        hasMore: false,
-      );
-      return;
-    }
-
-    final samePatient = _currentPatientId == normalizedPatientId;
-    final hasUsableCache =
-        samePatient &&
-        state.entries.isNotEmpty &&
-        _isCacheFreshForPatient(normalizedPatientId);
-    if (hasUsableCache) return;
-
-    await fetchPatientDiaries(
-      refresh: true,
-      patientId: normalizedPatientId,
-      forceRefresh: false,
-    );
-  }
 
   Future<void> loadMore() async {
     if (!state.hasMore || state.isLoading) return;

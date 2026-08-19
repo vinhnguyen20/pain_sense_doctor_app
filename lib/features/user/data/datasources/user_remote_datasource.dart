@@ -32,13 +32,18 @@ class UserRemoteDataSource {
     String? search,
   }) async {
     try {
+      final isSearching = search != null && search.trim().isNotEmpty;
+      final endpoint = isSearching ? '/users/patients/search' : '/users/patients/all';
+      
+      final queryParams = <String, dynamic>{
+        if (isSearching) 'q': search.trim(),
+        if (cursor != null) 'cursor': cursor,
+        if (limit != null) 'limit': limit,
+      };
+
       return await _client.get<ApiResponse<PaginatedResponse<PatientModel>>>(
-        '/users/patients/search',
-        queryParameters: {
-          'q': search ?? '',
-          if (cursor != null) 'cursor': cursor,
-          if (limit != null) 'limit': limit,
-        },
+        endpoint,
+        queryParameters: queryParams,
         fromJson: (json) => ApiResponse.fromPaginatedJson<PatientModel>(
           json,
           (item) => PatientModel.fromJson(item as Map<String, dynamic>),
