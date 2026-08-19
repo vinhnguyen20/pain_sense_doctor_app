@@ -6,13 +6,14 @@ import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.d
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
-import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
+import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_page.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/page/patient_connect_page.dart';
 import 'package:app_doctor/presentations/pages/settings/page/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -114,7 +115,8 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-connect',
                   name: 'patient-connect',
-                  builder: (context, state) => const ClinicianConnectPage(),
+                  builder: (context, state) =>
+                      PatientConnectPage(patient: state.extra as Patient?),
                 ),
               ],
             ),
