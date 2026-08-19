@@ -6,6 +6,7 @@ import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.d
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
+import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
@@ -113,8 +114,7 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-connect',
                   name: 'patient-connect',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Connect'))),
+                  builder: (context, state) => const ClinicianConnectPage(),
                 ),
               ],
             ),
@@ -189,8 +189,7 @@ class AppRouter {
                 GoRoute(
                   path: '/connect',
                   name: 'clinician-connect',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Connect'))),
+                  builder: (context, state) => const ClinicianConnectPage(),
                 ),
               ],
             ),
