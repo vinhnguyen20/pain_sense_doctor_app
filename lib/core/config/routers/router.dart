@@ -4,6 +4,7 @@ import 'package:app_doctor/features/auth/presentation/pages/login_page.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
@@ -97,7 +98,8 @@ class AppRouter {
                   path: '/patient-dashboard',
                   name: 'patient-dashboard',
                   builder: (context, state) {
-                    final patient = state.extra as Patient?;
+                    final patient = state.extra as Patient? ??
+                        ref.read(selectedPatientProvider);
 
                     if (patient == null) {
                       return const Scaffold(
@@ -115,8 +117,11 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-connect',
                   name: 'patient-connect',
-                  builder: (context, state) =>
-                      PatientConnectPage(patient: state.extra as Patient?),
+                  builder: (context, state) {
+                    final patient = state.extra as Patient? ??
+                        ref.read(selectedPatientProvider);
+                    return PatientConnectPage(patient: patient);
+                  },
                 ),
               ],
             ),

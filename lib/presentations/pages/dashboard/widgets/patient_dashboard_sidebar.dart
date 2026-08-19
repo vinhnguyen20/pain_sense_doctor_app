@@ -68,7 +68,13 @@ class PatientDashboardSidebar extends StatelessWidget {
                     icon: Icons.arrow_back_rounded,
                     label: 'Back',
                     isSelected: false,
-                    onTap: () => context.pop(),
+                    onTap: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/home');
+                      }
+                    },
                   ),
                   const SizedBox(height: 20),
                 ],

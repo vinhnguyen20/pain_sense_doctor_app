@@ -4,6 +4,8 @@ import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart
 import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
+import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_chat_content.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_contacts_content.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,9 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (widget.patient != null) {
+        ref.read(selectedPatientProvider.notifier).setPatient(widget.patient);
+      }
       ref.read(patientsProvider.notifier).fetchPatients();
       ref.read(conversationsProvider.notifier).fetchConversations();
     });
@@ -43,8 +48,10 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
   Widget build(BuildContext context) {
     final patientsState = ref.watch(patientsProvider);
     final conversationsState = ref.watch(conversationsProvider);
+    final selectedPatient = ref.watch(selectedPatientProvider);
     final patient =
         widget.patient ??
+        selectedPatient ??
         (patientsState.patients.isNotEmpty
             ? patientsState.patients.first
             : null);
@@ -102,7 +109,14 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                             onChat: _openChat,
                           ),
                         ] else
-                          const SizedBox.shrink(),
+                          patient == null
+                              ? const SizedBox.shrink()
+                              : SizedBox(
+                                  height: 700,
+                                  child: PatientAppointmentsContent(
+                                    patient: patient,
+                                  ),
+                                ),
                       ],
                     ),
                   ),

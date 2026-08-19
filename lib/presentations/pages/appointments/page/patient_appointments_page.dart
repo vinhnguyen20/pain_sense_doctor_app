@@ -20,6 +20,65 @@ class PatientAppointmentsPage extends ConsumerStatefulWidget {
       _PatientAppointmentsPageState();
 }
 
+class PatientAppointmentsContent extends ConsumerStatefulWidget {
+  final Patient patient;
+
+  const PatientAppointmentsContent({
+    super.key,
+    required this.patient,
+  });
+
+  @override
+  ConsumerState<PatientAppointmentsContent> createState() =>
+      _PatientAppointmentsContentState();
+}
+
+class _PatientAppointmentsContentState
+    extends ConsumerState<PatientAppointmentsContent> {
+  bool _showCreateForm = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final appointmentState = ref.watch(
+      appointmentsByPatientProvider(widget.patient.id),
+    );
+
+    return _showCreateForm
+        ? _CreateAppointmentForm(
+            patient: widget.patient,
+            onCreated: () async {
+              await ref
+                  .read(
+                    appointmentsByPatientProvider(
+                      widget.patient.id,
+                    ).notifier,
+                  )
+                  .refresh();
+
+              if (!mounted) return;
+              setState(() => _showCreateForm = false);
+            },
+            onCancel: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+              setState(() => _showCreateForm = false);
+            },
+          )
+        : _PatientScheduleContent(
+            state: appointmentState,
+            onCreateAppointment: () {
+              setState(() => _showCreateForm = true);
+            },
+            onRefresh: () => ref
+                .read(
+                  appointmentsByPatientProvider(
+                    widget.patient.id,
+                  ).notifier,
+                )
+                .refresh(),
+          );
+  }
+}
+
 class _PatientAppointmentsPageState
     extends ConsumerState<PatientAppointmentsPage> {
   bool _showCreateForm = false;
