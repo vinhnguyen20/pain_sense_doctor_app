@@ -34,6 +34,7 @@ class GoalFormPage extends ConsumerStatefulWidget {
 
   final List<GoalItemModel>? originalGoalItems;
   final bool useClinicianLayout;
+  final bool showClinicianHeader;
 
   const GoalFormPage({
     super.key,
@@ -43,6 +44,7 @@ class GoalFormPage extends ConsumerStatefulWidget {
     this.prefillGoalItems = const [],
     this.originalGoalItems,
     this.useClinicianLayout = false,
+    this.showClinicianHeader = true,
   });
 
   @override
@@ -1321,19 +1323,21 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClinicianHeader(
-                        doctorName: doctorName,
-                        onNotificationPressed: () {},
-                      ),
-                      const SizedBox(height: 30),
-                      Text(
-                        doctorName,
-                        style: AppTypography.titleBig1.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1,
+                      if (widget.showClinicianHeader) ...[
+                        ClinicianHeader(
+                          doctorName: doctorName,
+                          onNotificationPressed: () {},
                         ),
-                      ),
-                      const SizedBox(height: 30),
+                        const SizedBox(height: 30),
+                        Text(
+                          doctorName,
+                          style: AppTypography.titleBig1.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                      ],
                       Expanded(
                         child: Stack(
                           children: [

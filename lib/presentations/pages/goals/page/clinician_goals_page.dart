@@ -20,8 +20,13 @@ import 'package:go_router/go_router.dart';
 
 class ClinicianGoalsPage extends ConsumerStatefulWidget {
   final Patient? initialPatient;
+  final bool insidePatientDashboard;
 
-  const ClinicianGoalsPage({super.key, this.initialPatient});
+  const ClinicianGoalsPage({
+    super.key,
+    this.initialPatient,
+    this.insidePatientDashboard = false,
+  });
 
   @override
   ConsumerState<ClinicianGoalsPage> createState() =>
@@ -92,7 +97,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     final patient = _selectedPatient;
     if (patient == null) return;
     final result = await context.pushNamed(
-      'clinician-goal-form',
+      widget.insidePatientDashboard
+          ? 'patient-goal-form'
+          : 'clinician-goal-form',
       extra: {
         'mode': GoalFormMode.create,
         'patientId': patient.id,
@@ -107,7 +114,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     final patient = _selectedPatient;
     if (patient == null) return;
     final result = await context.pushNamed(
-      'goal-form',
+      widget.insidePatientDashboard
+          ? 'patient-goal-form'
+          : 'clinician-goal-form',
       extra: {
         'mode': GoalFormMode.edit,
         'initialGoal': goal.toGoalModel(),
@@ -213,20 +222,22 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClinicianHeader(
-                        doctorName: doctorName,
-                        onSearchChanged: _onSearchChanged,
-                        onNotificationPressed: () {},
-                      ),
-                      const SizedBox(height: 30),
-                      Text(
-                        doctorName,
-                        style: AppTypography.titleBig1.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1,
+                      if (!widget.insidePatientDashboard) ...[
+                        ClinicianHeader(
+                          doctorName: doctorName,
+                          onSearchChanged: _onSearchChanged,
+                          onNotificationPressed: () {},
                         ),
-                      ),
-                      const SizedBox(height: 30),
+                        const SizedBox(height: 30),
+                        Text(
+                          doctorName,
+                          style: AppTypography.titleBig1.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                      ],
                       SizedBox(
                         width: double.infinity,
                         height: 50,

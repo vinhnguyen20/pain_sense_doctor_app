@@ -9,6 +9,9 @@ class PatientGoalsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClinicianGoalsPage(initialPatient: patient);
+    return ClinicianGoalsPage(
+      initialPatient: patient,
+      insidePatientDashboard: true,
+    );
   }
 }
