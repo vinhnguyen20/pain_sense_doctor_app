@@ -329,6 +329,27 @@ class AppRouter {
                         return ClinicianGoalsPage(initialPatient: patient);
                       },
                     ),
+                    GoRoute(
+                      path: 'form',
+                      name: 'clinician-goal-form',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>?;
+
+                        return GoalFormPage(
+                          mode: extra?['mode'] ?? GoalFormMode.create,
+                          initialGoal: extra?['initialGoal'],
+                          originalGoalItems: extra?['originalGoalItems'],
+                          patientId:
+                              (extra?['patientId'] as String?)?.trim() ?? '',
+                          prefillGoalItems:
+                              (extra?['prefillGoalItems'] as List<dynamic>? ??
+                                      const [])
+                                  .whereType<Map<String, dynamic>>()
+                                  .toList(),
+                          useClinicianLayout: true,
+                        );
+                      },
+                    ),
                   ],
                 ),
               ],

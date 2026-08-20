@@ -1,5 +1,6 @@
 import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/common/widgets/custom_app_bar.dart';
+import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/common/widgets/app_snackbar.dart';
 import 'package:app_doctor/core/network/errors/exception_handler.dart';
@@ -7,7 +8,9 @@ import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart'
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/education/domain/entites/exercise.dart';
 import 'package:app_doctor/features/education/presentation/provider/exercise_picker_notifier.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/exercise_picker_bottomsheet.dart';
+import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_action_button.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_bottom_action.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_items_card.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_category_chip.dart';
@@ -30,6 +33,7 @@ class GoalFormPage extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> prefillGoalItems;
 
   final List<GoalItemModel>? originalGoalItems;
+  final bool useClinicianLayout;
 
   const GoalFormPage({
     super.key,
@@ -38,6 +42,7 @@ class GoalFormPage extends ConsumerStatefulWidget {
     required this.patientId,
     this.prefillGoalItems = const [],
     this.originalGoalItems,
+    this.useClinicianLayout = false,
   });
 
   @override
@@ -61,6 +66,7 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
   bool _isSubmitting = false;
+  final Set<int> _selectedWeekDays = {};
 
   bool get _isReadOnly => widget.mode == GoalFormMode.view;
   bool get _isCreating => widget.mode == GoalFormMode.create;
@@ -137,6 +143,11 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
       _goalItemDescCtrls[category]!.text = _goal.description;
     }
     _applyCreatePrefillItems();
+    if (widget.useClinicianLayout &&
+        _isCreating &&
+        !_selectedGoalCategories.values.any((selected) => selected)) {
+      _selectedGoalCategories[_goal.category] = true;
+    }
 
     if (_isEditing && widget.originalGoalItems != null) {
       for (final item in widget.originalGoalItems!) {
@@ -1101,6 +1112,87 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     });
   }
 
+  GoalCategory get _clinicianCategory {
+    for (final category in GoalCategory.values) {
+      if (_selectedGoalCategories[category] == true) return category;
+    }
+    return _goal.category;
+  }
+
+  void _selectClinicianCategory(GoalCategory category) {
+    setState(() {
+      for (final value in GoalCategory.values) {
+        _selectedGoalCategories[value] = value == category;
+      }
+      if (category != GoalCategory.yoga) {
+        _goal = _goal.copyWith(
+          selectedExerciseIds: const [],
+          selectedExercisePlans: const [],
+        );
+      }
+    });
+  }
+
+  Future<void> _pickClinicianDate({required bool isStartDate}) async {
+    final now = DateTime.now();
+    final current = isStartDate ? _goal.startDate : _goal.endDate;
+    final firstDate = isStartDate ? DateTime(2020) : (_goal.startDate ?? now);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? (isStartDate ? now : (_goal.startDate ?? now)),
+      firstDate: firstDate,
+      lastDate: DateTime(2035),
+    );
+    if (picked == null) return;
+    if (isStartDate) {
+      _onStartDateChanged(picked);
+    } else {
+      _onEndDateChanged(picked);
+    }
+  }
+
+  String _formatClinicianDate(DateTime? date, String placeholder) {
+    if (date == null) return placeholder;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  Future<void> _onClinicianSubmit() async {
+    if (_goal.patientConsent) {
+      await _onSubmit();
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Patient Consent',
+          style: AppTypography.titleBig1.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
+        ),
+        content: const Text(
+          'Confirm that the patient has been informed and agrees to this goal.',
+          style: AppTypography.defaultBody2,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _goal = _goal.copyWith(patientConsent: true));
+    await _onSubmit();
+  }
+
   Widget _buildYogaSection({required List<Exercise> availableExercises}) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
@@ -1198,9 +1290,303 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     );
   }
 
+  Widget _buildClinicianGoalForm({
+    required List<Exercise> availableExercises,
+  }) {
+    final userState = ref.watch(userProvider);
+    final fullName = userState.user?.fullName.trim();
+    final doctorName = fullName == null || fullName.isEmpty
+        ? 'Doctor'
+        : 'Dr. $fullName';
+    final category = _clinicianCategory;
+    final targetController = _goalItemTargetCtrls[category]!;
+    final titleController = _goalItemTitleCtrls[category]!;
+    final descriptionController = _goalItemDescCtrls[category]!;
+
+    return Scaffold(
+      backgroundColor: AppPalette.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth < 1208
+                ? 1208.0
+                : constraints.maxWidth;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: width,
+                height: constraints.maxHeight,
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClinicianHeader(
+                        doctorName: doctorName,
+                        onNotificationPressed: () {},
+                      ),
+                      const SizedBox(height: 30),
+                      Text(
+                        doctorName,
+                        style: AppTypography.titleBig1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            SingleChildScrollView(
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 90,
+                                  right: 40,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text(
+                                  'Goal Type',
+                                  style: AppTypography.titleBig1.copyWith(
+                                    color: AppPalette.secondaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Select an activity type to base your goal around.',
+                                  style: AppTypography.denseBody1.copyWith(
+                                    color: AppPalette.secondaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _ClinicianGoalTypeButton(
+                                      label: 'Exercise',
+                                      icon: Icons.fitness_center_rounded,
+                                      selected: category == GoalCategory.yoga,
+                                      onPressed: () => _selectClinicianCategory(
+                                        GoalCategory.yoga,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    _ClinicianGoalTypeButton(
+                                      label: 'Steps',
+                                      icon: Icons.directions_walk_rounded,
+                                      selected: category == GoalCategory.steps,
+                                      onPressed: () => _selectClinicianCategory(
+                                        GoalCategory.steps,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    _ClinicianGoalTypeButton(
+                                      label: 'Posture',
+                                      icon: Icons.chair_alt_rounded,
+                                      selected:
+                                          category == GoalCategory.activityTime,
+                                      onPressed: () => _selectClinicianCategory(
+                                        GoalCategory.activityTime,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                Center(
+                                  child: Text(
+                                    switch (category) {
+                                      GoalCategory.steps =>
+                                        'Set your Target Step Count',
+                                      GoalCategory.activityTime =>
+                                        'Set your Target Posture Score',
+                                      GoalCategory.yoga =>
+                                        'Set your Target Exercise Count',
+                                    },
+                                    style: AppTypography.titleBig1.copyWith(
+                                      color: AppPalette.secondaryBlue,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: _ClinicianTargetInput(
+                                    controller: targetController,
+                                    readOnly: category == GoalCategory.yoga,
+                                    computedValue: category == GoalCategory.yoga
+                                        ? _computedYogaTarget
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Goal Frequency',
+                                  style: AppTypography.titleBig1.copyWith(
+                                    color: AppPalette.secondaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Select how often you would like to see this goal.',
+                                  style: AppTypography.denseBody1.copyWith(
+                                    color: AppPalette.secondaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _ClinicianChoiceButton(
+                                      label: 'Daily',
+                                      selected:
+                                          _goal.frequency == GoalFrequency.daily,
+                                      onPressed: () => setState(
+                                        () => _goal = _goal.copyWith(
+                                          frequency: GoalFrequency.daily,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    _ClinicianChoiceButton(
+                                      label: 'Certain Days of the Week',
+                                      selected:
+                                          _goal.frequency == GoalFrequency.weekly,
+                                      onPressed: () => setState(
+                                        () => _goal = _goal.copyWith(
+                                          frequency: GoalFrequency.weekly,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(7, (index) {
+                                    const labels = [
+                                      'Sun',
+                                      'Mon',
+                                      'Tues',
+                                      'Wed',
+                                      'Thurs',
+                                      'Fri',
+                                      'Sat',
+                                    ];
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        right: index == 6 ? 0 : 20,
+                                      ),
+                                      child: _ClinicianDayButton(
+                                        label: labels[index],
+                                        selected: _selectedWeekDays.contains(index),
+                                        enabled:
+                                            _goal.frequency == GoalFrequency.weekly,
+                                        onPressed: () => setState(() {
+                                          if (_selectedWeekDays.contains(index)) {
+                                            _selectedWeekDays.remove(index);
+                                          } else {
+                                            _selectedWeekDays.add(index);
+                                          }
+                                        }),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _ClinicianDateButton(
+                                      label: _formatClinicianDate(
+                                        _goal.startDate,
+                                        'Start Date...',
+                                      ),
+                                      onPressed: () => _pickClinicianDate(
+                                        isStartDate: true,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    _ClinicianDateButton(
+                                      label: _formatClinicianDate(
+                                        _goal.endDate,
+                                        'End Date...',
+                                      ),
+                                      onPressed: () => _pickClinicianDate(
+                                        isStartDate: false,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 30),
+                                _ClinicianGoalTextField(
+                                  controller: titleController,
+                                  hint: 'Name Your Goal...',
+                                ),
+                                const SizedBox(height: 20),
+                                _ClinicianGoalTextField(
+                                  controller: descriptionController,
+                                  hint: 'Describe Your Goal...',
+                                  height: 70,
+                                  maxLines: 3,
+                                ),
+                                if (category == GoalCategory.yoga) ...[
+                                  const SizedBox(height: 20),
+                                  _buildYogaSection(
+                                    availableExercises: availableExercises,
+                                  ),
+                                ],
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: GoalActionButton(
+                                    label: _isCreating
+                                        ? 'Create Goal'
+                                        : 'Update Goal',
+                                    width: 240,
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : _onClinicianSubmit,
+                                  ),
+                                ),
+                                    const SizedBox(height: 10),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              top: 390,
+                              child: IconButton(
+                                onPressed: () => context.pop(),
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  size: 36,
+                                  color: AppPalette.secondaryBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final availableExercises = ref.watch(exercisePickerProvider).exercises;
+
+    if (widget.useClinicianLayout && (_isCreating || _isEditing)) {
+      return _buildClinicianGoalForm(
+        availableExercises: availableExercises,
+      );
+    }
 
     return Scaffold(
       backgroundColor: context.surface,
@@ -1337,6 +1723,277 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ClinicianGoalTypeButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  const _ClinicianGoalTypeButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 25),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          backgroundColor:
+              selected ? AppPalette.secondaryBlue : AppPalette.surfaceLight,
+          foregroundColor: selected ? AppPalette.white : AppPalette.medGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          textStyle: AppTypography.titleBig1,
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicianChoiceButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  const _ClinicianChoiceButton({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          backgroundColor:
+              selected ? AppPalette.secondaryBlue : AppPalette.surfaceLight,
+          foregroundColor: selected ? AppPalette.white : AppPalette.medGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          textStyle: AppTypography.titleBig1,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class _ClinicianDayButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  const _ClinicianDayButton({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: TextButton(
+        onPressed: enabled ? onPressed : null,
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          backgroundColor:
+              selected ? AppPalette.secondaryBlue : AppPalette.surfaceLight,
+          disabledBackgroundColor: AppPalette.surfaceLight,
+          foregroundColor: selected ? AppPalette.white : AppPalette.medGray,
+          disabledForegroundColor: AppPalette.medGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          textStyle: AppTypography.titleBig1,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class _ClinicianDateButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const _ClinicianDateButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          backgroundColor: AppPalette.surfaceLight,
+          foregroundColor: AppPalette.medGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          textStyle: AppTypography.titleBig1,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class _ClinicianGoalTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final double height;
+  final int maxLines;
+
+  const _ClinicianGoalTextField({
+    required this.controller,
+    required this.hint,
+    this.height = 50,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        cursorColor: AppPalette.secondaryBlue,
+        style: AppTypography.titleBig1.copyWith(
+          color: AppPalette.secondaryBlue,
+        ),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: AppPalette.surfaceLight,
+          hintText: hint,
+          hintStyle: AppTypography.titleBig1.copyWith(
+            color: AppPalette.medGray,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 14,
+          ),
+          border: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(
+              color: AppPalette.secondaryBlue,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicianTargetInput extends StatelessWidget {
+  final TextEditingController controller;
+  final bool readOnly;
+  final int? computedValue;
+
+  const _ClinicianTargetInput({
+    required this.controller,
+    required this.readOnly,
+    this.computedValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final target = computedValue ?? num.tryParse(value.text) ?? 0;
+        final progress = (target.toDouble() / 100)
+            .clamp(0.0, 1.0)
+            .toDouble();
+        return SizedBox(
+          width: 96,
+          height: 96,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 94,
+                height: 94,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 9,
+                  backgroundColor: AppPalette.surfaceLight,
+                  color: AppPalette.secondaryBlue,
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              SizedBox(
+                width: 62,
+                child: readOnly
+                    ? Text(
+                        '$target',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.display1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      )
+                    : TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        cursorColor: AppPalette.secondaryBlue,
+                        style: AppTypography.display1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '0',
+                          hintStyle: AppTypography.display1.copyWith(
+                            color: AppPalette.medGray,
+                          ),
+                          filled: false,
+                          fillColor: AppPalette.transparent,
+                          isDense: true,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

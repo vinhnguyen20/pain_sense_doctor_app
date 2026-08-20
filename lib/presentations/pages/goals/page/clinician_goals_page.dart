@@ -92,7 +92,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     final patient = _selectedPatient;
     if (patient == null) return;
     final result = await context.pushNamed(
-      'goal-form',
+      'clinician-goal-form',
       extra: {
         'mode': GoalFormMode.create,
         'patientId': patient.id,
