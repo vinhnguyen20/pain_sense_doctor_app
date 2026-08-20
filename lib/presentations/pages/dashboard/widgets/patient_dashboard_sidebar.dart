@@ -9,6 +9,11 @@ class PatientDashboardSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void openBranch(int index) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      navigationShell.goBranch(index, initialLocation: true);
+    }
+
     return Container(
       width: 232,
       color: AppPalette.secondaryBlue,
@@ -25,48 +30,48 @@ class PatientDashboardSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
                   _NavItem(
                     icon: Icons.menu_rounded,
                     label: 'Overview',
                     isSelected: navigationShell.currentIndex == 0,
-                    onTap: () =>
-                        navigationShell.goBranch(0, initialLocation: true),
+                    onTap: () => openBranch(0),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Connect',
                     isSelected: navigationShell.currentIndex == 1,
-                    onTap: () =>
-                        navigationShell.goBranch(1, initialLocation: true),
+                    onTap: () => openBranch(1),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.accessibility_new_rounded,
                     label: 'Exercises',
                     isSelected: navigationShell.currentIndex == 2,
-                    onTap: () =>
-                        navigationShell.goBranch(2, initialLocation: true),
+                    onTap: () => openBranch(2),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.flag_outlined,
                     label: 'Goals',
                     isSelected: navigationShell.currentIndex == 3,
-                    onTap: () =>
-                        navigationShell.goBranch(3, initialLocation: true),
+                    onTap: () => openBranch(3),
                   ),
                   const SizedBox(height: 20),
                   _NavItem(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
                     isSelected: navigationShell.currentIndex == 4,
-                    onTap: () =>
-                        navigationShell.goBranch(4, initialLocation: true),
+                    onTap: () => openBranch(4),
                   ),
                   const Spacer(),
                   _NavItem(
@@ -74,6 +79,7 @@ class PatientDashboardSidebar extends StatelessWidget {
                     label: 'Back',
                     isSelected: false,
                     onTap: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
                       if (context.canPop()) {
                         context.pop();
                       } else {
@@ -81,8 +87,12 @@ class PatientDashboardSidebar extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 20),
-                ],
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

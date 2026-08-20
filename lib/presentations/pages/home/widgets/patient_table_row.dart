@@ -86,9 +86,9 @@ class PatientTableRow extends StatelessWidget {
                         'patient-monitor-detail',
                         extra: patient,
                       );
-                    },
+                },
                 onDashboard: () {
-                  context.pushNamed('patient-dashboard', extra: patient);
+                  context.goNamed('patient-dashboard', extra: patient);
                 },
               ),
             ),

@@ -120,7 +120,7 @@ class PatientCard extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    context.pushNamed('patient-dashboard', extra: patient);
+                    context.goNamed('patient-dashboard', extra: patient);
                   },
                   icon: const Icon(Icons.bar_chart, size: AppSize.iconSm),
                   label: const Text('Dashboard'),

@@ -167,8 +167,7 @@ class PatientDashboardBody extends ConsumerWidget {
                 child: PatientOverviewCard(patient: patient),
               ),
               const SizedBox(width: PatientDashboardDimensions.firstRowGap),
-              SizedBox(
-                width: PatientDashboardDimensions.appointmentWidth,
+              Expanded(
                 child: AppointmentTimeline(patient: patient),
               ),
             ],
@@ -183,16 +182,15 @@ class PatientDashboardBody extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                width: PatientDashboardDimensions.bottomCardWidth,
+              Expanded(
                 child: TodayExerciseGoalsCard(patient: patient),
               ),
-              SizedBox(
-                width: PatientDashboardDimensions.bottomCardWidth,
+              const SizedBox(width: 20),
+              Expanded(
                 child: AdherenceScoreCard(patient: patient),
               ),
-              SizedBox(
-                width: PatientDashboardDimensions.bottomCardWidth,
+              const SizedBox(width: 20),
+              Expanded(
                 child: SevenDayOverviewContainer(patient: patient),
               ),
             ],
@@ -388,7 +386,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
     }
 
     return Container(
-      width: PatientDashboardDimensions.appointmentWidth,
+      width: double.infinity,
       height: 273,
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       child: Column(
@@ -933,8 +931,8 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
     }
 
     return Container(
-      width: 370,
-      height: 423,
+      width: double.infinity,
+      height: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
@@ -1096,8 +1094,8 @@ class SevenDayOverviewContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 370,
-      height: 423,
+      width: double.infinity,
+      height: double.infinity,
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,

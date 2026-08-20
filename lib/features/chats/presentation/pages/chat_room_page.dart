@@ -14,6 +14,7 @@ import 'package:app_doctor/features/user/presentation/provider/user_notifier.dar
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -203,6 +204,9 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
         );
     final isInitialLoading =
         chatState.isLoadingHistory && chatState.messages.isEmpty;
+    final isPatientDashboardChat = GoRouterState.of(
+      context,
+    ).uri.path.startsWith('/patient-connect');
 
     final body = isInitialLoading
         ? const Center(child: CircularProgressIndicator())
@@ -214,8 +218,11 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                   patient: activePatient,
                   showBackButton: true,
                   onBack: () {
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    if (isPatientDashboardChat) {
+                      context.go('/patient-connect', extra: activePatient);
+                    } else {
+                      context.go('/connect');
                     }
                   },
                 ),
@@ -248,18 +255,12 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final width = constraints.maxWidth < 1208
-                  ? 1208.0
-                  : constraints.maxWidth;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: width,
-                  height: constraints.maxHeight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: SizedBox(width: width - 60, child: body),
-                  ),
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: SizedBox(width: double.infinity, child: body),
                 ),
               );
             },

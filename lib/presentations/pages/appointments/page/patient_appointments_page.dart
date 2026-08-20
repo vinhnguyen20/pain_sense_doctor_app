@@ -301,7 +301,7 @@ class _PatientScheduleContent extends StatelessWidget {
     }
 
     return SizedBox(
-      width: 1148,
+      width: double.infinity,
       child: RefreshIndicator(
         onRefresh: onRefresh,
         child: ListView(
@@ -660,7 +660,7 @@ class _CreateAppointmentFormState
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 1148,
+      width: double.infinity,
       child: Column(
         children: [
           Expanded(
@@ -731,35 +731,38 @@ class _CreateAppointmentFormState
                     style: _title20(AppPalette.secondaryBlue),
                   ),
                   const SizedBox(height: 23),
-                  Container(
-                    width: 1068,
-                    height: 106,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppPalette.backgroundLight,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: TextField(
-                      controller: _notesController,
-                      onTapOutside: (_) =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
-                      expands: true,
-                      maxLines: null,
-                      minLines: null,
-                      cursorColor: AppPalette.secondaryBlue,
-                      style: _title20(AppPalette.secondaryBlue),
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        hintText: 'Appointment Notes...',
-                        hintStyle: _title20(AppPalette.medGray),
-                        isCollapsed: true,
+                  FractionallySizedBox(
+                    widthFactor: 0.93,
+                    child: Container(
+                      width: double.infinity,
+                      height: 106,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppPalette.backgroundLight,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: TextField(
+                        controller: _notesController,
+                        onTapOutside: (_) =>
+                            FocusManager.instance.primaryFocus?.unfocus(),
+                        expands: true,
+                        maxLines: null,
+                        minLines: null,
+                        cursorColor: AppPalette.secondaryBlue,
+                        style: _title20(AppPalette.secondaryBlue),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          hintText: 'Appointment Notes...',
+                          hintStyle: _title20(AppPalette.medGray),
+                          isCollapsed: true,
+                        ),
                       ),
                     ),
                   ),
