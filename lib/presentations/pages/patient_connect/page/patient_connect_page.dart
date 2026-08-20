@@ -74,13 +74,15 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
             final width = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
+            final isAppointments =
+                _selectedTab == PatientConnectTab.appointments;
 
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                 width: width,
                 height: constraints.maxHeight,
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.all(30),
                   child: SizedBox(
                     width: width - 60,
@@ -88,7 +90,7 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         PatientConnectHeader(patient: patient),
-                        const SizedBox(height: 20),
+                        SizedBox(height: isAppointments ? 30 : 20),
                         Center(
                           child: PatientConnectTabs(
                             selectedTab: _selectedTab,
@@ -98,24 +100,27 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        if (_selectedTab == PatientConnectTab.contacts)
-                          const PatientContactsContent()
-                        else if (_selectedTab == PatientConnectTab.chat) ...[
-                          PatientChatContent(
-                            patient: patient,
-                            patientConversation: patientConversation,
-                            otherConversations: otherConversations,
-                            onChat: _openChat,
-                          ),
-                        ] else
-                          patient == null
-                              ? const SizedBox.shrink()
-                              : SizedBox(
-                                  height: 700,
-                                  child: PatientAppointmentsContent(
-                                    patient: patient,
-                                  ),
+                        Expanded(
+                          child: isAppointments
+                              ? patient == null
+                                    ? const SizedBox.shrink()
+                                    : PatientAppointmentsContent(
+                                        patient: patient,
+                                      )
+                              : SingleChildScrollView(
+                                  child:
+                                      _selectedTab == PatientConnectTab.contacts
+                                      ? const PatientContactsContent()
+                                      : PatientChatContent(
+                                          patient: patient,
+                                          patientConversation:
+                                              patientConversation,
+                                          otherConversations:
+                                              otherConversations,
+                                          onChat: _openChat,
+                                        ),
                                 ),
+                        ),
                       ],
                     ),
                   ),

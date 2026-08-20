@@ -594,7 +594,10 @@ class DailyGoalsCard extends ConsumerWidget {
         ),
       ];
     } else {
-      children = goalItems.take(3).map((g) {
+      final visibleItems = goalItems.take(3).toList();
+      children = <Widget>[];
+      for (var index = 0; index < visibleItems.length; index++) {
+        final g = visibleItems[index];
         PatientDiaryActivity? activity;
         if (todayEntry != null) {
           final keyword = g.type.name.toLowerCase();
@@ -607,23 +610,22 @@ class DailyGoalsCard extends ConsumerWidget {
              }
           }
         }
-        return Padding(
-          padding: const EdgeInsets.only(right: 120),
-          child: SizedBox(
-            width: 250,
-            child: _GoalSummaryItem(
-              goalItem: g,
-              activity: activity,
-              defaultTitle: g.label,
-              defaultDescription: g.desc,
+        children.add(
+          Padding(
+            padding: EdgeInsets.only(
+              right: index == visibleItems.length - 1 ? 0 : 120,
+            ),
+            child: SizedBox(
+              width: 250,
+              child: _GoalSummaryItem(
+                goalItem: g,
+                activity: activity,
+                defaultTitle: g.label,
+                defaultDescription: g.desc,
+              ),
             ),
           ),
         );
-      }).toList();
-      // Remove trailing padding from the last element if any
-      if (children.isNotEmpty) {
-        final lastWidget = children.last as Padding;
-        if (lastWidget.child != null) children[children.length - 1] = lastWidget.child!;
       }
     }
 
