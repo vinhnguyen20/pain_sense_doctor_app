@@ -11,12 +11,14 @@ import 'package:app_doctor/presentations/pages/appointments/page/appointments_pa
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
+import 'package:app_doctor/presentations/pages/goals/page/clinician_goals_page.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
 import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_page.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/page/patient_connect_page.dart';
+import 'package:app_doctor/presentations/pages/patient_goals/page/patient_goals_page.dart';
 import 'package:app_doctor/presentations/pages/settings/page/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -186,8 +188,23 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-goals',
                   name: 'patient-goals',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Goals'))),
+                  builder: (context, state) {
+                    Patient? patient;
+                    if (state.extra is Patient) {
+                      patient = state.extra as Patient;
+                    } else if (state.extra is Map) {
+                      patient = (state.extra as Map)['patient'] as Patient?;
+                    }
+                    patient ??= ref.read(selectedPatientProvider);
+
+                    if (patient == null) {
+                      return const Scaffold(
+                        body: Center(child: Text('Patient not found')),
+                      );
+                    }
+
+                    return PatientGoalsPage(patient: patient);
+                  },
                 ),
               ],
             ),
@@ -289,8 +306,30 @@ class AppRouter {
                 GoRoute(
                   path: '/goals',
                   name: 'clinician-goals',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Goals'))),
+                  builder: (context, state) => const ClinicianGoalsPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'patient',
+                      name: 'clinician-patient-goals',
+                      builder: (context, state) {
+                        Patient? patient;
+                        if (state.extra is Patient) {
+                          patient = state.extra as Patient;
+                        } else if (state.extra is Map) {
+                          patient = (state.extra as Map)['patient'] as Patient?;
+                        }
+                        patient ??= ref.read(selectedPatientProvider);
+
+                        if (patient == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Patient not found')),
+                          );
+                        }
+
+                        return ClinicianGoalsPage(initialPatient: patient);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
