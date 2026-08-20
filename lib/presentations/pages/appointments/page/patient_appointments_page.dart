@@ -661,151 +661,122 @@ class _CreateAppointmentFormState
   Widget build(BuildContext context) {
     return SizedBox(
       width: 1148,
-      child: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.only(top: 43, bottom: 30),
-        child: Column(
-          children: [
-            Text(
-              'Appointment Date & Time',
-              style: _title20(AppPalette.secondaryBlue),
-            ),
-            const SizedBox(height: 23),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _PickerField(
-                  width: 200,
-                  label: _date == null ? 'Date...' : _yyyyMmDd(_date!),
-                  onTap: _pickDate,
-                ),
-                const SizedBox(width: 23),
-                _PickerField(
-                  width: 200,
-                  label: _time == null ? 'Time...' : _formatTime(_time!),
-                  onTap: _pickTime,
-                ),
-              ],
-            ),
-            const SizedBox(height: 23),
-            SizedBox(
-              width: 200,
-              height: 20,
-              child: Center(
-                child: Text(
-                  'Selected Patient',
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  style: _title20(AppPalette.secondaryBlue),
-                ),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.only(top: 43, bottom: 23),
+              child: Column(
+                children: [
+                  Text(
+                    'Appointment Date & Time',
+                    style: _title20(AppPalette.secondaryBlue),
+                  ),
+                  const SizedBox(height: 23),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _PickerField(
+                        width: 200,
+                        label: _date == null ? 'Date...' : _yyyyMmDd(_date!),
+                        onTap: _pickDate,
+                      ),
+                      const SizedBox(width: 23),
+                      _PickerField(
+                        width: 200,
+                        label: _time == null ? 'Time...' : _formatTime(_time!),
+                        onTap: _pickTime,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 23),
+                  Text(
+                    'Appointment Type',
+                    style: _title20(AppPalette.secondaryBlue),
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _TypeButton(
+                        label: 'Video',
+                        selected: _type == AppointmentType.videoCall,
+                        onTap: () {
+                          setState(() {
+                            _type = AppointmentType.videoCall;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      _TypeButton(
+                        label: 'In-Person',
+                        selected: _type == AppointmentType.inPerson,
+                        onTap: () {
+                          setState(() {
+                            _type = AppointmentType.inPerson;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      const _TypeButton(
+                        label: 'Exercise Demonstration',
+                        selected: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 23),
+                  Text(
+                    'Reason For Appointment',
+                    style: _title20(AppPalette.secondaryBlue),
+                  ),
+                  const SizedBox(height: 23),
+                  Container(
+                    width: 1068,
+                    height: 106,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppPalette.backgroundLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: TextField(
+                      controller: _notesController,
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                      expands: true,
+                      maxLines: null,
+                      minLines: null,
+                      cursorColor: AppPalette.secondaryBlue,
+                      style: _title20(AppPalette.secondaryBlue),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        hintText: 'Appointment Notes...',
+                        hintStyle: _title20(AppPalette.medGray),
+                        isCollapsed: true,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 23),
-            Container(
-              width: 200,
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: AppPalette.backgroundLight,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                widget.patient.fullName.trim().isEmpty
-                    ? 'Patient'
-                    : widget.patient.fullName.trim(),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: _title20(AppPalette.secondaryBlue),
-              ),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: _PrimaryButton(
+              label: 'Create Appointment',
+              width: 240,
+              loading: _submitting,
+              onTap: _submitting ? null : _submit,
             ),
-            const SizedBox(height: 23),
-            Text('Appointment Type', style: _title20(AppPalette.secondaryBlue)),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _TypeButton(
-                  label: 'Video',
-                  selected: _type == AppointmentType.videoCall,
-                  onTap: () {
-                    setState(() {
-                      _type = AppointmentType.videoCall;
-                    });
-                  },
-                ),
-                const SizedBox(width: 20),
-                _TypeButton(
-                  label: 'In-Person',
-                  selected: _type == AppointmentType.inPerson,
-                  onTap: () {
-                    setState(() {
-                      _type = AppointmentType.inPerson;
-                    });
-                  },
-                ),
-                const SizedBox(width: 20),
-                const _TypeButton(
-                  label: 'Exercise Demonstration',
-                  selected: false,
-                ),
-              ],
-            ),
-            const SizedBox(height: 23),
-            Text(
-              'Reason For Appointment',
-              style: _title20(AppPalette.secondaryBlue),
-            ),
-            const SizedBox(height: 23),
-            Container(
-              width: 1068,
-              height: 106,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppPalette.backgroundLight,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: TextField(
-                controller: _notesController,
-                onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                expands: true,
-                maxLines: null,
-                minLines: null,
-                cursorColor: AppPalette.secondaryBlue,
-                style: _title20(AppPalette.secondaryBlue),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  hintText: 'Appointment Notes...',
-                  hintStyle: _title20(AppPalette.medGray),
-                  isCollapsed: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 23),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _SecondaryButton(
-                  label: 'Back',
-                  width: 136,
-                  onTap: widget.onCancel,
-                ),
-                const SizedBox(width: 20),
-                _PrimaryButton(
-                  label: 'Create Appointment',
-                  width: 240,
-                  loading: _submitting,
-                  onTap: _submitting ? null : _submit,
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
