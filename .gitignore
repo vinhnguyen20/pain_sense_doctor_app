@@ -57,3 +57,6 @@ app.*.map.json
 
 #claude
 CLAUDE.md
+
+# Documentation / Markdown folder
+md/

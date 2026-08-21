@@ -20,6 +20,7 @@ import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_pa
 import 'package:app_doctor/presentations/pages/patient_connect/page/patient_connect_page.dart';
 import 'package:app_doctor/presentations/pages/patient_goals/page/patient_goals_page.dart';
 import 'package:app_doctor/presentations/pages/settings/page/settings_page.dart';
+import 'package:app_doctor/presentations/pages/exercises/page/patient_exercises_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -178,8 +179,16 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-exercises',
                   name: 'patient-exercises',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Exercises'))),
+                  builder: (context, state) {
+                    Patient? patient;
+                    if (state.extra is Patient) {
+                      patient = state.extra as Patient;
+                    } else if (state.extra is Map) {
+                      patient = (state.extra as Map)['patient'] as Patient?;
+                    }
+                    patient ??= ref.read(selectedPatientProvider);
+                    return PatientExercisesPage(patient: patient);
+                  },
                 ),
               ],
             ),
@@ -237,7 +246,7 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-settings',
                   name: 'patient-settings',
-                    builder: (context, state) => const SettingsPage(),
+                  builder: (context, state) => const SettingsPage(),
                 ),
               ],
             ),

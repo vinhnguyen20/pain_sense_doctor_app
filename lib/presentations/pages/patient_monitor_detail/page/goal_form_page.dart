@@ -1363,230 +1363,257 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
                         child: Stack(
                           children: [
                             SingleChildScrollView(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: context.isCompactShell ? 0 : 90,
-                                  right: context.isCompactShell ? 0 : 40,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Goal Type',
-                                      style: AppTypography.titleBig1.copyWith(
-                                        color: AppPalette.secondaryBlue,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Select an activity type to base your goal around.',
-                                      style: AppTypography.denseBody1.copyWith(
-                                        color: AppPalette.secondaryBlue,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 18),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: 20,
-                                      runSpacing: AppSpacing.s10,
-                                      children: [
-                                        _ClinicianGoalTypeButton(
-                                          label: 'Exercise',
-                                          icon: Icons.fitness_center_rounded,
-                                          selected:
-                                              category == GoalCategory.yoga,
-                                          onPressed: () =>
-                                              _selectClinicianCategory(
-                                                GoalCategory.yoga,
-                                              ),
-                                        ),
-                                        _ClinicianGoalTypeButton(
-                                          label: 'Steps',
-                                          icon: Icons.directions_walk_rounded,
-                                          selected:
-                                              category == GoalCategory.steps,
-                                          onPressed: () =>
-                                              _selectClinicianCategory(
-                                                GoalCategory.steps,
-                                              ),
-                                        ),
-                                        _ClinicianGoalTypeButton(
-                                          label: 'Posture',
-                                          icon: Icons.chair_alt_rounded,
-                                          selected:
-                                              category ==
-                                              GoalCategory.activityTime,
-                                          onPressed: () =>
-                                              _selectClinicianCategory(
-                                                GoalCategory.activityTime,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Center(
-                                      child: Text(
-                                        switch (category) {
-                                          GoalCategory.steps =>
-                                            'Set your Target Step Count',
-                                          GoalCategory.activityTime =>
-                                            'Set your Target Posture Score',
-                                          GoalCategory.yoga =>
-                                            'Set your Target Exercise Count',
-                                        },
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: context.isCompactShell ? 0 : 90,
+                                    right: context.isCompactShell ? 0 : 40,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Goal Type',
                                         style: AppTypography.titleBig1.copyWith(
                                           color: AppPalette.secondaryBlue,
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Center(
-                                      child: _ClinicianTargetInput(
-                                        controller: targetController,
-                                        readOnly: category == GoalCategory.yoga,
-                                        computedValue:
-                                            category == GoalCategory.yoga
-                                            ? _computedYogaTarget
-                                            : null,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      'Goal Frequency',
-                                      style: AppTypography.titleBig1.copyWith(
-                                        color: AppPalette.secondaryBlue,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Select how often you would like to see this goal.',
-                                      style: AppTypography.denseBody1.copyWith(
-                                        color: AppPalette.secondaryBlue,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 18),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: 20,
-                                      runSpacing: AppSpacing.s10,
-                                      children: [
-                                        _ClinicianChoiceButton(
-                                          label: 'Daily',
-                                          selected:
-                                              _goal.frequency ==
-                                              GoalFrequency.daily,
-                                          onPressed: () => setState(
-                                            () => _goal = _goal.copyWith(
-                                              frequency: GoalFrequency.daily,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Select an activity type to base your goal around.',
+                                        style: AppTypography.denseBody1
+                                            .copyWith(
+                                              color: AppPalette.secondaryBlue,
                                             ),
-                                          ),
-                                        ),
-                                        _ClinicianChoiceButton(
-                                          label: 'Certain Days of the Week',
-                                          selected:
-                                              _goal.frequency ==
-                                              GoalFrequency.weekly,
-                                          onPressed: () => setState(
-                                            () => _goal = _goal.copyWith(
-                                              frequency: GoalFrequency.weekly,
+                                      ),
+                                      const SizedBox(height: 18),
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: 20,
+                                          runSpacing: AppSpacing.s10,
+                                          children: [
+                                            _ClinicianGoalTypeButton(
+                                              label: 'Exercise',
+                                              icon:
+                                                  Icons.fitness_center_rounded,
+                                              selected:
+                                                  category == GoalCategory.yoga,
+                                              onPressed: () =>
+                                                  _selectClinicianCategory(
+                                                    GoalCategory.yoga,
+                                                  ),
                                             ),
-                                          ),
+                                            _ClinicianGoalTypeButton(
+                                              label: 'Steps',
+                                              icon:
+                                                  Icons.directions_walk_rounded,
+                                              selected:
+                                                  category ==
+                                                  GoalCategory.steps,
+                                              onPressed: () =>
+                                                  _selectClinicianCategory(
+                                                    GoalCategory.steps,
+                                                  ),
+                                            ),
+                                            _ClinicianGoalTypeButton(
+                                              label: 'Posture',
+                                              icon: Icons.chair_alt_rounded,
+                                              selected:
+                                                  category ==
+                                                  GoalCategory.activityTime,
+                                              onPressed: () =>
+                                                  _selectClinicianCategory(
+                                                    GoalCategory.activityTime,
+                                                  ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: context.isCompactShell ? 8 : 20,
-                                      runSpacing: AppSpacing.s8,
-                                      children: List.generate(7, (index) {
-                                        const labels = [
-                                          'Sun',
-                                          'Mon',
-                                          'Tues',
-                                          'Wed',
-                                          'Thurs',
-                                          'Fri',
-                                          'Sat',
-                                        ];
-                                        return _ClinicianDayButton(
-                                          label: labels[index],
-                                          selected: _selectedWeekDays.contains(
-                                            index,
-                                          ),
-                                          enabled:
-                                              _goal.frequency ==
-                                              GoalFrequency.weekly,
-                                          onPressed: () => setState(() {
-                                            if (_selectedWeekDays.contains(
-                                              index,
-                                            )) {
-                                              _selectedWeekDays.remove(index);
-                                            } else {
-                                              _selectedWeekDays.add(index);
-                                            }
-                                          }),
-                                        );
-                                      }),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: 10,
-                                      runSpacing: AppSpacing.s10,
-                                      children: [
-                                        _ClinicianDateButton(
-                                          label: _formatClinicianDate(
-                                            _goal.startDate,
-                                            'Start Date...',
-                                          ),
-                                          onPressed: () => _pickClinicianDate(
-                                            isStartDate: true,
-                                          ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Center(
+                                        child: Text(
+                                          switch (category) {
+                                            GoalCategory.steps =>
+                                              'Set your Target Step Count',
+                                            GoalCategory.activityTime =>
+                                              'Set your Target Posture Score',
+                                            GoalCategory.yoga =>
+                                              'Set your Target Exercise Count',
+                                          },
+                                          style: AppTypography.titleBig1
+                                              .copyWith(
+                                                color: AppPalette.secondaryBlue,
+                                              ),
                                         ),
-                                        _ClinicianDateButton(
-                                          label: _formatClinicianDate(
-                                            _goal.endDate,
-                                            'End Date...',
-                                          ),
-                                          onPressed: () => _pickClinicianDate(
-                                            isStartDate: false,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 30),
-                                    _ClinicianGoalTextField(
-                                      controller: titleController,
-                                      hint: 'Name Your Goal...',
-                                    ),
-                                    const SizedBox(height: 20),
-                                    _ClinicianGoalTextField(
-                                      controller: descriptionController,
-                                      hint: 'Describe Your Goal...',
-                                      height: 70,
-                                      maxLines: 3,
-                                    ),
-                                    if (category == GoalCategory.yoga) ...[
+                                      ),
                                       const SizedBox(height: 20),
-                                      _buildYogaSection(
-                                        availableExercises: availableExercises,
+                                      Center(
+                                        child: _ClinicianTargetInput(
+                                          controller: targetController,
+                                          readOnly:
+                                              category == GoalCategory.yoga,
+                                          computedValue:
+                                              category == GoalCategory.yoga
+                                              ? _computedYogaTarget
+                                              : null,
+                                        ),
                                       ),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        'Goal Frequency',
+                                        style: AppTypography.titleBig1.copyWith(
+                                          color: AppPalette.secondaryBlue,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Select how often you would like to see this goal.',
+                                        style: AppTypography.denseBody1
+                                            .copyWith(
+                                              color: AppPalette.secondaryBlue,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 18),
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: 20,
+                                          runSpacing: AppSpacing.s10,
+                                          children: [
+                                            _ClinicianChoiceButton(
+                                              label: 'Daily',
+                                              selected:
+                                                  _goal.frequency ==
+                                                  GoalFrequency.daily,
+                                              onPressed: () => setState(
+                                                () => _goal = _goal.copyWith(
+                                                  frequency:
+                                                      GoalFrequency.daily,
+                                                ),
+                                              ),
+                                            ),
+                                            _ClinicianChoiceButton(
+                                              label: 'Certain Days of the Week',
+                                              selected:
+                                                  _goal.frequency ==
+                                                  GoalFrequency.weekly,
+                                              onPressed: () => setState(
+                                                () => _goal = _goal.copyWith(
+                                                  frequency:
+                                                      GoalFrequency.weekly,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: context.isCompactShell
+                                              ? 8
+                                              : 20,
+                                          runSpacing: AppSpacing.s8,
+                                          children: List.generate(7, (index) {
+                                            const labels = [
+                                              'Sun',
+                                              'Mon',
+                                              'Tues',
+                                              'Wed',
+                                              'Thurs',
+                                              'Fri',
+                                              'Sat',
+                                            ];
+                                            return _ClinicianDayButton(
+                                              label: labels[index],
+                                              selected: _selectedWeekDays
+                                                  .contains(index),
+                                              enabled:
+                                                  _goal.frequency ==
+                                                  GoalFrequency.weekly,
+                                              onPressed: () => setState(() {
+                                                if (_selectedWeekDays.contains(
+                                                  index,
+                                                )) {
+                                                  _selectedWeekDays.remove(
+                                                    index,
+                                                  );
+                                                } else {
+                                                  _selectedWeekDays.add(index);
+                                                }
+                                              }),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: 10,
+                                          runSpacing: AppSpacing.s10,
+                                          children: [
+                                            _ClinicianDateButton(
+                                              label: _formatClinicianDate(
+                                                _goal.startDate,
+                                                'Start Date...',
+                                              ),
+                                              onPressed: () =>
+                                                  _pickClinicianDate(
+                                                    isStartDate: true,
+                                                  ),
+                                            ),
+                                            _ClinicianDateButton(
+                                              label: _formatClinicianDate(
+                                                _goal.endDate,
+                                                'End Date...',
+                                              ),
+                                              onPressed: () =>
+                                                  _pickClinicianDate(
+                                                    isStartDate: false,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 30),
+                                      _ClinicianGoalTextField(
+                                        controller: titleController,
+                                        hint: 'Name Your Goal...',
+                                      ),
+                                      const SizedBox(height: 20),
+                                      _ClinicianGoalTextField(
+                                        controller: descriptionController,
+                                        hint: 'Describe Your Goal...',
+                                        height: 70,
+                                        maxLines: 3,
+                                      ),
+                                      if (category == GoalCategory.yoga) ...[
+                                        const SizedBox(height: 20),
+                                        _buildYogaSection(
+                                          availableExercises:
+                                              availableExercises,
+                                        ),
+                                      ],
+                                      const SizedBox(height: 20),
+                                      Center(
+                                        child: GoalActionButton(
+                                          label: _isCreating
+                                              ? 'Create Goal'
+                                              : 'Update Goal',
+                                          width: 240,
+                                          onPressed: _isSubmitting
+                                              ? null
+                                              : _onClinicianSubmit,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
                                     ],
-                                    const SizedBox(height: 20),
-                                    Center(
-                                      child: GoalActionButton(
-                                        label: _isCreating
-                                            ? 'Create Goal'
-                                            : 'Update Goal',
-                                        width: 240,
-                                        onPressed: _isSubmitting
-                                            ? null
-                                            : _onClinicianSubmit,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
