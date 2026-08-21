@@ -23,10 +23,7 @@ class PatientAppointmentsPage extends ConsumerStatefulWidget {
 class PatientAppointmentsContent extends ConsumerStatefulWidget {
   final Patient patient;
 
-  const PatientAppointmentsContent({
-    super.key,
-    required this.patient,
-  });
+  const PatientAppointmentsContent({super.key, required this.patient});
 
   @override
   ConsumerState<PatientAppointmentsContent> createState() =>
@@ -49,9 +46,7 @@ class _PatientAppointmentsContentState
             onCreated: () async {
               await ref
                   .read(
-                    appointmentsByPatientProvider(
-                      widget.patient.id,
-                    ).notifier,
+                    appointmentsByPatientProvider(widget.patient.id).notifier,
                   )
                   .refresh();
 
@@ -69,11 +64,7 @@ class _PatientAppointmentsContentState
               setState(() => _showCreateForm = true);
             },
             onRefresh: () => ref
-                .read(
-                  appointmentsByPatientProvider(
-                    widget.patient.id,
-                  ).notifier,
-                )
+                .read(appointmentsByPatientProvider(widget.patient.id).notifier)
                 .refresh(),
           );
   }
@@ -94,7 +85,9 @@ class _PatientAppointmentsPageState
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(userProvider);
-    final doctorName = userState.user?.lastName != null ? 'Dr. ${userState.user!.lastName}' : 'Doctor';
+    final doctorName = userState.user?.lastName != null
+        ? 'Dr. ${userState.user!.lastName}'
+        : 'Doctor';
     final appointmentState = ref.watch(
       appointmentsByPatientProvider(widget.patient.id),
     );
@@ -104,6 +97,82 @@ class _PatientAppointmentsPageState
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            if (context.isCompactShell) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClinicianHeader(doctorName: doctorName),
+                    const SizedBox(height: AppSpacing.s20),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            context.goNamed('appointments');
+                          },
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          color: AppPalette.secondaryBlue,
+                        ),
+                        Expanded(
+                          child: Text(
+                            widget.patient.fullName.trim().isEmpty
+                                ? 'Patient Schedule'
+                                : widget.patient.fullName.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.titleBig1.copyWith(
+                              color: AppPalette.secondaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: _showCreateForm
+                          ? _CreateAppointmentForm(
+                              patient: widget.patient,
+                              onCreated: () async {
+                                await ref
+                                    .read(
+                                      appointmentsByPatientProvider(
+                                        widget.patient.id,
+                                      ).notifier,
+                                    )
+                                    .refresh();
+                                if (!mounted) return;
+                                setState(() => _showCreateForm = false);
+                              },
+                              onCancel: () {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                setState(() => _showCreateForm = false);
+                              },
+                            )
+                          : _PatientScheduleContent(
+                              state: appointmentState,
+                              onCreateAppointment: () {
+                                setState(() => _showCreateForm = true);
+                              },
+                              onRefresh: () => ref
+                                  .read(
+                                    appointmentsByPatientProvider(
+                                      widget.patient.id,
+                                    ).notifier,
+                                  )
+                                  .refresh(),
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final width = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
@@ -128,8 +197,16 @@ class _PatientAppointmentsPageState
                               context.goNamed('appointments');
                             },
                             child: const Padding(
-                              padding: EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
-                              child: Icon(Icons.arrow_back, color: AppPalette.secondaryBlue, size: 28),
+                              padding: EdgeInsets.only(
+                                right: 16.0,
+                                top: 4,
+                                bottom: 4,
+                              ),
+                              child: Icon(
+                                Icons.arrow_back,
+                                color: AppPalette.secondaryBlue,
+                                size: 28,
+                              ),
                             ),
                           ),
                           Text(
@@ -287,11 +364,9 @@ class _PatientScheduleContent extends StatelessWidget {
           ),
         );
         sections.add(const SizedBox(height: 10));
-        
+
         for (var i = 0; i < group.appointments.length; i++) {
-          sections.add(
-            _ScheduleCard(appointment: group.appointments[i]),
-          );
+          sections.add(_ScheduleCard(appointment: group.appointments[i]));
           if (i < group.appointments.length - 1) {
             sections.add(const SizedBox(height: 10));
           }
@@ -358,12 +433,12 @@ class _AppointmentTimeline extends StatelessWidget {
         .toSet();
 
     return SizedBox(
-      width: 586,
+      width: context.isCompactShell ? double.infinity : 586,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 443.522,
+            width: context.isCompactShell ? double.infinity : 443.522,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -509,6 +584,85 @@ class _ScheduleCard extends StatelessWidget {
     final doctor = appointment.doctorName.trim().isEmpty
         ? 'Doctor'
         : appointment.doctorName.trim();
+
+    if (context.isCompactShell) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.s16),
+        decoration: const BoxDecoration(
+          color: AppPalette.backgroundLight,
+          borderRadius: AppCorners.r20,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: _title20(AppPalette.secondaryBlue)),
+            const SizedBox(height: AppSpacing.s8),
+            Text(
+              doctor,
+              style: AppTypography.titleBig2.copyWith(
+                color: AppPalette.secondaryBlue,
+              ),
+            ),
+            if (appointment.description.trim().isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s8),
+              Text(
+                appointment.description.trim(),
+                style: AppTypography.titleBig2.copyWith(
+                  color: AppPalette.secondaryBlue,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.s12),
+            Text(
+              _appointmentTypeLabel(appointment.type),
+              style: _title20(AppPalette.secondaryBlue),
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            Text(
+              '${date == null ? '—' : _yyyyMmDd(date)}  •  ${_timeRange(appointment.schedule.startTime, appointment.schedule.endTime)}',
+              style: AppTypography.defaultBody2.copyWith(
+                color: AppPalette.secondaryBlue,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s16),
+            _PrimaryButton(
+              label: 'Message',
+              width: double.infinity,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Messaging from Schedule is not connected yet.',
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            _PrimaryButton(
+              label: appointment.type == AppointmentType.videoCall
+                  ? 'Join Call'
+                  : 'View Details',
+              width: double.infinity,
+              onTap: () {
+                final hasLink =
+                    appointment.meetingLink?.trim().isNotEmpty == true;
+                final message = appointment.type == AppointmentType.videoCall
+                    ? hasLink
+                          ? 'Meeting link is available.'
+                          : 'No meeting link is available yet.'
+                    : 'In-person appointment.';
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(message)));
+              },
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -678,13 +832,13 @@ class _CreateAppointmentFormState
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _PickerField(
-                        width: 200,
+                        width: context.screenWidth < 360 ? 125 : 140,
                         label: _date == null ? 'Date...' : _yyyyMmDd(_date!),
                         onTap: _pickDate,
                       ),
                       const SizedBox(width: 23),
                       _PickerField(
-                        width: 200,
+                        width: context.screenWidth < 360 ? 125 : 140,
                         label: _time == null ? 'Time...' : _formatTime(_time!),
                         onTap: _pickTime,
                       ),
@@ -696,8 +850,10 @@ class _CreateAppointmentFormState
                     style: _title20(AppPalette.secondaryBlue),
                   ),
                   const SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: context.isCompactShell ? 8 : 20,
+                    runSpacing: AppSpacing.s8,
                     children: [
                       _TypeButton(
                         label: 'Video',
@@ -708,7 +864,6 @@ class _CreateAppointmentFormState
                           });
                         },
                       ),
-                      const SizedBox(width: 20),
                       _TypeButton(
                         label: 'In-Person',
                         selected: _type == AppointmentType.inPerson,
@@ -718,7 +873,6 @@ class _CreateAppointmentFormState
                           });
                         },
                       ),
-                      const SizedBox(width: 20),
                       const _TypeButton(
                         label: 'Exercise Demonstration',
                         selected: false,

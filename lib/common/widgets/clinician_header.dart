@@ -17,52 +17,39 @@ class ClinicianHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.isCompactShell) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  doctorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.titleBig1.copyWith(
+                    color: AppPalette.secondaryBlue,
+                  ),
+                ),
+              ),
+              _ProfileAvatar(avatarUrl: avatarUrl),
+              const SizedBox(width: AppSpacing.s12),
+              _NotificationButton(onPressed: onNotificationPressed),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          _SearchField(onChanged: onSearchChanged, compact: true),
+        ],
+      );
+    }
+
     return SizedBox(
       height: 50,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 542,
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 19),
-            decoration: BoxDecoration(
-              color: AppPalette.backgroundLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            alignment: Alignment.center,
-            child: TextField(
-              onChanged: onSearchChanged,
-              onTapOutside: (_) {
-                FocusManager.instance.primaryFocus?.unfocus();
-              },
-              maxLines: 1,
-              textAlignVertical: TextAlignVertical.center,
-              cursorColor: AppPalette.secondaryBlue,
-              style: AppTypography.titleBig1.copyWith(
-                color: AppPalette.secondaryBlue,
-                height: 1.0,
-              ),
-              strutStyle: const StrutStyle(
-                fontFamily: 'Cabin',
-                fontSize: 20,
-                height: 1.0,
-                forceStrutHeight: true,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Search Patients...',
-                hintStyle: AppTypography.titleBig1.copyWith(
-                  color: AppPalette.medGray,
-                  height: 1.0,
-                ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-              ),
-            ),
-          ),
+          _SearchField(onChanged: onSearchChanged),
           const SizedBox(width: 10),
           const SizedBox(
             width: 36,
@@ -88,43 +75,104 @@ class ClinicianHeader extends StatelessWidget {
                 const SizedBox(width: 20),
                 _ProfileAvatar(avatarUrl: avatarUrl),
                 const SizedBox(width: 20),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onNotificationPressed,
-                  child: SizedBox(
-                    width: 40,
-                    height: 48,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Align(
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.notifications_none_rounded,
-                            size: 36,
-                            color: AppPalette.secondaryBlue,
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: AppPalette.green,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _NotificationButton(onPressed: onNotificationPressed),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  final ValueChanged<String>? onChanged;
+  final bool compact;
+
+  const _SearchField({this.onChanged, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: compact ? double.infinity : 542,
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 19),
+      decoration: BoxDecoration(
+        color: AppPalette.backgroundLight,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      alignment: Alignment.center,
+      child: TextField(
+        onChanged: onChanged,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        maxLines: 1,
+        textAlignVertical: TextAlignVertical.center,
+        cursorColor: AppPalette.secondaryBlue,
+        style: AppTypography.titleBig1.copyWith(
+          color: AppPalette.secondaryBlue,
+          height: 1,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search Patients...',
+          hintStyle: AppTypography.titleBig1.copyWith(
+            color: AppPalette.medGray,
+            height: 1,
+          ),
+          suffixIcon: compact
+              ? const Icon(
+                  Icons.search_rounded,
+                  color: AppPalette.secondaryBlue,
+                )
+              : null,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          isDense: true,
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+
+  const _NotificationButton({this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: SizedBox(
+        width: 40,
+        height: 48,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Align(
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.notifications_none_rounded,
+                size: 36,
+                color: AppPalette.secondaryBlue,
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppPalette.green,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

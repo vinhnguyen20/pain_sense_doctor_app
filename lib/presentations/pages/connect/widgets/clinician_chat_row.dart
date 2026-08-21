@@ -17,14 +17,91 @@ class ClinicianChatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = patient.fullName.isEmpty ? 'Unnamed patient' : patient.fullName;
+    final name = patient.fullName.isEmpty
+        ? 'Unnamed patient'
+        : patient.fullName;
     final message = conversation?.lastMessage?.text.trim();
     final messageText = message == null || message.isEmpty
         ? 'No recent message'
         : message;
-    final textStyle = AppTypography.defaultBody2.copyWith(
-      height: 1,
-    );
+    final textStyle = AppTypography.defaultBody2.copyWith(height: 1);
+
+    if (context.isCompactShell) {
+      return Material(
+        color: Colors.transparent,
+        borderRadius: AppCorners.r20,
+        child: InkWell(
+          onTap: onChat,
+          borderRadius: AppCorners.r20,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.s16),
+            decoration: const BoxDecoration(
+              color: AppPalette.surfaceLight,
+              borderRadius: AppCorners.r20,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: AppPalette.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s12),
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.titleBig1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s10),
+                Text(
+                  messageText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle.copyWith(color: AppPalette.black),
+                ),
+                const SizedBox(height: AppSpacing.s12),
+                Text(
+                  patient.phone?.trim().isNotEmpty == true
+                      ? patient.phone!
+                      : 'No phone number',
+                  style: textStyle.copyWith(color: AppPalette.secondaryBlue),
+                ),
+                const SizedBox(height: AppSpacing.s4),
+                Text(
+                  patient.email?.trim().isNotEmpty == true
+                      ? patient.email!
+                      : 'No email address',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle.copyWith(color: AppPalette.secondaryBlue),
+                ),
+                const SizedBox(height: AppSpacing.s14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onChat,
+                    child: const Text('Chat'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Material(
       color: Colors.transparent,
@@ -88,7 +165,9 @@ class ClinicianChatRow extends StatelessWidget {
                           : 'No phone number',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: textStyle.copyWith(color: AppPalette.secondaryBlue),
+                      style: textStyle.copyWith(
+                        color: AppPalette.secondaryBlue,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -97,7 +176,9 @@ class ClinicianChatRow extends StatelessWidget {
                           : 'No email address',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: textStyle.copyWith(color: AppPalette.secondaryBlue),
+                      style: textStyle.copyWith(
+                        color: AppPalette.secondaryBlue,
+                      ),
                     ),
                   ],
                 ),

@@ -15,7 +15,7 @@ class PatientDashboardSidebar extends StatelessWidget {
     }
 
     return Container(
-      width: 232,
+      width: AppLayout.sidebarWidth,
       color: AppPalette.secondaryBlue,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -39,54 +39,54 @@ class PatientDashboardSidebar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                  _NavItem(
-                    icon: Icons.menu_rounded,
-                    label: 'Overview',
-                    isSelected: navigationShell.currentIndex == 0,
-                    onTap: () => openBranch(0),
-                  ),
-                  const SizedBox(height: 20),
-                  _NavItem(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    label: 'Connect',
-                    isSelected: navigationShell.currentIndex == 1,
-                    onTap: () => openBranch(1),
-                  ),
-                  const SizedBox(height: 20),
-                  _NavItem(
-                    icon: Icons.accessibility_new_rounded,
-                    label: 'Exercises',
-                    isSelected: navigationShell.currentIndex == 2,
-                    onTap: () => openBranch(2),
-                  ),
-                  const SizedBox(height: 20),
-                  _NavItem(
-                    icon: Icons.flag_outlined,
-                    label: 'Goals',
-                    isSelected: navigationShell.currentIndex == 3,
-                    onTap: () => openBranch(3),
-                  ),
-                  const SizedBox(height: 20),
-                  _NavItem(
-                    icon: Icons.settings_outlined,
-                    label: 'Settings',
-                    isSelected: navigationShell.currentIndex == 4,
-                    onTap: () => openBranch(4),
-                  ),
-                  const Spacer(),
-                  _NavItem(
-                    icon: Icons.arrow_back_rounded,
-                    label: 'Back',
-                    isSelected: false,
-                    onTap: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/home');
-                      }
-                    },
-                  ),
+                          _NavItem(
+                            icon: Icons.menu_rounded,
+                            label: 'Overview',
+                            isSelected: navigationShell.currentIndex == 0,
+                            onTap: () => openBranch(0),
+                          ),
+                          const SizedBox(height: 20),
+                          _NavItem(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            label: 'Connect',
+                            isSelected: navigationShell.currentIndex == 1,
+                            onTap: () => openBranch(1),
+                          ),
+                          const SizedBox(height: 20),
+                          _NavItem(
+                            icon: Icons.accessibility_new_rounded,
+                            label: 'Exercises',
+                            isSelected: navigationShell.currentIndex == 2,
+                            onTap: () => openBranch(2),
+                          ),
+                          const SizedBox(height: 20),
+                          _NavItem(
+                            icon: Icons.flag_outlined,
+                            label: 'Goals',
+                            isSelected: navigationShell.currentIndex == 3,
+                            onTap: () => openBranch(3),
+                          ),
+                          const SizedBox(height: 20),
+                          _NavItem(
+                            icon: Icons.settings_outlined,
+                            label: 'Settings',
+                            isSelected: navigationShell.currentIndex == 4,
+                            onTap: () => openBranch(4),
+                          ),
+                          const Spacer(),
+                          _NavItem(
+                            icon: Icons.arrow_back_rounded,
+                            label: 'Back',
+                            isSelected: false,
+                            onTap: () {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/home');
+                              }
+                            },
+                          ),
                           const SizedBox(height: 20),
                         ],
                       ),

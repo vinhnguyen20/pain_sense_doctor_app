@@ -139,23 +139,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           title: 'Personal Information',
                           icon: Icons.person_outline_rounded,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: CustomTextField(
-                                    controller: _firstNameCtrl,
-                                    label: 'First Name',
+                            if (context.isMobile) ...[
+                              CustomTextField(
+                                controller: _firstNameCtrl,
+                                label: 'First Name',
+                              ),
+                              const SizedBox(height: AppSpacing.s16),
+                              CustomTextField(
+                                controller: _lastNameCtrl,
+                                label: 'Last Name',
+                              ),
+                            ] else
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CustomTextField(
+                                      controller: _firstNameCtrl,
+                                      label: 'First Name',
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: AppSpacing.s12),
-                                Expanded(
-                                  child: CustomTextField(
-                                    controller: _lastNameCtrl,
-                                    label: 'Last Name',
+                                  const SizedBox(width: AppSpacing.s12),
+                                  Expanded(
+                                    child: CustomTextField(
+                                      controller: _lastNameCtrl,
+                                      label: 'Last Name',
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                             const SizedBox(height: AppSpacing.s16),
                             _BirthdateField(
                               selected: settingsState.birthdate,

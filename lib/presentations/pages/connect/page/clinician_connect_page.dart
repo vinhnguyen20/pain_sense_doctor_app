@@ -83,6 +83,111 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            if (context.isCompactShell) {
+              Widget stateContent;
+              if (patientsState.isLoading && patientsState.patients.isEmpty) {
+                stateContent = const SizedBox(
+                  height: 240,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppPalette.secondaryBlue,
+                    ),
+                  ),
+                );
+              } else if (patientsState.error != null &&
+                  patientsState.patients.isEmpty) {
+                stateContent = Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s40),
+                  child: Column(
+                    children: [
+                      Text(
+                        patientsState.error!,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.defaultBody2.copyWith(
+                          color: context.error,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s12),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.read(patientsProvider.notifier).refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (patientsState.patients.isEmpty) {
+                stateContent = const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s40),
+                  child: Center(child: Text('No patients found.')),
+                );
+              } else {
+                stateContent = _PatientChatList(
+                  patients: patientsState.patients,
+                  conversations: conversationsState.conversations,
+                  onChat: _openChat,
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClinicianHeader(
+                      doctorName: doctorName,
+                      onSearchChanged: _onSearchChanged,
+                      onNotificationPressed: () {},
+                    ),
+                    const SizedBox(height: AppSpacing.s24),
+                    Text(
+                      'Patient conversations',
+                      style: AppTypography.titleBig1.copyWith(
+                        color: AppPalette.secondaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          await Future.wait([
+                            ref.read(patientsProvider.notifier).refresh(),
+                            ref
+                                .read(conversationsProvider.notifier)
+                                .fetchConversations(),
+                          ]);
+                        },
+                        child: ListView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          children: [
+                            stateContent,
+                            if (patientsState.isLoadingMore)
+                              const Padding(
+                                padding: EdgeInsets.all(AppSpacing.s20),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppPalette.secondaryBlue,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: AppSpacing.s20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final contentWidth = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
@@ -96,7 +201,9 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
                   onRefresh: () async {
                     await Future.wait([
                       ref.read(patientsProvider.notifier).refresh(),
-                      ref.read(conversationsProvider.notifier).fetchConversations(),
+                      ref
+                          .read(conversationsProvider.notifier)
+                          .fetchConversations(),
                     ]);
                   },
                   child: SingleChildScrollView(
@@ -141,9 +248,8 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
                                   children: [
                                     Text(
                                       patientsState.error!,
-                                      style: AppTypography.defaultBody2.copyWith(
-                                        color: context.error,
-                                      ),
+                                      style: AppTypography.defaultBody2
+                                          .copyWith(color: context.error),
                                     ),
                                     const SizedBox(height: 12),
                                     ElevatedButton(
@@ -231,7 +337,8 @@ class _PatientChatList extends StatelessWidget {
       itemBuilder: (context, index) {
         final patient = patients[index];
         final conversation = _conversationFor(patient);
-        final effectiveConversation = conversation ??
+        final effectiveConversation =
+            conversation ??
             Conversation(
               id: '',
               name: patient.fullName.isEmpty ? 'Patient' : patient.fullName,

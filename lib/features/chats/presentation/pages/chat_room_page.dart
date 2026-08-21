@@ -66,7 +66,9 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
-    ref.read(conversationsProvider.notifier).fetchConversations(showLoading: false);
+    ref
+        .read(conversationsProvider.notifier)
+        .fetchConversations(showLoading: false);
     super.dispose();
   }
 
@@ -197,7 +199,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       context,
       liveConversation,
     );
-    final activePatient = widget.patient ??
+    final activePatient =
+        widget.patient ??
         _resolvePatientFromId(
           ref.watch(patientsProvider).patients,
           _chatSession.patientId,
@@ -259,7 +262,9 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                 width: constraints.maxWidth,
                 height: constraints.maxHeight,
                 child: Padding(
-                  padding: const EdgeInsets.all(30),
+                  padding: EdgeInsets.all(
+                    context.isCompactShell ? AppSpacing.s16 : 30,
+                  ),
                   child: SizedBox(width: double.infinity, child: body),
                 ),
               );

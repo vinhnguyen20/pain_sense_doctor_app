@@ -24,15 +24,15 @@ class PatientChatContent extends StatelessWidget {
     final effectivePatientConv = patient == null
         ? null
         : (patientConversation ??
-            Conversation(
-              id: '',
-              name: patient!.fullName.isEmpty ? 'Patient' : patient!.fullName,
-              participants: [patient!.id],
-              status: 'active',
-              unreadCountDoctor: 0,
-              unreadCountPatient: 0,
-              unreadInfo: const [],
-            ));
+              Conversation(
+                id: '',
+                name: patient!.fullName.isEmpty ? 'Patient' : patient!.fullName,
+                participants: [patient!.id],
+                status: 'active',
+                unreadCountDoctor: 0,
+                unreadCountPatient: 0,
+                unreadInfo: const [],
+              ));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,8 +113,11 @@ class ChatSummaryCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _ChatAvatar(asset: avatarAsset),
-            const SizedBox(width: 40),
+            _ChatAvatar(
+              asset: avatarAsset,
+              size: context.isCompactShell ? 48 : 80,
+            ),
+            SizedBox(width: context.isCompactShell ? 12 : 40),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +145,7 @@ class ChatSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 20),
+            SizedBox(width: context.isCompactShell ? 8 : 20),
             _DateTimeGroup(lastMessage: conversation?.lastMessage),
           ],
         ),
@@ -211,13 +214,14 @@ class _DateTimeGroup extends StatelessWidget {
 
 class _ChatAvatar extends StatelessWidget {
   final String asset;
+  final double size;
 
-  const _ChatAvatar({required this.asset});
+  const _ChatAvatar({required this.asset, required this.size});
 
   @override
   Widget build(BuildContext context) {
     return ClipOval(
-      child: Image.asset(asset, width: 80, height: 80, fit: BoxFit.cover),
+      child: Image.asset(asset, width: size, height: size, fit: BoxFit.cover),
     );
   }
 }

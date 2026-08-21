@@ -30,6 +30,19 @@ class PatientContactsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.isCompactShell) {
+      return Column(
+        children: [
+          for (var index = 0; index < contacts.length; index++) ...[
+            ClinicianContactCard(data: contacts[index]),
+            if (index != contacts.length - 1)
+              const SizedBox(height: AppSpacing.s12),
+          ],
+          const SizedBox(height: AppSpacing.s20),
+        ],
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -66,8 +79,8 @@ class ClinicianContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 280,
-      height: 398,
+      width: context.isCompactShell ? double.infinity : 280,
+      height: context.isCompactShell ? null : 398,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
         color: AppPalette.surfaceLight,
@@ -76,7 +89,10 @@ class ClinicianContactCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _ContactAvatar(asset: data.avatarAsset),
+          _ContactAvatar(
+            asset: data.avatarAsset,
+            size: context.isCompactShell ? 120 : 200,
+          ),
           const SizedBox(height: 24),
           Text(
             data.name,
@@ -129,13 +145,14 @@ class ClinicianContactCard extends StatelessWidget {
 
 class _ContactAvatar extends StatelessWidget {
   final String asset;
+  final double size;
 
-  const _ContactAvatar({required this.asset});
+  const _ContactAvatar({required this.asset, required this.size});
 
   @override
   Widget build(BuildContext context) {
     return ClipOval(
-      child: Image.asset(asset, width: 200, height: 200, fit: BoxFit.cover),
+      child: Image.asset(asset, width: size, height: size, fit: BoxFit.cover),
     );
   }
 }

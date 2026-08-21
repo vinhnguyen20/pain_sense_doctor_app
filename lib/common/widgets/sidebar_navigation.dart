@@ -10,7 +10,7 @@ class SidebarNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 232,
+      width: AppLayout.sidebarWidth,
       color: AppPalette.backgroundLight,
       padding: const EdgeInsets.all(20),
       child: SafeArea(
@@ -30,66 +30,67 @@ class SidebarNavigation extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-          _NavItem(
-            icon: Icons.menu_rounded,
-            label: 'Overview',
-            isSelected:
-                navigationShell == null || navigationShell!.currentIndex == 0,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(0, initialLocation: true);
-            },
-          ),
-          const SizedBox(height: 20),
-          _NavItem(
-            icon: Icons.chat_bubble_outline_rounded,
-            label: 'Connect',
-            isSelected: navigationShell?.currentIndex == 1,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(1, initialLocation: true);
-            },
-          ),
-          const SizedBox(height: 20),
-          _NavItem(
-            icon: Icons.accessibility_new_rounded,
-            label: 'Exercises',
-            isSelected: navigationShell?.currentIndex == 2,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(2, initialLocation: true);
-            },
-          ),
-          const SizedBox(height: 20),
-          _NavItem(
-            icon: Icons.flag_outlined,
-            label: 'Goals',
-            isSelected: navigationShell?.currentIndex == 3,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(3, initialLocation: true);
-            },
-          ),
-          const SizedBox(height: 20),
-          _NavItem(
-            icon: Icons.calendar_month_outlined,
-            label: 'Schedule',
-            isSelected: navigationShell?.currentIndex == 4,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(4, initialLocation: true);
-            },
-          ),
-          const SizedBox(height: 20),
-          _NavItem(
-            icon: Icons.settings_outlined,
-            label: 'Settings',
-            isSelected: navigationShell?.currentIndex == 5,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              navigationShell?.goBranch(5, initialLocation: true);
-            },
-          ),
+                    _NavItem(
+                      icon: Icons.menu_rounded,
+                      label: 'Overview',
+                      isSelected:
+                          navigationShell == null ||
+                          navigationShell!.currentIndex == 0,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(0, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: 'Connect',
+                      isSelected: navigationShell?.currentIndex == 1,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(1, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.accessibility_new_rounded,
+                      label: 'Exercises',
+                      isSelected: navigationShell?.currentIndex == 2,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(2, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.flag_outlined,
+                      label: 'Goals',
+                      isSelected: navigationShell?.currentIndex == 3,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(3, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.calendar_month_outlined,
+                      label: 'Schedule',
+                      isSelected: navigationShell?.currentIndex == 4,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(4, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.settings_outlined,
+                      label: 'Settings',
+                      isSelected: navigationShell?.currentIndex == 5,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(5, initialLocation: true);
+                      },
+                    ),
                   ],
                 ),
               ),

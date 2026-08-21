@@ -5,10 +5,7 @@ import 'package:flutter/material.dart';
 class AiSuggestionsSection extends StatelessWidget {
   final List<AiGoalSuggestionRow> suggestions;
 
-  const AiSuggestionsSection({
-    super.key,
-    required this.suggestions,
-  });
+  const AiSuggestionsSection({super.key, required this.suggestions});
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +83,77 @@ class AiGoalSuggestionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.isCompactShell) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.s16),
+        decoration: const BoxDecoration(
+          color: AppPalette.surfaceLight,
+          borderRadius: AppCorners.r8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.1),
+                    borderRadius: AppCorners.r8,
+                  ),
+                  child: Icon(icon, size: 22, color: iconColor),
+                ),
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTypography.titleSmall1.copyWith(
+                      color: AppPalette.secondaryBlue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s10),
+            Text(
+              description,
+              style: AppTypography.denseBody1.copyWith(
+                color: AppPalette.black.withValues(alpha: 0.68),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 14,
+                  color: AppPalette.warning,
+                ),
+                const SizedBox(width: AppSpacing.s4),
+                Expanded(
+                  child: Text(
+                    reason,
+                    style: AppTypography.captionBody1.copyWith(
+                      color: AppPalette.warning,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s14),
+            GoalActionButton(
+              label: 'Adopt',
+              width: double.infinity,
+              onPressed: onAdopt,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 70),
@@ -153,11 +221,7 @@ class AiGoalSuggestionRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 20),
-          GoalActionButton(
-            label: 'Adopt',
-            width: 137,
-            onPressed: onAdopt,
-          ),
+          GoalActionButton(label: 'Adopt', width: 137, onPressed: onAdopt),
         ],
       ),
     );

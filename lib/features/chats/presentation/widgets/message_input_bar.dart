@@ -124,7 +124,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
             Expanded(
               child: Center(
                 child: Container(
-                  width: 639,
+                  width: double.infinity,
                   height: 50,
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(horizontal: 20),

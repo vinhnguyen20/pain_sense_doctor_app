@@ -42,18 +42,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             Image.asset(leadingImage!, height: 44),
             const SizedBox(width: 10),
           ],
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: context.titleMedium),
-              if (subtitle != null)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  subtitle!,
-                  style: context.bodySmall?.copyWith(
-                    color: context.colors.onSurface.withValues(alpha: 0.6),
-                  ),
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.titleMedium,
                 ),
-            ],
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.bodySmall?.copyWith(
+                      color: context.colors.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -68,14 +78,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(2),
-        child: Container(
-          color:
-              context.colors.outline ??
-              (context.theme.brightness == Brightness.light
-                  ? Colors.grey.shade300
-                  : Colors.grey.shade800),
-          height: 2,
-        ),
+        child: Container(color: context.colors.outline, height: 2),
       ),
     );
   }

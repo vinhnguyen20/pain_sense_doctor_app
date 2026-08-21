@@ -14,6 +14,12 @@ extension ResponsiveX on BuildContext {
   /// Large tablet / desktop — width ≥ 840.
   bool get isExpanded => screenWidth >= AppBreakpoints.expanded;
 
+  /// Authenticated shell switches to the compact/mobile composition below 1024.
+  bool get isCompactShell => screenWidth < AppBreakpoints.desktopShell;
+
+  /// Authenticated shell uses the desktop canvas at 1024 and above.
+  bool get isDesktopCanvas => !isCompactShell;
+
   /// Returns [tablet] on tablet/desktop, [mobile] otherwise.
   T responsive<T>({required T mobile, required T tablet}) =>
       isMobile ? mobile : tablet;

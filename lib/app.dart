@@ -1,6 +1,8 @@
+import 'package:app_doctor/common/widgets/responsive_app_viewport.dart';
 import 'package:app_doctor/core/config/routers/router.dart';
 import 'package:app_doctor/core/config/theme/app_theme.dart';
 import 'package:app_doctor/core/providers/theme_notifier.dart';
+import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +26,9 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     ref.watch(themeProvider);
+    final isAuthenticated = ref.watch(
+      authProvider.select((state) => state.isAuthenticated),
+    );
 
     return MaterialApp.router(
       routerConfig: _router,
@@ -32,6 +37,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
+      builder: (context, child) => ResponsiveAppViewport(
+        enabled: isAuthenticated,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

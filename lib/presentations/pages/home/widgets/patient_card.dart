@@ -6,8 +6,15 @@ import 'package:go_router/go_router.dart';
 
 class PatientCard extends StatelessWidget {
   final Patient patient;
+  final VoidCallback? onDetails;
+  final VoidCallback? onDashboard;
 
-  const PatientCard({super.key, required this.patient});
+  const PatientCard({
+    super.key,
+    required this.patient,
+    this.onDetails,
+    this.onDashboard,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,41 +60,54 @@ class PatientCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: patient.trackingLogs?.lbpScore.toString(),
-                            style: context.displaySmall?.copyWith(
-                              color: colorFromHex(patient.trackingLogs?.color),
-                              fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: RichText(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: patient.trackingLogs?.lbpScore.toString(),
+                              style: context.displaySmall?.copyWith(
+                                color: colorFromHex(
+                                  patient.trackingLogs?.color,
+                                ),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: ' /100',
-                            style: context.bodyMedium?.copyWith(
-                              color: context.onSurface.withValues(alpha: 0.45),
+                            TextSpan(
+                              text: ' /100',
+                              style: context.bodyMedium?.copyWith(
+                                color: context.onSurface.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s10,
-                        vertical: AppSpacing.s4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorFromHex(
-                          patient.trackingLogs?.color,
-                        ).withValues(alpha: 0.15),
-                        borderRadius: AppCorners.r20,
-                      ),
-                      child: Text(
-                        patient.trackingLogs?.status ?? 'N/A',
-                        style: context.labelSmall?.copyWith(
-                          color: colorFromHex(patient.trackingLogs?.color),
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(width: AppSpacing.s8),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s10,
+                          vertical: AppSpacing.s4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorFromHex(
+                            patient.trackingLogs?.color,
+                          ).withValues(alpha: 0.15),
+                          borderRadius: AppCorners.r20,
+                        ),
+                        child: Text(
+                          patient.trackingLogs?.status ?? 'N/A',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.labelSmall?.copyWith(
+                            color: colorFromHex(patient.trackingLogs?.color),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -110,18 +130,22 @@ class PatientCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    context.pushNamed('patient-monitor-detail', extra: patient);
-                  },
+                  onPressed:
+                      onDetails ??
+                      () => context.pushNamed(
+                        'patient-monitor-detail',
+                        extra: patient,
+                      ),
                   child: const Text('View Details'),
                 ),
               ),
               const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.goNamed('patient-dashboard', extra: patient);
-                  },
+                  onPressed:
+                      onDashboard ??
+                      () =>
+                          context.goNamed('patient-dashboard', extra: patient),
                   icon: const Icon(Icons.bar_chart, size: AppSize.iconSm),
                   label: const Text('Dashboard'),
                 ),

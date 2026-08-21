@@ -1,3 +1,4 @@
+import 'package:app_doctor/common/widgets/compact_navigation_bar.dart';
 import 'package:app_doctor/common/widgets/sidebar_navigation.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.sizeOf(context).width >= 768;
+    final isDesktop = context.isDesktopCanvas;
 
     if (isDesktop) {
       return GestureDetector(
@@ -58,89 +59,53 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
       },
       child: Scaffold(
         body: widget.navigationShell,
-        bottomNavigationBar: _buildBottomNavBar(context),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    const items = [
-      _MobileNavItem(icon: Icons.home, label: 'Home', branchIndex: 0),
-      _MobileNavItem(
-        icon: Icons.calendar_month_outlined,
-        label: 'Schedule',
-        branchIndex: 4,
-      ),
-      _MobileNavItem(icon: Icons.settings, label: 'Settings', branchIndex: 5),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.surface,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x11000000),
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            children: items.map((item) {
-              final isSelected =
-                  item.branchIndex == widget.navigationShell.currentIndex;
-
-              return Expanded(
-                child: InkWell(
-                  onTap: () {
-                    FocusManager.instance.primaryFocus?.unfocus();
-                    widget.navigationShell.goBranch(
-                      item.branchIndex,
-                      initialLocation: true,
-                    );
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        item.icon,
-                        size: 24,
-                        color: isSelected
-                            ? context.colors.primary
-                            : AppPalette.medGray,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: AppTypography.captionBody2.copyWith(
-                          color: isSelected
-                              ? context.colors.primary
-                              : AppPalette.medGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+        bottomNavigationBar: CompactNavigationBar(
+          currentIndex: widget.navigationShell.currentIndex,
+          destinations: const [
+            CompactNavDestination(
+              icon: Icons.home_outlined,
+              label: 'Home',
+              branchIndex: 0,
+            ),
+            CompactNavDestination(
+              icon: Icons.chat_bubble_outline_rounded,
+              label: 'Connect',
+              branchIndex: 1,
+            ),
+            CompactNavDestination(
+              icon: Icons.flag_outlined,
+              label: 'Goals',
+              branchIndex: 3,
+            ),
+            CompactNavDestination(
+              icon: Icons.calendar_month_outlined,
+              label: 'Schedule',
+              branchIndex: 4,
+            ),
+          ],
+          overflowDestinations: const [
+            CompactNavDestination(
+              icon: Icons.accessibility_new_rounded,
+              label: 'Exercises',
+              branchIndex: 2,
+            ),
+            CompactNavDestination(
+              icon: Icons.settings_outlined,
+              label: 'Settings',
+              branchIndex: 5,
+            ),
+          ],
+          onSelectBranch: _openBranch,
         ),
       ),
     );
   }
-}
 
-class _MobileNavItem {
-  final IconData icon;
-  final String label;
-  final int branchIndex;
-
-  const _MobileNavItem({
-    required this.icon,
-    required this.label,
-    required this.branchIndex,
-  });
+  void _openBranch(int branchIndex) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    widget.navigationShell.goBranch(
+      branchIndex,
+      initialLocation: branchIndex == widget.navigationShell.currentIndex,
+    );
+  }
 }

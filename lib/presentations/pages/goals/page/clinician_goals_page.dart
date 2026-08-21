@@ -11,6 +11,7 @@ import 'package:app_doctor/features/user/presentation/provider/user_notifier.dar
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/goals/widgets/clinician_goal_row.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
+import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/ai_goal_suggestion.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_action_button.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
@@ -29,8 +30,7 @@ class ClinicianGoalsPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ClinicianGoalsPage> createState() =>
-      _ClinicianGoalsPageState();
+  ConsumerState<ClinicianGoalsPage> createState() => _ClinicianGoalsPageState();
 }
 
 class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
@@ -100,10 +100,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       widget.insidePatientDashboard
           ? 'patient-goal-form'
           : 'clinician-goal-form',
-      extra: {
-        'mode': GoalFormMode.create,
-        'patientId': patient.id,
-      },
+      extra: {'mode': GoalFormMode.create, 'patientId': patient.id},
     );
     if (result != null) {
       ref.invalidate(patientUserGoalsProvider(patient.id));
@@ -150,7 +147,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       ),
     );
     if (confirmed != true) return;
-    final response = await ref.read(deleteUserGoalUseCaseProvider).call(goal.id);
+    final response = await ref
+        .read(deleteUserGoalUseCaseProvider)
+        .call(goal.id);
     if (!mounted) return;
     if (response.isSuccess) {
       ref.invalidate(patientUserGoalsProvider(patient.id));
@@ -198,9 +197,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
   Widget _buildGoalsContent(String doctorName) {
     final patient = _selectedPatient!;
     final goalsAsync = ref.watch(patientUserGoalsProvider(patient.id));
-    final notifier = ref.watch(
-      patientUserGoalsProvider(patient.id).notifier,
-    );
+    final notifier = ref.watch(patientUserGoalsProvider(patient.id).notifier);
     final goals = goalsAsync.value ?? const <UserGoalModel>[];
 
     return Scaffold(
@@ -208,6 +205,80 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            if (context.isCompactShell) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!widget.insidePatientDashboard) ...[
+                      ClinicianHeader(
+                        doctorName: doctorName,
+                        onSearchChanged: _onSearchChanged,
+                        onNotificationPressed: () {},
+                      ),
+                      const SizedBox(height: AppSpacing.s24),
+                    ] else ...[
+                      PatientConnectHeader(patient: patient),
+                      const SizedBox(height: AppSpacing.s20),
+                      Center(
+                        child: Text(
+                          'Assigned Goals',
+                          style: AppTypography.heading1.copyWith(
+                            color: AppPalette.secondaryBlue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s20),
+                    ],
+                    GoalActionButton(
+                      label: 'Create New Goal',
+                      width: double.infinity,
+                      onPressed: _openCreateGoal,
+                    ),
+                    const SizedBox(height: AppSpacing.s10),
+                    GoalActionButton(
+                      label: 'Suggest Goal',
+                      width: double.infinity,
+                      onPressed: () => setState(
+                        () => _showAiSuggestions = !_showAiSuggestions,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s20),
+                    if (!widget.insidePatientDashboard) ...[
+                      Text(
+                        'Here are the latest goals you have created.',
+                        style: AppTypography.titleBig2.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.s10),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(patientUserGoalsProvider(patient.id));
+                          await ref.read(
+                            patientUserGoalsProvider(patient.id).future,
+                          );
+                        },
+                        child: _buildGoalList(
+                          goalsAsync: goalsAsync,
+                          goals: goals,
+                          isFetchingMore: notifier.isFetchingMore,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final width = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
@@ -237,6 +308,19 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
                           ),
                         ),
                         const SizedBox(height: 30),
+                      ] else ...[
+                        PatientConnectHeader(patient: patient),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Text(
+                            'Assigned Goals',
+                            style: AppTypography.display1.copyWith(
+                              color: AppPalette.secondaryBlue,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
                       ],
                       SizedBox(
                         width: double.infinity,
@@ -254,21 +338,21 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
                               label: 'Suggest Goal',
                               width: 240,
                               onPressed: () => setState(
-                                () => _showAiSuggestions =
-                                    !_showAiSuggestions,
+                                () => _showAiSuggestions = !_showAiSuggestions,
                               ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 30),
-                      Text(
-                        'Here are the latest goals you have created.',
-                        style: AppTypography.titleBig2.copyWith(
-                          color: AppPalette.secondaryBlue,
-                          height: 1,
+                      if (!widget.insidePatientDashboard)
+                        Text(
+                          'Here are the latest goals you have created.',
+                          style: AppTypography.titleBig2.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1,
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 10),
                       Expanded(
                         child: RefreshIndicator(
@@ -310,9 +394,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
         const Center(
           child: Padding(
             padding: EdgeInsets.all(30),
-            child: CircularProgressIndicator(
-              color: AppPalette.secondaryBlue,
-            ),
+            child: CircularProgressIndicator(color: AppPalette.secondaryBlue),
           ),
         ),
       );
@@ -375,9 +457,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
         const Center(
           child: Padding(
             padding: EdgeInsets.all(20),
-            child: CircularProgressIndicator(
-              color: AppPalette.secondaryBlue,
-            ),
+            child: CircularProgressIndicator(color: AppPalette.secondaryBlue),
           ),
         ),
       );
@@ -426,9 +506,8 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.zero,
       itemCount: rows.length,
-      separatorBuilder: (_, index) => SizedBox(
-        height: index + 1 == aiIndex ? 30 : 10,
-      ),
+      separatorBuilder: (_, index) =>
+          SizedBox(height: index + 1 == aiIndex ? 30 : 10),
       itemBuilder: (_, index) => rows[index],
     );
   }

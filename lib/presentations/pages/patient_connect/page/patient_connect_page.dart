@@ -71,11 +71,53 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final isAppointments =
+                _selectedTab == PatientConnectTab.appointments;
+
+            if (context.isCompactShell) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PatientConnectHeader(patient: patient),
+                    const SizedBox(height: AppSpacing.s16),
+                    PatientConnectTabs(
+                      selectedTab: _selectedTab,
+                      onChanged: (tab) => setState(() => _selectedTab = tab),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    Expanded(
+                      child: isAppointments
+                          ? patient == null
+                                ? const SizedBox.shrink()
+                                : PatientAppointmentsContent(patient: patient)
+                          : SingleChildScrollView(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              child: _selectedTab == PatientConnectTab.contacts
+                                  ? const PatientContactsContent()
+                                  : PatientChatContent(
+                                      patient: patient,
+                                      patientConversation: patientConversation,
+                                      otherConversations: otherConversations,
+                                      onChat: _openChat,
+                                    ),
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final width = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
-            final isAppointments =
-                _selectedTab == PatientConnectTab.appointments;
 
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -162,6 +204,32 @@ class PatientConnectTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.isCompactShell) {
+      return Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppPalette.surfaceLight,
+          borderRadius: AppCorners.r20,
+        ),
+        child: Row(
+          children: [
+            for (final tab in PatientConnectTab.values)
+              Expanded(
+                child: _TabItem(
+                  label: switch (tab) {
+                    PatientConnectTab.chat => 'Chat',
+                    PatientConnectTab.contacts => 'Contacts',
+                    PatientConnectTab.appointments => 'Schedule',
+                  },
+                  tab: tab,
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: 680,
       height: 50,
@@ -196,7 +264,7 @@ class _TabItem extends StatelessWidget {
     return GestureDetector(
       onTap: tabs?.onChanged == null ? null : () => tabs!.onChanged!(tab),
       child: Container(
-        width: 200,
+        width: context.isCompactShell ? double.infinity : 200,
         height: 50,
         alignment: Alignment.center,
         decoration: BoxDecoration(

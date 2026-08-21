@@ -6,6 +6,7 @@ import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
 import 'package:app_doctor/presentations/pages/home/widgets/patient_table_row.dart';
+import 'package:app_doctor/presentations/pages/home/widgets/patient_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
@@ -40,20 +41,24 @@ class ClinicianHomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content;
+    Widget desktopContent;
+    Widget compactContent;
 
     if (isLoading) {
-      content = const Center(child: CircularProgressIndicator());
+      desktopContent = const Center(child: CircularProgressIndicator());
+      compactContent = desktopContent;
     } else if (errorMessage != null) {
-      content = ErrorRetryView(
+      desktopContent = ErrorRetryView(
         message: errorMessage!,
         onRetry: onRetry ?? () {},
       );
+      compactContent = desktopContent;
     } else {
-      content = ListView.separated(
+      desktopContent = ListView.separated(
         controller: scrollController,
         padding: const EdgeInsets.only(bottom: 20),
-        physics: const AlwaysScrollableScrollPhysics(), keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         itemCount:
             patients.length +
             (isLoadingMore || !hasMore && patients.isNotEmpty ? 1 : 0),
@@ -90,6 +95,37 @@ class ClinicianHomeView extends StatelessWidget {
           );
         },
       );
+      compactContent = ListView.separated(
+        controller: scrollController,
+        padding: const EdgeInsets.only(bottom: AppSpacing.s20),
+        physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        itemCount:
+            patients.length +
+            (isLoadingMore || !hasMore && patients.isNotEmpty ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+        itemBuilder: (context, index) {
+          if (index < patients.length) {
+            final patient = patients[index];
+            return PatientCard(
+              patient: patient,
+              onDetails: onPatientDetails == null
+                  ? null
+                  : () => onPatientDetails!(patient),
+            );
+          }
+          if (isLoadingMore) {
+            return const Padding(
+              padding: EdgeInsets.all(AppSpacing.s16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.s16),
+            child: Center(child: Text('No more patients')),
+          );
+        },
+      );
     }
 
     return Scaffold(
@@ -97,6 +133,44 @@ class ClinicianHomeView extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            if (context.isCompactShell) {
+              final body =
+                  onRefresh != null && !isLoading && errorMessage == null
+                  ? RefreshIndicator(
+                      onRefresh: onRefresh!,
+                      child: compactContent,
+                    )
+                  : compactContent;
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClinicianHeader(
+                      doctorName: doctorName,
+                      onSearchChanged: onSearchChanged,
+                      onNotificationPressed: () {},
+                    ),
+                    const SizedBox(height: AppSpacing.s24),
+                    Text(
+                      'Welcome to your patient dashboard.',
+                      style: AppTypography.titleBig1.copyWith(
+                        color: AppPalette.secondaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    Expanded(child: body),
+                  ],
+                ),
+              );
+            }
+
             final width = constraints.maxWidth < 1208
                 ? 1208.0
                 : constraints.maxWidth;
@@ -133,9 +207,9 @@ class ClinicianHomeView extends StatelessWidget {
                                 errorMessage == null
                             ? RefreshIndicator(
                                 onRefresh: onRefresh!,
-                                child: content,
+                                child: desktopContent,
                               )
-                            : content,
+                            : desktopContent,
                       ),
                     ],
                   ),
@@ -246,7 +320,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final patientsState = ref.watch(patientsProvider);
     final userState = ref.watch(userProvider);
-    final doctorName = userState.user?.lastName != null ? 'Dr. ${userState.user!.lastName}' : 'Doctor';
+    final doctorName = userState.user?.lastName != null
+        ? 'Dr. ${userState.user!.lastName}'
+        : 'Doctor';
 
     return ClinicianHomeView(
       patients: patientsState.patients,

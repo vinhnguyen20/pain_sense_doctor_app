@@ -20,6 +20,61 @@ class ClinicianGoalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.isCompactShell) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final actionWidth = (constraints.maxWidth - 52) / 2;
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.s16),
+            decoration: const BoxDecoration(
+              color: AppPalette.surfaceLight,
+              borderRadius: AppCorners.r8,
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 28, color: AppPalette.secondaryBlue),
+                    const SizedBox(width: AppSpacing.s12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTypography.defaultBody1.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      color: AppPalette.secondaryBlue,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s12),
+                Row(
+                  children: [
+                    GoalActionButton(
+                      label: 'Assign',
+                      width: actionWidth,
+                      onPressed: onAssign,
+                    ),
+                    const SizedBox(width: AppSpacing.s12),
+                    GoalActionButton(
+                      label: 'Edit',
+                      width: actionWidth,
+                      onPressed: onEdit,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
     return Container(
       width: double.infinity,
       height: 70,
@@ -69,11 +124,7 @@ class ClinicianGoalRow extends StatelessWidget {
                   onPressed: onAssign,
                 ),
                 const SizedBox(width: 20),
-                GoalActionButton(
-                  label: 'Edit',
-                  width: 137,
-                  onPressed: onEdit,
-                ),
+                GoalActionButton(label: 'Edit', width: 137, onPressed: onEdit),
                 const SizedBox(width: 20),
                 SizedBox(
                   width: 40,

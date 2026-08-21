@@ -7,6 +7,16 @@ import 'package:flutter/material.dart';
 abstract final class AppBreakpoints {
   static const double compact = 600;
   static const double expanded = 840;
+
+  /// Below this width the authenticated shells use their compact/mobile UI.
+  static const double desktopShell = 1024;
+}
+
+/// The existing desktop design is a 232 px sidebar plus 1208 px of content.
+abstract final class AppLayout {
+  static const double desktopCanvasWidth = 1440;
+  static const double sidebarWidth = 232;
+  static const double desktopContentWidth = 1208;
 }
 
 abstract final class AppSpacing {

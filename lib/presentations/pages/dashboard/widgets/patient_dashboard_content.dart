@@ -17,13 +17,42 @@ import 'patient_dashboard_dimensions.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 
 class DashboardStyles {
-  static const heading = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 20, height: 1.0, color: Color(0xFF206EB0));
-  static const category = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 24, height: 1.0, color: Color(0xFF206EB0));
-  static const body = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.normal, fontSize: 16, height: 1.0, color: Color(0xFF18588C));
-  static const button = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 16, height: 1.0, color: Colors.white);
-  static const dayLabel = TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 12, height: 1.0, color: Color(0xFF206EB0));
+  static const heading = TextStyle(
+    fontFamily: 'Cabin',
+    fontWeight: FontWeight.bold,
+    fontSize: 20,
+    height: 1.0,
+    color: Color(0xFF206EB0),
+  );
+  static const category = TextStyle(
+    fontFamily: 'Cabin',
+    fontWeight: FontWeight.bold,
+    fontSize: 24,
+    height: 1.0,
+    color: Color(0xFF206EB0),
+  );
+  static const body = TextStyle(
+    fontFamily: 'Cabin',
+    fontWeight: FontWeight.normal,
+    fontSize: 16,
+    height: 1.0,
+    color: Color(0xFF18588C),
+  );
+  static const button = TextStyle(
+    fontFamily: 'Cabin',
+    fontWeight: FontWeight.bold,
+    fontSize: 16,
+    height: 1.0,
+    color: Colors.white,
+  );
+  static const dayLabel = TextStyle(
+    fontFamily: 'Cabin',
+    fontWeight: FontWeight.bold,
+    fontSize: 12,
+    height: 1.0,
+    color: Color(0xFF206EB0),
+  );
 }
-
 
 class RoundedCircularProgress extends StatelessWidget {
   final double value;
@@ -120,6 +149,14 @@ class PatientDashboardContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (context.isCompactShell) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.s16),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: PatientDashboardBody(patient: patient),
+          );
+        }
+
         const minContentWidth = 1208.0;
 
         final contentWidth = constraints.maxWidth < minContentWidth
@@ -149,6 +186,37 @@ class PatientDashboardBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (context.isCompactShell) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This is ${patient.firstName}\'s patient overview.',
+            style: DashboardStyles.category,
+          ),
+          const SizedBox(height: AppSpacing.s20),
+          PatientOverviewCard(patient: patient),
+          const SizedBox(height: AppSpacing.s16),
+          SizedBox(height: 273, child: AppointmentTimeline(patient: patient)),
+          const SizedBox(height: AppSpacing.s16),
+          DailyGoalsCard(patient: patient),
+          const SizedBox(height: AppSpacing.s16),
+          SizedBox(
+            height: PatientDashboardDimensions.bottomCardHeight,
+            child: TodayExerciseGoalsCard(patient: patient),
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          SizedBox(height: 380, child: AdherenceScoreCard(patient: patient)),
+          const SizedBox(height: AppSpacing.s16),
+          SizedBox(
+            height: PatientDashboardDimensions.bottomCardHeight,
+            child: SevenDayOverviewContainer(patient: patient),
+          ),
+          const SizedBox(height: AppSpacing.s20),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,9 +235,7 @@ class PatientDashboardBody extends ConsumerWidget {
                 child: PatientOverviewCard(patient: patient),
               ),
               const SizedBox(width: PatientDashboardDimensions.firstRowGap),
-              Expanded(
-                child: AppointmentTimeline(patient: patient),
-              ),
+              Expanded(child: AppointmentTimeline(patient: patient)),
             ],
           ),
         ),
@@ -182,17 +248,11 @@ class PatientDashboardBody extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: TodayExerciseGoalsCard(patient: patient),
-              ),
+              Expanded(child: TodayExerciseGoalsCard(patient: patient)),
               const SizedBox(width: 20),
-              Expanded(
-                child: AdherenceScoreCard(patient: patient),
-              ),
+              Expanded(child: AdherenceScoreCard(patient: patient)),
               const SizedBox(width: 20),
-              Expanded(
-                child: SevenDayOverviewContainer(patient: patient),
-              ),
+              Expanded(child: SevenDayOverviewContainer(patient: patient)),
             ],
           ),
         ),
@@ -292,9 +352,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      
-    });
+    Future.microtask(() {});
   }
 
   @override
@@ -398,7 +456,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
               values: values,
               barColors: barColors,
               expand: true,
-              barWidth: 20,
+              barWidth: context.isCompactShell ? 14 : 20,
               maxBarHeight: 55,
             ),
           ),
@@ -413,22 +471,27 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         lastAppointment != null
-                            ? _formatMonthDay(_parseRobustDate(lastAppointment.schedule.date) ?? DateTime.now()) : '—',
+                            ? _formatMonthDay(
+                                _parseRobustDate(
+                                      lastAppointment.schedule.date,
+                                    ) ??
+                                    DateTime.now(),
+                              )
+                            : '—',
                         style: DashboardStyles.category,
                       ),
                       Text(
                         'Last Appt.',
-                        style: DashboardStyles.body.copyWith(color: AppPalette.secondaryBlue),
+                        style: DashboardStyles.body.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Expanded(
                   child: Center(
-                    child: Text(
-                      'Today',
-                      style: DashboardStyles.category,
-                    ),
+                    child: Text('Today', style: DashboardStyles.category),
                   ),
                 ),
                 Expanded(
@@ -437,12 +500,20 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                     children: [
                       Text(
                         nextAppointment != null
-                            ? _formatMonthDay(_parseRobustDate(nextAppointment.schedule.date) ?? DateTime.now()) : '—',
+                            ? _formatMonthDay(
+                                _parseRobustDate(
+                                      nextAppointment.schedule.date,
+                                    ) ??
+                                    DateTime.now(),
+                              )
+                            : '—',
                         style: DashboardStyles.category,
                       ),
                       Text(
                         'Next Appt.',
-                        style: DashboardStyles.body.copyWith(color: AppPalette.secondaryBlue),
+                        style: DashboardStyles.body.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
                       ),
                     ],
                   ),
@@ -487,10 +558,7 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
                         ),
                       ),
                     ),
-                    child: Text(
-                      'Schedule',
-                      style: DashboardStyles.button,
-                    ),
+                    child: Text('Schedule', style: DashboardStyles.button),
                   ),
                 ),
               ],
@@ -501,23 +569,26 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
     );
   }
 
-  
   DateTime? _parseRobustDate(String dateStr) {
     var d = DateTime.tryParse(dateStr);
     if (d != null) return d;
-    
+
     // Handle dd/MM/yyyy or MM/dd/yyyy
     var parts = dateStr.split('/');
     if (parts.length == 3 && parts[2].length == 4) {
-      return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
+      return DateTime.tryParse(
+        '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}',
+      );
     }
-    
+
     // Handle dd-MM-yyyy or MM-dd-yyyy
     parts = dateStr.split('-');
     if (parts.length == 3 && parts[2].length == 4) {
-      return DateTime.tryParse('${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}');
+      return DateTime.tryParse(
+        '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}',
+      );
     }
-    
+
     return null;
   }
 
@@ -549,12 +620,14 @@ class DailyGoalsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final diaryState = ref.watch(patientDiaryProvider(patient.id));
     final goalsAsync = ref.watch(patientUserGoalsProvider(patient.id));
-    
+
     final now = DateTime.now();
     PatientDiaryEntry? todayEntry;
 
     for (final e in diaryState.entries) {
-      if (e.date.year == now.year && e.date.month == now.month && e.date.day == now.day) {
+      if (e.date.year == now.year &&
+          e.date.month == now.month &&
+          e.date.day == now.day) {
         todayEntry = e;
         break;
       }
@@ -570,7 +643,9 @@ class DailyGoalsCard extends ConsumerWidget {
         padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
         decoration: BoxDecoration(
           color: AppPalette.white,
-          borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
+          borderRadius: BorderRadius.circular(
+            PatientDashboardDimensions.cardRadius,
+          ),
           border: Border.all(color: AppPalette.medGray),
         ),
         child: const Center(child: CircularProgressIndicator()),
@@ -581,9 +656,9 @@ class DailyGoalsCard extends ConsumerWidget {
     List<Widget> children = [];
     if (goalItems.isEmpty) {
       children = [
-        const SizedBox(
-          width: 250,
-          child: _GoalSummaryItem(
+        SizedBox(
+          width: context.isCompactShell ? double.infinity : 250,
+          child: const _GoalSummaryItem(
             goalItem: null,
             activity: null,
             defaultTitle: '—',
@@ -601,20 +676,25 @@ class DailyGoalsCard extends ConsumerWidget {
           final keyword = g.type.name.toLowerCase();
           final gLabel = g.label.toLowerCase();
           for (final a in todayEntry.diary) {
-             final aLabel = a.label.toLowerCase();
-             if (aLabel.contains(keyword) || aLabel.contains(gLabel)) {
-                activity = a;
-                break;
-             }
+            final aLabel = a.label.toLowerCase();
+            if (aLabel.contains(keyword) || aLabel.contains(gLabel)) {
+              activity = a;
+              break;
+            }
           }
         }
         children.add(
           Padding(
             padding: EdgeInsets.only(
-              right: index == visibleItems.length - 1 ? 0 : 120,
+              right: context.isCompactShell || index == visibleItems.length - 1
+                  ? 0
+                  : 120,
+              bottom: context.isCompactShell && index != visibleItems.length - 1
+                  ? AppSpacing.s16
+                  : 0,
             ),
             child: SizedBox(
-              width: 250,
+              width: context.isCompactShell ? double.infinity : 250,
               child: _GoalSummaryItem(
                 goalItem: g,
                 activity: activity,
@@ -632,7 +712,9 @@ class DailyGoalsCard extends ConsumerWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
+        borderRadius: BorderRadius.circular(
+          PatientDashboardDimensions.cardRadius,
+        ),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
@@ -640,24 +722,29 @@ class DailyGoalsCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.flag_outlined, size: 24, color: Color(0xFF206EB0)),
+              const Icon(
+                Icons.flag_outlined,
+                size: 24,
+                color: Color(0xFF206EB0),
+              ),
               const SizedBox(width: 10),
               const Text('Daily Goals', style: DashboardStyles.heading),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
+          if (context.isCompactShell)
+            Column(children: children)
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
         ],
       ),
     );
   }
 }
-
-
 
 class _GoalSummaryItem extends StatelessWidget {
   final GoalItemModel? goalItem;
@@ -679,17 +766,23 @@ class _GoalSummaryItem extends StatelessWidget {
     String desc = defaultDescription;
     Color color = const Color(0xFF58E8EA);
 
-    if (title.toLowerCase().contains('exercise')) color = const Color(0xFF87C879);
+    if (title.toLowerCase().contains('exercise')) {
+      color = const Color(0xFF87C879);
+    }
     if (title.toLowerCase().contains('step')) color = const Color(0xFF206EB0);
-    if (title.toLowerCase().contains('posture')) color = const Color(0xFF18588C);
+    if (title.toLowerCase().contains('posture')) {
+      color = const Color(0xFF18588C);
+    }
 
     if (activity != null) {
       percent = activity!.percent.toInt();
 
       if (title.toLowerCase().contains('exercise')) {
-        desc = 'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
+        desc =
+            'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
       } else if (title.toLowerCase().contains('step')) {
-        desc = 'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
+        desc =
+            'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
       } else if (title.toLowerCase().contains('posture')) {
         desc = 'How well you are\nfollowing your posture\nguidance.';
       } else {
@@ -719,8 +812,26 @@ class _GoalSummaryItem extends StatelessWidget {
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('$percent', style: const TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 24, height: 1.0, color: Color(0xFF206EB0))),
-                  const Text('%', style: TextStyle(fontFamily: 'Cabin', fontWeight: FontWeight.bold, fontSize: 12, height: 1.0, color: Color(0xFF206EB0))),
+                  Text(
+                    '$percent',
+                    style: const TextStyle(
+                      fontFamily: 'Cabin',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      height: 1.0,
+                      color: Color(0xFF206EB0),
+                    ),
+                  ),
+                  const Text(
+                    '%',
+                    style: TextStyle(
+                      fontFamily: 'Cabin',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      height: 1.0,
+                      color: Color(0xFF206EB0),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -741,16 +852,19 @@ class _GoalSummaryItem extends StatelessWidget {
     );
   }
 }
+
 class TodayExerciseGoalsCard extends ConsumerStatefulWidget {
   final Patient patient;
 
   const TodayExerciseGoalsCard({super.key, required this.patient});
 
   @override
-  ConsumerState<TodayExerciseGoalsCard> createState() => _TodayExerciseGoalsCardState();
+  ConsumerState<TodayExerciseGoalsCard> createState() =>
+      _TodayExerciseGoalsCardState();
 }
 
-class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard> {
+class _TodayExerciseGoalsCardState
+    extends ConsumerState<TodayExerciseGoalsCard> {
   final ScrollController _scrollController = ScrollController();
   bool _canScroll = false;
 
@@ -802,7 +916,8 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
     );
 
     for (final goal in goalsList) {
-      if (now.isBefore(goal.startDate) || now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
+      if (now.isBefore(goal.startDate) ||
+          now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
         continue;
       }
 
@@ -819,26 +934,34 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
             }
             if (hasToday) {
               final label = ue.name ?? item.label;
-              final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == label.toLowerCase() || (a.userExercises?.any((ex) => ex.exerciseId == ue.resolvedExerciseId) ?? false)).firstOrNull;
-              final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
-              todayExercises.add({
-                'label': label,
-                'completed': isCompleted,
-              });
+              final matchingActivity = todayEntry?.diary
+                  .where(
+                    (a) =>
+                        a.label.toLowerCase() == label.toLowerCase() ||
+                        (a.userExercises?.any(
+                              (ex) => ex.exerciseId == ue.resolvedExerciseId,
+                            ) ??
+                            false),
+                  )
+                  .firstOrNull;
+              final isCompleted =
+                  matchingActivity != null && matchingActivity.percent >= 100.0;
+              todayExercises.add({'label': label, 'completed': isCompleted});
             }
           }
-        } else if (item.type.toApiString() == 'exercise' || item.label.toLowerCase().contains('exercise')) {
+        } else if (item.type.toApiString() == 'exercise' ||
+            item.label.toLowerCase().contains('exercise')) {
           // fallback if no userExercises but it's an exercise goal
-          final matchingActivity = todayEntry?.diary.where((a) => a.label.toLowerCase() == item.label.toLowerCase()).firstOrNull;
-          final isCompleted = matchingActivity != null && matchingActivity.percent >= 100.0;
-          todayExercises.add({
-            'label': item.label,
-            'completed': isCompleted,
-          });
+          final matchingActivity = todayEntry?.diary
+              .where((a) => a.label.toLowerCase() == item.label.toLowerCase())
+              .firstOrNull;
+          final isCompleted =
+              matchingActivity != null && matchingActivity.percent >= 100.0;
+          todayExercises.add({'label': item.label, 'completed': isCompleted});
         }
       }
     }
-    
+
     // Add dummy scroll listener callback to check scroll size after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkScroll();
@@ -850,12 +973,20 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
     } else if (goalsAsync.hasError) {
       contentWidget = const Text(
         'Unable to load exercise goals.',
-        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+        style: TextStyle(
+          fontFamily: 'Cabin',
+          fontSize: 16,
+          color: Color(0xFF18588C),
+        ),
       );
     } else if (todayExercises.isEmpty) {
       contentWidget = const Text(
         'No exercise goals today.',
-        style: TextStyle(fontFamily: 'Cabin', fontSize: 16, color: Color(0xFF18588C)),
+        style: TextStyle(
+          fontFamily: 'Cabin',
+          fontSize: 16,
+          color: Color(0xFF18588C),
+        ),
       );
     } else {
       contentWidget = ListView.separated(
@@ -869,11 +1000,13 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
           final String label = ex['label'];
 
           return Container(
-            width: 330,
+            width: context.isCompactShell ? double.infinity : 330,
             constraints: const BoxConstraints(minHeight: 50),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: isCompleted ? const Color(0xFF87C879) : const Color(0xFFF7F7F7),
+              color: isCompleted
+                  ? const Color(0xFF87C879)
+                  : const Color(0xFFF7F7F7),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -888,7 +1021,9 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                         child: Center(
                           child: Icon(
                             Icons.directions_run, // Fallback icon
-                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                            color: isCompleted
+                                ? const Color(0xFFFFFFFF)
+                                : const Color(0xFF206EB0),
                             size: 24,
                           ),
                         ),
@@ -902,7 +1037,9 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                             height: 1.1875,
-                            color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF206EB0),
+                            color: isCompleted
+                                ? const Color(0xFFFFFFFF)
+                                : const Color(0xFF206EB0),
                           ),
                         ),
                       ),
@@ -914,12 +1051,18 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: isCompleted ? const Color(0xFFFFFFFF) : const Color(0xFF18588C),
+                    color: isCompleted
+                        ? const Color(0xFFFFFFFF)
+                        : const Color(0xFF18588C),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: isCompleted
                       ? const Center(
-                          child: Icon(Icons.check, size: 16, color: Color(0xFF87C879)),
+                          child: Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Color(0xFF87C879),
+                          ),
                         )
                       : null,
                 ),
@@ -943,14 +1086,18 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 330,
+            width: context.isCompactShell ? double.infinity : 330,
             height: 24,
             child: Row(
               children: [
                 SizedBox(
                   width: 24,
                   height: 24,
-                  child: Icon(Icons.fitness_center, size: 24, color: Color(0xFF206EB0)),
+                  child: Icon(
+                    Icons.fitness_center,
+                    size: 24,
+                    color: Color(0xFF206EB0),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 const Text(
@@ -969,16 +1116,22 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
           ),
           const SizedBox(height: 20),
           SizedBox(
-            width: 330,
+            width: context.isCompactShell ? double.infinity : 330,
             height: 260,
             child: contentWidget,
           ),
           const SizedBox(height: 10),
           SizedBox(
-            width: 330,
+            width: context.isCompactShell ? double.infinity : 330,
             height: 8,
             child: _canScroll
-                ? const Center(child: Icon(Icons.keyboard_arrow_down, size: 15, color: Color(0xFF206EB0)))
+                ? const Center(
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 15,
+                      color: Color(0xFF206EB0),
+                    ),
+                  )
                 : const SizedBox.shrink(),
           ),
           const SizedBox(height: 10),
@@ -992,8 +1145,13 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF206EB0),
                   foregroundColor: const Color(0xFFFFFFFF),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                   minimumSize: const Size(136, 31),
                 ),
                 child: const Text(
@@ -1013,6 +1171,7 @@ class _TodayExerciseGoalsCardState extends ConsumerState<TodayExerciseGoalsCard>
     );
   }
 }
+
 class AdherenceScoreCard extends ConsumerWidget {
   final Patient patient;
 
@@ -1026,7 +1185,9 @@ class AdherenceScoreCard extends ConsumerWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
+        borderRadius: BorderRadius.circular(
+          PatientDashboardDimensions.cardRadius,
+        ),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
@@ -1047,11 +1208,11 @@ class AdherenceScoreCard extends ConsumerWidget {
                       width: 200,
                       height: 200,
                       child: RoundedCircularProgress(
-                    value: score / 100,
-                    strokeWidth: 20,
-                    backgroundColor: const Color(0xFFF7F7F7),
-                    color: const Color(0xFF206EB0),
-                  ),
+                        value: score / 100,
+                        strokeWidth: 20,
+                        backgroundColor: const Color(0xFFF7F7F7),
+                        color: const Color(0xFF206EB0),
+                      ),
                     ),
                     SizedBox(
                       width: 150,
@@ -1086,6 +1247,7 @@ class AdherenceScoreCard extends ConsumerWidget {
     );
   }
 }
+
 class SevenDayOverviewContainer extends StatelessWidget {
   final Patient patient;
 
@@ -1099,7 +1261,9 @@ class SevenDayOverviewContainer extends StatelessWidget {
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       decoration: BoxDecoration(
         color: AppPalette.white,
-        borderRadius: BorderRadius.circular(PatientDashboardDimensions.cardRadius),
+        borderRadius: BorderRadius.circular(
+          PatientDashboardDimensions.cardRadius,
+        ),
         border: Border.all(color: AppPalette.medGray),
       ),
       child: Column(
