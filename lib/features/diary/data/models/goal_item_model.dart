@@ -7,11 +7,13 @@ class UserExerciseScheduleSlot {
   final String period;
   final String time;
   final String? instruction;
+  final bool isCompleted;
 
   const UserExerciseScheduleSlot({
     required this.period,
     required this.time,
     this.instruction,
+    this.isCompleted = false,
   });
 
   factory UserExerciseScheduleSlot.fromJson(Map<String, dynamic> json) =>
@@ -19,6 +21,7 @@ class UserExerciseScheduleSlot {
         period: json['period'] as String? ?? 'morning',
         time: json['time'] as String? ?? '07:00',
         instruction: json['instruction'] as String?,
+        isCompleted: json['is_completed'] as bool? ?? false,
       );
 }
 
@@ -26,11 +29,15 @@ class UserExerciseScheduleConfig {
   final DateTime exerciseDate;
   final int sessionsCount;
   final List<UserExerciseScheduleSlot> slots;
+  final int sessionsCompleted;
+  final int sessionsTotal;
 
   const UserExerciseScheduleConfig({
     required this.exerciseDate,
     required this.sessionsCount,
     required this.slots,
+    this.sessionsCompleted = 0,
+    this.sessionsTotal = 0,
   });
 
   factory UserExerciseScheduleConfig.fromJson(Map<String, dynamic> json) =>
@@ -46,6 +53,8 @@ class UserExerciseScheduleConfig {
                 )
                 .toList() ??
             const [],
+        sessionsCompleted: (json['sessions_completed'] as num?)?.toInt() ?? 0,
+        sessionsTotal: (json['sessions_total'] as num?)?.toInt() ?? 0,
       );
 }
 

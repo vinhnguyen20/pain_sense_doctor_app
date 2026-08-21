@@ -218,14 +218,26 @@ class ScheduleConfigModel extends ScheduleConfig
   @JsonKey(name: 'slots')
   final List<ScheduleSlotModel> slots;
 
+  @override
+  @JsonKey(name: 'sessions_completed', defaultValue: 0)
+  final int sessionsCompleted;
+
+  @override
+  @JsonKey(name: 'sessions_total', defaultValue: 0)
+  final int sessionsTotal;
+
   const ScheduleConfigModel({
     required this.exerciseDate,
     required this.sessionsCount,
     required this.slots,
+    this.sessionsCompleted = 0,
+    this.sessionsTotal = 0,
   }) : super(
          exerciseDate: exerciseDate,
          sessionsCount: sessionsCount,
          slots: slots,
+         sessionsCompleted: sessionsCompleted,
+         sessionsTotal: sessionsTotal,
        );
 
   factory ScheduleConfigModel.fromJson(Map<String, dynamic> json) =>
@@ -238,6 +250,8 @@ class ScheduleConfigModel extends ScheduleConfig
       exerciseDate: entity.exerciseDate,
       sessionsCount: entity.sessionsCount,
       slots: entity.slots.map((e) => ScheduleSlotModel.fromEntity(e)).toList(),
+      sessionsCompleted: entity.sessionsCompleted,
+      sessionsTotal: entity.sessionsTotal,
     );
   }
 
@@ -247,6 +261,8 @@ class ScheduleConfigModel extends ScheduleConfig
       exerciseDate: exerciseDate,
       sessionsCount: sessionsCount,
       slots: slots.map((e) => e.toEntity()).toList(),
+      sessionsCompleted: sessionsCompleted,
+      sessionsTotal: sessionsTotal,
     );
   }
 }
@@ -254,11 +270,16 @@ class ScheduleConfigModel extends ScheduleConfig
 @JsonSerializable(explicitToJson: true)
 class ScheduleSlotModel extends ScheduleSlot
     with EntityConvertible<ScheduleSlotModel, ScheduleSlot> {
+  @override
+  @JsonKey(name: 'is_completed', defaultValue: false)
+  final bool isCompleted;
+
   const ScheduleSlotModel({
     required super.period,
     required super.time,
     super.instruction,
-  });
+    this.isCompleted = false,
+  }) : super(isCompleted: isCompleted);
 
   factory ScheduleSlotModel.fromJson(Map<String, dynamic> json) =>
       _$ScheduleSlotModelFromJson(json);
@@ -270,11 +291,17 @@ class ScheduleSlotModel extends ScheduleSlot
       period: entity.period,
       time: entity.time,
       instruction: entity.instruction,
+      isCompleted: entity.isCompleted,
     );
   }
 
   @override
   ScheduleSlot toEntity() {
-    return ScheduleSlot(period: period, time: time, instruction: instruction);
+    return ScheduleSlot(
+      period: period,
+      time: time,
+      instruction: instruction,
+      isCompleted: isCompleted,
+    );
   }
 }

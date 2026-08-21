@@ -14,6 +14,7 @@ import 'package:app_doctor/features/diary/domain/entites/patient_diary_activity.
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'seven_7_day_trend.dart';
 import 'patient_dashboard_dimensions.dart';
+import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 
 class DashboardStyles {
@@ -652,37 +653,45 @@ class DailyGoalsCard extends ConsumerWidget {
       );
     }
 
-    // Default to empty state if no real goals assigned
+    // Show from todayEntry diary if available, otherwise fallback to goalItems
     List<Widget> children = [];
-    if (goalItems.isEmpty) {
-      children = [
-        SizedBox(
-          width: context.isCompactShell ? double.infinity : 250,
-          child: const _GoalSummaryItem(
-            goalItem: null,
-            activity: null,
-            defaultTitle: '—',
-            defaultDescription: 'No goal assigned.',
-          ),
-        ),
-      ];
-    } else {
-      final visibleItems = goalItems.take(3).toList();
-      children = <Widget>[];
+    if (todayEntry != null && todayEntry.diary.isNotEmpty) {
+      final visibleItems = todayEntry.diary.take(3).toList();
       for (var index = 0; index < visibleItems.length; index++) {
-        final g = visibleItems[index];
-        PatientDiaryActivity? activity;
-        if (todayEntry != null) {
+        final a = visibleItems[index];
+        GoalItemModel? matchingGoalItem = goalItems.where((g) {
           final keyword = g.type.name.toLowerCase();
           final gLabel = g.label.toLowerCase();
-          for (final a in todayEntry.diary) {
-            final aLabel = a.label.toLowerCase();
-            if (aLabel.contains(keyword) || aLabel.contains(gLabel)) {
-              activity = a;
-              break;
-            }
-          }
-        }
+          final aLabel = a.label.toLowerCase();
+          return aLabel.contains(keyword) || aLabel.contains(gLabel);
+        }).firstOrNull;
+
+        children.add(
+          Padding(
+            padding: EdgeInsets.only(
+              right: context.isCompactShell || index == visibleItems.length - 1
+                  ? 0
+                  : 120,
+              bottom: context.isCompactShell && index != visibleItems.length - 1
+                  ? AppSpacing.s16
+                  : 0,
+            ),
+            child: SizedBox(
+              width: context.isCompactShell ? double.infinity : 250,
+              child: _GoalSummaryItem(
+                goalItem: matchingGoalItem,
+                activity: a,
+                defaultTitle: a.label,
+                defaultDescription: a.desc,
+              ),
+            ),
+          ),
+        );
+      }
+    } else if (goalItems.isNotEmpty) {
+      final visibleItems = goalItems.take(3).toList();
+      for (var index = 0; index < visibleItems.length; index++) {
+        final g = visibleItems[index];
         children.add(
           Padding(
             padding: EdgeInsets.only(
@@ -697,7 +706,7 @@ class DailyGoalsCard extends ConsumerWidget {
               width: context.isCompactShell ? double.infinity : 250,
               child: _GoalSummaryItem(
                 goalItem: g,
-                activity: activity,
+                activity: null,
                 defaultTitle: g.label,
                 defaultDescription: g.desc,
               ),
@@ -705,6 +714,18 @@ class DailyGoalsCard extends ConsumerWidget {
           ),
         );
       }
+    } else {
+      children = [
+        SizedBox(
+          width: context.isCompactShell ? double.infinity : 250,
+          child: const _GoalSummaryItem(
+            goalItem: null,
+            activity: null,
+            defaultTitle: '—',
+            defaultDescription: 'No goal assigned.',
+          ),
+        ),
+      ];
     }
 
     return Container(
@@ -766,27 +787,43 @@ class _GoalSummaryItem extends StatelessWidget {
     String desc = defaultDescription;
     Color color = const Color(0xFF58E8EA);
 
-    if (title.toLowerCase().contains('exercise')) {
+    if (title.toLowerCase().contains('exercise') ||
+        title.toLowerCase().contains('yoga') ||
+        activity?.type == GoalType.yogaMeditation) {
       color = const Color(0xFF87C879);
     }
-    if (title.toLowerCase().contains('step')) color = const Color(0xFF206EB0);
-    if (title.toLowerCase().contains('posture')) {
+    if (title.toLowerCase().contains('step') ||
+        title.toLowerCase().contains('walk') ||
+        activity?.type == GoalType.stepsWalking) {
+      color = const Color(0xFF206EB0);
+    }
+    if (title.toLowerCase().contains('posture') ||
+        title.toLowerCase().contains('pain') ||
+        title.toLowerCase().contains('limit') ||
+        activity?.type == GoalType.activityWalk) {
       color = const Color(0xFF18588C);
     }
 
     if (activity != null) {
       percent = activity!.percent.toInt();
 
-      if (title.toLowerCase().contains('exercise')) {
+      if (title.toLowerCase().contains('exercise') ||
+          title.toLowerCase().contains('yoga') ||
+          activity!.type == GoalType.yogaMeditation) {
         desc =
             'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
-      } else if (title.toLowerCase().contains('step')) {
+      } else if (title.toLowerCase().contains('step') ||
+          title.toLowerCase().contains('walk') ||
+          activity!.type == GoalType.stepsWalking) {
         desc =
             'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
-      } else if (title.toLowerCase().contains('posture')) {
+      } else if (title.toLowerCase().contains('posture') ||
+          title.toLowerCase().contains('pain') ||
+          title.toLowerCase().contains('limit') ||
+          activity!.type == GoalType.activityWalk) {
         desc = 'How well you are\nfollowing your posture\nguidance.';
       } else {
-        desc = activity!.desc;
+        desc = activity!.desc.isNotEmpty ? activity!.desc : defaultDescription;
       }
     }
 
@@ -926,9 +963,14 @@ class _TodayExerciseGoalsCardState
         if (item.userExercises != null && item.userExercises!.isNotEmpty) {
           for (final ue in item.userExercises!) {
             bool hasToday = false;
+            bool slotCompleted = false;
             for (final sc in ue.scheduleConfig) {
               if (_isSameDay(sc.exerciseDate, now)) {
                 hasToday = true;
+                if (sc.sessionsCompleted > 0 ||
+                    sc.slots.any((slot) => slot.isCompleted)) {
+                  slotCompleted = true;
+                }
                 break;
               }
             }
@@ -944,8 +986,9 @@ class _TodayExerciseGoalsCardState
                             false),
                   )
                   .firstOrNull;
-              final isCompleted =
-                  matchingActivity != null && matchingActivity.percent >= 100.0;
+              final isCompleted = slotCompleted ||
+                  (matchingActivity != null &&
+                      matchingActivity.percent >= 100.0);
               todayExercises.add({'label': label, 'completed': isCompleted});
             }
           }
