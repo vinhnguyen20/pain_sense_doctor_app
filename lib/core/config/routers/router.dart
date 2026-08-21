@@ -20,6 +20,7 @@ import 'package:app_doctor/presentations/pages/connect/page/clinician_connect_pa
 import 'package:app_doctor/presentations/pages/patient_connect/page/patient_connect_page.dart';
 import 'package:app_doctor/presentations/pages/patient_goals/page/patient_goals_page.dart';
 import 'package:app_doctor/presentations/pages/settings/page/settings_page.dart';
+import 'package:app_doctor/presentations/pages/settings/page/clinician_settings_page.dart';
 import 'package:app_doctor/presentations/pages/exercises/page/patient_exercises_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -422,7 +423,7 @@ class AppRouter {
                 GoRoute(
                   path: '/setting',
                   name: 'setting',
-                  builder: (context, state) => const SettingsPage(),
+                  builder: (context, state) => const ClinicianSettingsPage(),
                 ),
               ],
             ),

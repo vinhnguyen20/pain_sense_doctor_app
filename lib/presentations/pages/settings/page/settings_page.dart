@@ -101,13 +101,11 @@ class _SettingsTabs extends StatelessWidget {
             indicatorSize: TabBarIndicatorSize.tab,
             labelColor: Colors.white,
             unselectedLabelColor: const Color(0xFFC5C5C5),
-            labelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+            labelStyle: AppTypography.titleBig1.copyWith(
+              color: Colors.white,
             ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+            unselectedLabelStyle: AppTypography.titleBig1.copyWith(
+              color: const Color(0xFFC5C5C5),
             ),
             tabs: const [
               Tab(text: 'Device'),
@@ -150,22 +148,22 @@ class _DeviceSettings extends StatelessWidget {
         const SizedBox(height: 30),
         Text(
           'Device Connection Tutorials',
-          style: context.bodyLarge?.copyWith(
+          style: AppTypography.titleBig1.copyWith(
             color: AppPalette.secondaryBlue,
-            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           'Connect your PainSense health monitoring device to learn more about your pain management.',
-          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+          style: AppTypography.titleBig2.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
         ),
         const SizedBox(height: 22),
         Text(
           'Current Devices',
-          style: context.bodyLarge?.copyWith(
+          style: AppTypography.titleBig1.copyWith(
             color: AppPalette.secondaryBlue,
-            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 10),
@@ -180,15 +178,22 @@ class _DeviceSettings extends StatelessWidget {
         const SizedBox(height: 30),
         Text(
           'Need help with a Painsense Device?',
-          style: context.bodyLarge?.copyWith(
+          style: AppTypography.titleBig1.copyWith(
             color: AppPalette.secondaryBlue,
-            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          'Contact Us\ninfo@painsensesolution.ca\n1200 - 900 West Hastings St.\nVancouver BC V6C 1E5',
-          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+          'Contact Us',
+          style: AppTypography.titleBig1.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
+        ),
+        Text(
+          'info@painsensesolution.ca\n1200 - 900 West Hastings St.\nVancouver BC V6C 1E5',
+          style: AppTypography.titleBig2.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
         ),
       ],
     );
@@ -209,9 +214,8 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           text,
-          style: context.bodyLarge?.copyWith(
+          style: AppTypography.titleBig1.copyWith(
             color: AppPalette.secondaryBlue,
-            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -348,15 +352,14 @@ class _DeviceInfo extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: context.bodyLarge?.copyWith(
+                style: AppTypography.defaultBody1.copyWith(
                   color: AppPalette.secondaryBlue,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: context.bodyLarge?.copyWith(
+                style: AppTypography.defaultBody2.copyWith(
                   color: AppPalette.secondaryBlue,
                 ),
               ),
@@ -388,7 +391,10 @@ class _ActionButton extends StatelessWidget {
           ),
           padding: EdgeInsets.zero,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 16)),
+        child: Text(
+          label,
+          style: AppTypography.titleSmall1.copyWith(color: Colors.white),
+        ),
       ),
     );
   }
@@ -410,15 +416,16 @@ class _NotificationSettings extends StatelessWidget {
       children: [
         Text(
           "Choose John's Notification Frequency",
-          style: context.bodyLarge?.copyWith(
+          style: AppTypography.titleBig1.copyWith(
             color: AppPalette.secondaryBlue,
-            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           'This setting will adjust how often the PainSense device vibrates to suggest adjustments to posture.',
-          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+          style: AppTypography.titleBig2.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
         ),
         const SizedBox(height: 24),
         LayoutBuilder(
@@ -452,9 +459,22 @@ class _NotificationSettings extends StatelessWidget {
                 const SizedBox(height: 2),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text('Less Often'), Text('More Often')],
+                    children: [
+                      Text(
+                        'Less Often',
+                        style: AppTypography.titleBig2.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                      Text(
+                        'More Often',
+                        style: AppTypography.titleBig2.copyWith(
+                          color: AppPalette.secondaryBlue,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
