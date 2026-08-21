@@ -1,367 +1,407 @@
-import 'package:app_doctor/common/widgets/app_snackbar.dart';
-import 'package:app_doctor/common/widgets/custom_app_bar.dart';
-import 'package:app_doctor/common/widgets/custom_text_field.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
-import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
-import 'package:app_doctor/features/settings/presentation/provider/settings_notifier.dart';
-import 'package:app_doctor/features/user/domain/entities/user.dart';
-import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsPage extends ConsumerStatefulWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends ConsumerState<SettingsPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _ecNameCtrl = TextEditingController();
-  final _ecPhoneCtrl = TextEditingController();
+class _SettingsPageState extends State<SettingsPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  int _notificationFrequency = 3;
 
   @override
   void initState() {
     super.initState();
-
-    final existing = ref.read(userProvider).user;
-    if (existing != null) {
-      _populate(existing);
-    } else {
-      Future.microtask(() => ref.read(userProvider.notifier).getCurrentUser());
-    }
-  }
-
-  void _populate(User user) {
-    _firstNameCtrl.text = user.firstName ?? '';
-    _lastNameCtrl.text = user.lastName ?? '';
-    _emailCtrl.text = user.email ?? '';
-    _phoneCtrl.text = user.phone ?? '';
-    _ecNameCtrl.text = user.emergencyContact?.name ?? '';
-    _ecPhoneCtrl.text = user.emergencyContact?.phone ?? '';
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _firstNameCtrl.dispose();
-    _lastNameCtrl.dispose();
-    _emailCtrl.dispose();
-    _phoneCtrl.dispose();
-    _ecNameCtrl.dispose();
-    _ecPhoneCtrl.dispose();
+    _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _onSave() async {
-    if (!(_formKey.currentState?.validate() ?? true)) return;
-
-    final error = await ref
-        .read(settingsProvider.notifier)
-        .updateProfile(
-          firstName: _firstNameCtrl.text,
-          lastName: _lastNameCtrl.text,
-          email: _emailCtrl.text,
-          phone: _phoneCtrl.text,
-          emergencyName: _ecNameCtrl.text,
-          emergencyPhone: _ecPhoneCtrl.text,
-        );
-
-    if (!mounted) return;
-
-    if (error != null) {
-      AppSnackbar.error(context, error);
-    } else {
-      AppSnackbar.success(context, 'Profile updated successfully');
-    }
-  }
-
-  Future<void> _onLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: context.error),
-            child: const Text('Log out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      ref.read(authProvider.notifier).signOut();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userState = ref.watch(userProvider);
-    final settingsState = ref.watch(settingsProvider);
-
-    ref.listen<UserState>(userProvider, (prev, next) {
-      if (next.user != null && prev?.user != next.user) {
-        _populate(next.user!);
-      }
-    });
-
     return Scaffold(
       backgroundColor: context.background,
-      appBar: const CustomAppBar(title: 'Settings'),
       body: SafeArea(
-        child: userState.isLoading && userState.user == null
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: () => ref
-                    .read(userProvider.notifier)
-                    .getCurrentUser(forceRefresh: true),
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: context.screenPadding,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: AppSpacing.s8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 600;
+            final horizontalPadding = isCompact ? 16.0 : 30.0;
 
-                        _SectionCard(
-                          title: 'Personal Information',
-                          icon: Icons.person_outline_rounded,
-                          children: [
-                            if (context.isMobile) ...[
-                              CustomTextField(
-                                controller: _firstNameCtrl,
-                                label: 'First Name',
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                isCompact ? 16 : 30,
+                horizontalPadding,
+                32,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1150),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SettingsTabs(controller: _tabController),
+                      const SizedBox(height: 28),
+                      AnimatedBuilder(
+                        animation: _tabController,
+                        builder: (context, _) => _tabController.index == 0
+                            ? _DeviceSettings(isCompact: isCompact)
+                            : _NotificationSettings(
+                                selected: _notificationFrequency,
+                                onSelected: (value) => setState(
+                                  () => _notificationFrequency = value,
+                                ),
                               ),
-                              const SizedBox(height: AppSpacing.s16),
-                              CustomTextField(
-                                controller: _lastNameCtrl,
-                                label: 'Last Name',
-                              ),
-                            ] else
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: CustomTextField(
-                                      controller: _firstNameCtrl,
-                                      label: 'First Name',
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.s12),
-                                  Expanded(
-                                    child: CustomTextField(
-                                      controller: _lastNameCtrl,
-                                      label: 'Last Name',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            const SizedBox(height: AppSpacing.s16),
-                            _BirthdateField(
-                              selected: settingsState.birthdate,
-                              onChanged: (date) => ref
-                                  .read(settingsProvider.notifier)
-                                  .setBirthdate(date),
-                            ),
-                            const SizedBox(height: AppSpacing.s16),
-                            CustomTextField(
-                              controller: _emailCtrl,
-                              label: 'Email Address',
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Email is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.s16),
-                            CustomTextField(
-                              controller: _phoneCtrl,
-                              label: 'Phone Number',
-                              keyboardType: TextInputType.phone,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Phone number is required';
-                                }
-                                return null;
-                              },
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: AppSpacing.s16),
-
-                        _SectionCard(
-                          title: 'Emergency Contact',
-                          icon: Icons.emergency_outlined,
-                          subtitle: 'Person to contact in case of emergency',
-                          children: [
-                            CustomTextField(
-                              controller: _ecNameCtrl,
-                              label: 'Contact Name',
-                            ),
-                            const SizedBox(height: AppSpacing.s16),
-                            CustomTextField(
-                              controller: _ecPhoneCtrl,
-                              label: 'Contact Phone',
-                              keyboardType: TextInputType.phone,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: AppSpacing.s24),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: settingsState.isLoading ? null : _onSave,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: context.primary,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.s16,
-                              ),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: AppCorners.r12,
-                              ),
-                            ),
-                            child: settingsState.isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Save Changes',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.s12),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _onLogout,
-                            icon: Icon(
-                              Icons.logout_rounded,
-                              size: 18,
-                              color: context.error,
-                            ),
-                            label: Text(
-                              'Log out',
-                              style: TextStyle(
-                                color: context.error,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.s16,
-                              ),
-                              side: BorderSide(
-                                color: context.error.withValues(alpha: .4),
-                              ),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: AppCorners.r12,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.s32),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final String? subtitle;
-  final List<Widget> children;
+class _SettingsTabs extends StatelessWidget {
+  final TabController controller;
 
-  const _SectionCard({
+  const _SettingsTabs({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          height: 50,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: TabBar(
+            controller: controller,
+            dividerColor: Colors.transparent,
+            indicator: BoxDecoration(
+              color: AppPalette.secondaryBlue,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: const Color(0xFFC5C5C5),
+            labelStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            tabs: const [
+              Tab(text: 'Device'),
+              Tab(text: 'Notifications'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeviceSettings extends StatelessWidget {
+  final bool isCompact;
+
+  const _DeviceSettings({required this.isCompact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 0 : 161),
+          child: const _SectionTitle(
+            icon: Icons.bluetooth,
+            text: "John's Devices",
+          ),
+        ),
+        const SizedBox(height: 10),
+        _DeviceCard(
+          image: 'assets/images/icon/Group 241.png',
+          title: 'PainSense Back Belt',
+          subtitle: 'Connected',
+          connected: true,
+          isCompact: isCompact,
+          insetHorizontal: isCompact ? 0 : 161,
+          actionLabel: 'Info',
+        ),
+        const SizedBox(height: 30),
+        Text(
+          'Device Connection Tutorials',
+          style: context.bodyLarge?.copyWith(
+            color: AppPalette.secondaryBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Connect your PainSense health monitoring device to learn more about your pain management.',
+          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+        ),
+        const SizedBox(height: 22),
+        Text(
+          'Current Devices',
+          style: context.bodyLarge?.copyWith(
+            color: AppPalette.secondaryBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _DeviceCard(
+          image: 'assets/images/icon/Painsense Belt.817 1.png',
+          title: 'PainSense Back Belt',
+          subtitle: '2026',
+          isCompact: isCompact,
+          actionLabel: 'Info',
+          secondaryActionLabel: 'Tutorial',
+        ),
+        const SizedBox(height: 30),
+        Text(
+          'Need help with a Painsense Device?',
+          style: context.bodyLarge?.copyWith(
+            color: AppPalette.secondaryBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Contact Us\ninfo@painsensesolution.ca\n1200 - 900 West Hastings St.\nVancouver BC V6C 1E5',
+          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _SectionTitle({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: AppPalette.secondaryBlue),
+        const SizedBox(width: 12),
+        Text(
+          text,
+          style: context.bodyLarge?.copyWith(
+            color: AppPalette.secondaryBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeviceCard extends StatelessWidget {
+  final String image;
+  final String title;
+  final String subtitle;
+  final bool connected;
+  final bool isCompact;
+  final double insetHorizontal;
+  final String actionLabel;
+  final String? secondaryActionLabel;
+
+  const _DeviceCard({
+    required this.image,
     required this.title,
-    required this.icon,
-    required this.children,
-    this.subtitle,
+    required this.subtitle,
+    required this.isCompact,
+    this.insetHorizontal = 0,
+    required this.actionLabel,
+    this.connected = false,
+    this.secondaryActionLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.s20),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: AppCorners.r16,
-        border: Border.all(color: context.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: context.primary),
-              const SizedBox(width: AppSpacing.s8),
-              Text(
-                title,
-                style: context.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.s4),
-            Padding(
-              padding: const EdgeInsets.only(left: 26),
-              child: Text(
-                subtitle!,
-                style: context.bodySmall?.copyWith(
-                  color: context.onSurface.withValues(alpha: .5),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.s20),
-          ...children,
+    final actions = Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        _ActionButton(label: actionLabel),
+        if (secondaryActionLabel != null) ...[
+          const SizedBox(width: 20),
+          _ActionButton(label: secondaryActionLabel!),
         ],
+      ],
+    );
+    final compactActions = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ActionButton(label: actionLabel, expand: true),
+        if (secondaryActionLabel != null) ...[
+          const SizedBox(height: 12),
+          _ActionButton(label: secondaryActionLabel!, expand: true),
+        ],
+      ],
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: insetHorizontal),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 14 : 20,
+          vertical: isCompact ? 14 : 18,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: isCompact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _DeviceInfo(
+                    image: image,
+                    title: title,
+                    subtitle: subtitle,
+                    connected: connected,
+                  ),
+                  const SizedBox(height: 14),
+                  compactActions,
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _DeviceInfo(
+                      image: image,
+                      title: title,
+                      subtitle: subtitle,
+                      connected: connected,
+                    ),
+                  ),
+                  actions,
+                ],
+              ),
       ),
     );
   }
 }
 
-class _BirthdateField extends StatelessWidget {
-  final DateTime? selected;
-  final ValueChanged<DateTime?> onChanged;
+class _DeviceInfo extends StatelessWidget {
+  final String image;
+  final String title;
+  final String subtitle;
+  final bool connected;
 
-  const _BirthdateField({required this.selected, required this.onChanged});
+  const _DeviceInfo({
+    required this.image,
+    required this.title,
+    required this.subtitle,
+    required this.connected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (connected)
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: const BoxDecoration(
+              color: AppPalette.green,
+              shape: BoxShape.circle,
+            ),
+          ),
+        SizedBox(
+          width: connected ? 76 : 150,
+          height: connected ? 28 : 52,
+          child: Image.asset(image, fit: BoxFit.contain),
+        ),
+        const SizedBox(width: 22),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.bodyLarge?.copyWith(
+                  color: AppPalette.secondaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: context.bodyLarge?.copyWith(
+                  color: AppPalette.secondaryBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final bool expand;
+
+  const _ActionButton({required this.label, this.expand = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: expand ? double.infinity : (label == 'Tutorial' ? 240 : 115),
+      height: 50,
+      child: FilledButton(
+        onPressed: () {},
+        style: FilledButton.styleFrom(
+          backgroundColor: AppPalette.secondaryBlue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+}
+
+class _NotificationSettings extends StatelessWidget {
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  const _NotificationSettings({
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -369,54 +409,57 @@ class _BirthdateField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Date of Birth',
-          style: context.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: context.onSurface.withValues(alpha: .6),
+          "Choose John's Notification Frequency",
+          style: context.bodyLarge?.copyWith(
+            color: AppPalette.secondaryBlue,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: AppSpacing.s6),
-        GestureDetector(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: selected ?? DateTime(1990),
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) onChanged(picked);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s16,
-              vertical: AppSpacing.s14,
-            ),
-            decoration: BoxDecoration(
-              color: context.background,
-              borderRadius: AppCorners.r12,
-              border: Border.all(color: context.border),
-            ),
-            child: Row(
+        const SizedBox(height: 6),
+        Text(
+          'This setting will adjust how often the PainSense device vibrates to suggest adjustments to posture.',
+          style: context.bodyLarge?.copyWith(color: AppPalette.secondaryBlue),
+        ),
+        const SizedBox(height: 24),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final barWidth = constraints.maxWidth < 420 ? 22.0 : 29.0;
+            return Column(
               children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 18,
-                  color: context.onSurface.withValues(alpha: .45),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: List.generate(7, (index) {
+                    final isSelected = index == selected;
+                    return GestureDetector(
+                      onTap: () => onSelected(index),
+                      child: Container(
+                        width: barWidth,
+                        height: isSelected ? 62 : (index.isEven ? 23 : 34),
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppPalette.secondaryBlue
+                              : (index == 0 || index == 6
+                                    ? const Color(0xFFF5F5F5)
+                                    : const Color(0xFFC7D3DE)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
-                const SizedBox(width: AppSpacing.s10),
-                Text(
-                  selected != null
-                      ? '${selected!.day.toString().padLeft(2, '0')}/${selected!.month.toString().padLeft(2, '0')}/${selected!.year}'
-                      : 'Select date of birth',
-                  style: context.bodyMedium?.copyWith(
-                    color: selected != null
-                        ? context.onSurface
-                        : context.onSurface.withValues(alpha: .35),
+                const SizedBox(height: 2),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [Text('Less Often'), Text('More Often')],
                   ),
                 ),
               ],
-            ),
-          ),
+            );
+          },
         ),
       ],
     );

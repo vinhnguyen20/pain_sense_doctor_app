@@ -237,8 +237,7 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-settings',
                   name: 'patient-settings',
-                  builder: (context, state) =>
-                      const Scaffold(body: Center(child: Text('Settings'))),
+                    builder: (context, state) => const SettingsPage(),
                 ),
               ],
             ),

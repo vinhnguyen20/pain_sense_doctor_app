@@ -52,6 +52,8 @@ flutter:
   assets:
     - .env
     - assets/images/icon/icon.png
+    - assets/images/icon/Group 241.png
+    - assets/images/icon/Painsense Belt.817 1.png
     - assets/images/logo/ps_logo_full.png
     - assets/images/logo/ps_logo_full_white.png
     - assets/images/logo/ps_logo.jpg
