@@ -64,8 +64,24 @@ class ExerciseModel extends Exercise
          createdBy: createdBy,
        );
 
-  factory ExerciseModel.fromJson(Map<String, dynamic> json) =>
-      _$ExerciseModelFromJson(json);
+  factory ExerciseModel.fromJson(Map<String, dynamic> json) {
+    return ExerciseModel(
+      id: _stringValue(json['id']),
+      title: _stringValue(json['title']),
+      description: _stringValue(json['description']),
+      durationSeconds: _intValue(json['duration_seconds']),
+      level: _stringValue(json['level']),
+      benefits: _stringList(json['benefits']),
+      media: _mediaList(json),
+      viewCount: _intValue(json['view_count']),
+      avgRatings: _doubleValue(json['avg_ratings']),
+      totalReviews: _intValue(json['total_reviews']),
+      note: json['note']?.toString(),
+      createdBy: json['created_by']?.toString(),
+      createdAt: _dateTimeValue(json['created_at']),
+      updatedAt: _dateTimeValue(json['updated_at']),
+    );
+  }
 
   Map<String, dynamic> toJson() => _$ExerciseModelToJson(this);
 
@@ -162,8 +178,25 @@ class ExerciseMediaModel extends ExerciseMedia
          createdBy: createdBy,
        );
 
-  factory ExerciseMediaModel.fromJson(Map<String, dynamic> json) =>
-      _$ExerciseMediaModelFromJson(json);
+  factory ExerciseMediaModel.fromJson(Map<String, dynamic> json) {
+    return ExerciseMediaModel(
+      id: _stringValue(json['id']),
+      type: ExerciseMediaType.fromString(
+        (json['type'] ?? 'video_server').toString(),
+      ),
+      title: _stringValue(json['title']),
+      url: _stringValue(json['url'] ?? json['video_url']),
+      thumbnailUrl: json['thumbnail_url']?.toString(),
+      position: _intValue(json['position']),
+      durationSeconds: json['duration_seconds'] == null
+          ? null
+          : _intValue(json['duration_seconds']),
+      posturePositionRequired: json['posture_position_required']?.toString(),
+      altText: json['alt_text']?.toString(),
+      createdAt: _dateTimeValue(json['created_at']),
+      createdBy: json['created_by']?.toString(),
+    );
+  }
 
   Map<String, dynamic> toJson() => _$ExerciseMediaModelToJson(this);
 
@@ -199,4 +232,31 @@ class ExerciseMediaModel extends ExerciseMedia
       createdBy: createdBy,
     );
   }
+}
+
+String _stringValue(dynamic value) => value?.toString() ?? '';
+
+int _intValue(dynamic value) => value is num ? value.toInt() : 0;
+
+double _doubleValue(dynamic value) => value is num ? value.toDouble() : 0;
+
+List<String> _stringList(dynamic value) {
+  if (value is! List) return const [];
+  return value.map((item) => item.toString()).toList();
+}
+
+DateTime? _dateTimeValue(dynamic value) {
+  if (value is! String || value.trim().isEmpty) return null;
+  return DateTime.tryParse(value);
+}
+
+List<ExerciseMediaModel> _mediaList(Map<String, dynamic> json) {
+  final rawMedia = json['media'] ?? json['videos'];
+  if (rawMedia is! List) return const [];
+  return rawMedia
+      .whereType<Map>()
+      .map(
+        (item) => ExerciseMediaModel.fromJson(Map<String, dynamic>.from(item)),
+      )
+      .toList();
 }

@@ -1,16 +1,22 @@
 import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/education/domain/entites/exercise.dart';
+import 'package:app_doctor/features/education/presentation/provider/education_provider.dart';
 import 'package:app_doctor/presentations/pages/exercises/widgets/clinician_exercise_components.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// UI-only exercise and routine flow. The sample content is intentionally
-/// local until the clinician exercise APIs are wired in.
-class ClinicianExercisesPage extends StatefulWidget {
+/// Clinician exercise and routine flow.
+///
+/// The exercise library is loaded from `/exercises`; routine persistence stays
+/// local until the backend provides a routine resource.
+class ClinicianExercisesPage extends ConsumerStatefulWidget {
   const ClinicianExercisesPage({super.key});
 
   @override
-  State<ClinicianExercisesPage> createState() => _ClinicianExercisesPageState();
+  ConsumerState<ClinicianExercisesPage> createState() =>
+      _ClinicianExercisesPageState();
 }
 
 enum _ExerciseView {
@@ -22,15 +28,52 @@ enum _ExerciseView {
   editExercise,
 }
 
-class _ClinicianExercisesPageState extends State<ClinicianExercisesPage> {
+class _ClinicianExercisesPageState
+    extends ConsumerState<ClinicianExercisesPage> {
   _ExerciseView _view = _ExerciseView.overview;
   String _routineName = '';
   String _selectedExercise = 'Shoulder Shrugs';
   int _reps = 5;
   int _sets = 3;
+  List<_ExerciseData> _apiExercises = const [];
+  bool _isLoadingExercises = true;
+  String? _exerciseApiError;
 
   String get _displayRoutineName =>
       _routineName.trim().isEmpty ? 'My New Strength Routine' : _routineName;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadExercises);
+  }
+
+  Future<void> _loadExercises() async {
+    final response = await ref
+        .read(getExercisesUseCaseProvider)
+        .call(limit: 100);
+    if (!mounted) return;
+
+    if (response.isSuccess && response.data != null) {
+      setState(() {
+        _apiExercises = response.data!.items.map(_toExerciseData).toList();
+        _isLoadingExercises = false;
+        _exerciseApiError = null;
+      });
+    } else {
+      setState(() {
+        _isLoadingExercises = false;
+        _exerciseApiError = response.message;
+      });
+    }
+  }
+
+  _ExerciseData _toExerciseData(Exercise exercise) => _ExerciseData(
+    exercise.title,
+    _assetForExercise(exercise.title),
+    exercise.description.trim().isEmpty ? null : exercise.description,
+    id: exercise.id,
+  );
 
   void _open(_ExerciseView view) => setState(() => _view = view);
 
@@ -72,7 +115,23 @@ class _ClinicianExercisesPageState extends State<ClinicianExercisesPage> {
                 const SizedBox(height: 16),
               DefaultTextStyle.merge(
                 style: const TextStyle(color: AppPalette.secondaryBlue),
-                child: _buildView(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_isLoadingExercises)
+                      const LinearProgressIndicator(minHeight: 2),
+                    if (_exerciseApiError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Không tải được thư viện bài tập, đang hiển thị dữ liệu mẫu.',
+                        style: AppTypography.denseBody1.copyWith(
+                          color: AppPalette.medGray,
+                        ),
+                      ),
+                    ],
+                    _buildView(context),
+                  ],
+                ),
               ),
             ],
           ),
@@ -85,6 +144,7 @@ class _ClinicianExercisesPageState extends State<ClinicianExercisesPage> {
     switch (_view) {
       case _ExerciseView.overview:
         return _OverviewView(
+          exercises: _apiExercises,
           onCreateRoutine: () => _open(_ExerciseView.routineType),
           onEditExercise: (name) {
             _selectedExercise = name;
@@ -101,6 +161,7 @@ class _ClinicianExercisesPageState extends State<ClinicianExercisesPage> {
       case _ExerciseView.routinePicker:
         return _RoutinePickerView(
           routineName: _displayRoutineName,
+          exercises: _apiExercises,
           onBack: () => _open(_ExerciseView.routineType),
           onExerciseSelected: (name) {
             _selectedExercise = name;
@@ -145,41 +206,45 @@ class _ClinicianExercisesPageState extends State<ClinicianExercisesPage> {
 }
 
 class _OverviewView extends StatelessWidget {
+  final List<_ExerciseData> exercises;
   final VoidCallback onCreateRoutine;
   final ValueChanged<String> onEditExercise;
 
   const _OverviewView({
+    required this.exercises,
     required this.onCreateRoutine,
     required this.onEditExercise,
   });
 
   @override
   Widget build(BuildContext context) {
+    final library = exercises.isEmpty ? _fallbackExercises : exercises;
+    final stretching = library.where(_isStretchingExercise).toList();
+    final strength = library
+        .where((item) => !_isStretchingExercise(item))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ExerciseSection(
           title: 'Stretching',
-          exercises: const [
-            _ExerciseData(
-              '30 Minute Program',
-              'side_stretch.svg',
-              'Your custom\nStretching Routine',
-            ),
-            _ExerciseData('Toe Touches', 'yoga.svg', null),
-          ],
+          exercises: stretching.isEmpty
+              ? const [
+                  _ExerciseData(
+                    '30 Minute Program',
+                    'side_stretch.svg',
+                    'Your custom\nStretching Routine',
+                  ),
+                  _ExerciseData('Toe Touches', 'yoga.svg', null),
+                ]
+              : stretching,
           onTap: onEditExercise,
         ),
         const SizedBox(height: 30),
         _ExerciseSection(
           title: 'Strength Training',
-          exercises: const [
-            _ExerciseData('Bridges', 'bridges.svg', null),
-            _ExerciseData('Front Plank', 'front_plank.svg', null),
-            _ExerciseData('Standing Squats', 'lunges.svg', null),
-            _ExerciseData('Standing Lunges', 'lunges.svg', null),
-            _ExerciseData('Shoulder Shrugs', 'shoulder_shrugs.svg', null),
-          ],
+          exercises: strength.isEmpty ? _fallbackExercises : strength,
           onTap: onEditExercise,
         ),
         const SizedBox(height: 30),
@@ -297,24 +362,20 @@ class _RoutineTypeView extends StatelessWidget {
 
 class _RoutinePickerView extends StatelessWidget {
   final String routineName;
+  final List<_ExerciseData> exercises;
   final VoidCallback onBack;
   final ValueChanged<String> onExerciseSelected;
 
   const _RoutinePickerView({
     required this.routineName,
+    required this.exercises,
     required this.onBack,
     required this.onExerciseSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    const exercises = [
-      _ExerciseData('Bridges', 'bridges.svg', null),
-      _ExerciseData('Front Plank', 'front_plank.svg', null),
-      _ExerciseData('Standing Squats', 'lunges.svg', null),
-      _ExerciseData('Standing Lunges', 'lunges.svg', null),
-      _ExerciseData('Shoulder Shrugs', 'shoulder_shrugs.svg', null),
-    ];
+    final library = exercises.isEmpty ? _fallbackExercises : exercises;
     return _FlowColumn(
       onBack: onBack,
       child: Column(
@@ -337,7 +398,7 @@ class _RoutinePickerView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _ResponsiveWrap(
-            children: exercises
+            children: library
                 .map(
                   (exercise) => _ExerciseTile(
                     exercise: exercise,
@@ -411,10 +472,7 @@ class _ExerciseSetupView extends StatelessWidget {
                 height: showVideoIcon ? 134.01744079589844 : 94,
                 padding: showVideoIcon
                     ? const EdgeInsets.all(20)
-                    : const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
+                    : const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 borderRadius: 20,
                 gap: showVideoIcon ? 6.02 : 10,
                 isVertical: showVideoIcon,
@@ -589,8 +647,38 @@ class _ExerciseData {
   final String name;
   final String asset;
   final String? subtitle;
+  final String? id;
 
-  const _ExerciseData(this.name, this.asset, this.subtitle);
+  const _ExerciseData(this.name, this.asset, this.subtitle, {this.id});
+}
+
+const _fallbackExercises = [
+  _ExerciseData('Bridges', 'bridges.svg', null),
+  _ExerciseData('Front Plank', 'front_plank.svg', null),
+  _ExerciseData('Standing Squats', 'lunges.svg', null),
+  _ExerciseData('Standing Lunges', 'lunges.svg', null),
+  _ExerciseData('Shoulder Shrugs', 'shoulder_shrugs.svg', null),
+];
+
+bool _isStretchingExercise(_ExerciseData exercise) {
+  final value = '${exercise.name} ${exercise.subtitle ?? ''}'.toLowerCase();
+  return value.contains('stretch') ||
+      value.contains('yoga') ||
+      value.contains('toe') ||
+      value.contains('giãn');
+}
+
+String _assetForExercise(String title) {
+  final value = title.toLowerCase();
+  if (value.contains('yoga')) return 'yoga.svg';
+  if (value.contains('shoulder') || value.contains('shrug')) {
+    return 'shoulder_shrugs.svg';
+  }
+  if (value.contains('bridge')) return 'bridges.svg';
+  if (value.contains('plank')) return 'front_plank.svg';
+  if (value.contains('lunge') || value.contains('squat')) return 'lunges.svg';
+  if (value.contains('run')) return 'running.svg';
+  return 'side_stretch.svg';
 }
 
 class _ExerciseTile extends StatelessWidget {
@@ -842,12 +930,8 @@ class _BlueButton extends StatelessWidget {
 }
 
 _ExerciseData _exerciseData(String name) {
-  const all = [
-    _ExerciseData('Bridges', 'bridges.svg', null),
-    _ExerciseData('Front Plank', 'front_plank.svg', null),
-    _ExerciseData('Standing Squats', 'lunges.svg', null),
-    _ExerciseData('Standing Lunges', 'lunges.svg', null),
-    _ExerciseData('Shoulder Shrugs', 'shoulder_shrugs.svg', null),
-  ];
-  return all.firstWhere((item) => item.name == name, orElse: () => all.last);
+  return _fallbackExercises.firstWhere(
+    (item) => item.name == name,
+    orElse: () => _ExerciseData(name, _assetForExercise(name), null),
+  );
 }

@@ -59,12 +59,16 @@ enum ExerciseMediaType {
   unknown;
 
   static ExerciseMediaType fromString(String value) {
-    switch (value) {
+    switch (value.toLowerCase()) {
       case 'image':
         return ExerciseMediaType.image;
       case 'video_server':
+      case 'videoserver':
+      case 'video':
         return ExerciseMediaType.videoServer;
       case 'video_youtube':
+      case 'videoyoutube':
+      case 'youtube':
         return ExerciseMediaType.videoYoutube;
       default:
         return ExerciseMediaType.unknown;
