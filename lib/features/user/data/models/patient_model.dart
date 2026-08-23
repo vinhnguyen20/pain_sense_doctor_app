@@ -57,6 +57,10 @@ class PatientModel extends Patient
   @override
   final TrackingLogsModel? trackingLogs;
 
+  @JsonKey(name: 'pain_type')
+  @override
+  final String? painType;
+
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   AuthInfo? get authInfo => null;
@@ -74,6 +78,7 @@ class PatientModel extends Patient
     this.emergencyContact,
     this.status,
     this.trackingLogs,
+    this.painType,
   }) : super(
          id: id,
          email: email,
@@ -87,6 +92,7 @@ class PatientModel extends Patient
          emergencyContact: emergencyContact,
          status: status,
          trackingLogs: trackingLogs,
+         painType: painType,
        );
 
   factory PatientModel.fromJson(Map<String, dynamic> json) =>
@@ -109,6 +115,7 @@ class PatientModel extends Patient
       emergencyContact: emergencyContact?.toEntity(),
       status: status,
       trackingLogs: trackingLogs?.toEntity(),
+      painType: painType,
     );
   }
 
@@ -130,6 +137,7 @@ class PatientModel extends Patient
       trackingLogs: entity.trackingLogs != null
           ? TrackingLogsModel.fromEntity(entity.trackingLogs!)
           : null,
+      painType: entity.painType,
     );
   }
 

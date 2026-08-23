@@ -5,6 +5,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 class Patient extends User {
   final TrackingLogs? trackingLogs;
+  final String? painType;
 
   const Patient({
     required super.id,
@@ -19,6 +20,7 @@ class Patient extends User {
     super.emergencyContact,
     super.status,
     this.trackingLogs,
+    this.painType,
   });
 
   @override
@@ -35,6 +37,7 @@ class Patient extends User {
     EmergencyContact? emergencyContact,
     UserStatus? status,
     TrackingLogs? trackingLogs,
+    String? painType,
     DateTime? createdAt,
     AuthInfo? authInfo,
   }) {
@@ -51,11 +54,12 @@ class Patient extends User {
       emergencyContact: emergencyContact ?? this.emergencyContact,
       status: status ?? this.status,
       trackingLogs: trackingLogs ?? this.trackingLogs,
+      painType: painType ?? this.painType,
     );
   }
 
   @override
-  List<Object?> get props => [...super.props, trackingLogs];
+  List<Object?> get props => [...super.props, trackingLogs, painType];
 }
 
 class TrackingLogs extends Equatable {
