@@ -38,8 +38,10 @@ class ChatWsDataSource {
   bool _isDisposed = false;
   bool _manualDisconnect = false;
   bool _isConnecting = false;
+  String? _connectedUserId;
 
-  Uri? _connectedUri;
+  bool get isConnected => _socket != null;
+  String? get connectedUserId => _connectedUserId;
 
   final Map<String, int> _preferredPortByHost = {};
 
@@ -53,7 +55,9 @@ class ChatWsDataSource {
        _parseConversation = parseConversation;
 
   Future<void> connect() async {
-    if (_isDisposed || _manualDisconnect || _isConnecting) return;
+    if (_isDisposed || _manualDisconnect || _isConnecting || isConnected) {
+      return;
+    }
     _isConnecting = true;
 
     try {
@@ -92,7 +96,6 @@ class ChatWsDataSource {
           socket.pingInterval = _pingInterval;
 
           _socket = socket;
-          _connectedUri = uri;
           _recordSuccess(uri);
           _log('connected ${_maskUri(uri)}');
           break;
@@ -184,6 +187,7 @@ class ChatWsDataSource {
     }
 
     final userId = data?['user_id']?.toString() ?? data?['userId']?.toString();
+    _connectedUserId = userId?.trim();
     _log('RX connected userId=$userId');
     _stopReconnectTimer();
     _emit(ChatWsConnected(userId: userId));
@@ -201,7 +205,10 @@ class ChatWsDataSource {
     final data = _toMap(payload['data']);
     if (data == null) return;
     try {
-      final conversation = _parseConversation(data);
+      final conversationMap =
+          _toMap(data['conversation']) ?? _toMap(data['data']) ?? data;
+      final conversation = _parseConversation(conversationMap);
+      if (conversation.id.trim().isEmpty) return;
       _emit(ChatWsConversationUpdated(conversation));
       _log('RX conversation.updated id=${conversation.id}');
     } catch (_) {}
@@ -374,7 +381,6 @@ class ChatWsDataSource {
       _socket?.close();
     } catch (_) {}
     _socket = null;
-    _connectedUri = null;
   }
 
   void _startStabilityTimer() {

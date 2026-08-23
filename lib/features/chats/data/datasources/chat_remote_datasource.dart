@@ -349,8 +349,27 @@ class ChatRemoteDataSource {
       normalized['last_message'] = null;
     }
 
-    normalized['unread_info'] = normalized['unread_info'] ?? <dynamic>[];
-    normalized['unread_count_doctor'] = normalized['unread_count_doctor'] ?? 0;
+    final rawUnreadInfo = normalized['unread_info'] ?? normalized['unreadInfo'];
+    if (rawUnreadInfo is List) {
+      normalized['unread_info'] = rawUnreadInfo.map((item) {
+        if (item is Map) {
+          final m = Map<String, dynamic>.from(item);
+          return {
+            'user_id': (m['user_id'] ?? m['userId'])?.toString() ?? '',
+            'count': (m['count'] as num?)?.toInt() ?? 0,
+            'last_read_at': m['last_read_at'] ?? m['lastReadAt'],
+          };
+        }
+        return item;
+      }).toList();
+    } else {
+      normalized['unread_info'] = <dynamic>[];
+    }
+    normalized['unread_count_doctor'] =
+        normalized['unread_count_doctor'] ??
+        normalized['unread_count'] ??
+        normalized['unreadCount'] ??
+        0;
     normalized['unread_count_patient'] =
         normalized['unread_count_patient'] ?? 0;
     normalized['status'] = normalized['status'] ?? 'active';
