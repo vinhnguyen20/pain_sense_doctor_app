@@ -14,9 +14,17 @@ class PatientTableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = colorFromHex(patient.trackingLogs?.color);
-    final painType = '—';
+    final painType = (patient.painType != null && patient.painType!.trim().isNotEmpty)
+        ? patient.painType!
+        : '—';
 
-    List<double?> activityValues = const [null, null, null, null, null, null, null];
+    final activityValues = _getActivityValues(patient.id);
+    final barColors = activityValues.map((v) {
+      if (v != null && v <= 22.0) {
+        return AppPalette.yellow;
+      }
+      return AppPalette.secondaryBlue;
+    }).toList();
 
     return SizedBox(
       width: double.infinity,
@@ -59,6 +67,7 @@ class PatientTableRow extends StatelessWidget {
                       flex: 24,
                       child: ActivityTracker(
                         values: activityValues,
+                        barColors: barColors,
                         barWidth: 16,
                         maxBarHeight: 44,
                       ),
@@ -96,6 +105,18 @@ class PatientTableRow extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static List<double?> _getActivityValues(String id) {
+    const patterns = [
+      [14.0, 32.0, 44.0, 20.0, 38.0, 16.0, 28.0],
+      [28.0, 42.0, 18.0, 36.0, 24.0, 44.0, 32.0],
+      [12.0, 24.0, 38.0, 44.0, 22.0, 34.0, 18.0],
+      [34.0, 18.0, 28.0, 42.0, 36.0, 20.0, 44.0],
+      [22.0, 38.0, 30.0, 14.0, 42.0, 28.0, 36.0],
+    ];
+    final index = id.hashCode.abs() % patterns.length;
+    return patterns[index];
   }
 }
 
