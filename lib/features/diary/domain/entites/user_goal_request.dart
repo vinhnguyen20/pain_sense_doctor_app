@@ -54,8 +54,8 @@ class UserGoalExerciseAssignment {
       'assigned_date': _apiDateFormatter.format(assignedDate),
       'start_date': _apiDateFormatter.format(startDate),
       'end_date': _apiDateFormatter.format(endDate),
-      if (doctorInstruction != null) 'doctor_instruction': doctorInstruction,
       'schedule_config': scheduleConfig.map((item) => item.toJson()).toList(),
+      'doctor_instruction': doctorInstruction ?? '',
     };
   }
 }
@@ -94,11 +94,7 @@ class UserGoalScheduleSlot {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'period': period,
-      'time': time,
-      if (instruction != null) 'instruction': instruction,
-    };
+    return {'period': period, 'time': time, 'instruction': instruction ?? ''};
   }
 }
 
@@ -126,7 +122,7 @@ class UserGoalItem {
       'unit': unit,
       'label': label,
       'desc': desc,
-      if (userExerciseIds != null) 'user_exercise_ids': userExerciseIds,
+      'user_exercise_ids': userExerciseIds ?? const <String>[],
     };
   }
 }
@@ -156,6 +152,7 @@ class UpdateUserGoalRequest {
     'user_id': patientId,
     'start_date': _fmt.format(startDate),
     'end_date': _fmt.format(endDate),
+    'exercises': exercises.map((e) => e.toJson()).toList(),
     'user_exercises': exercises.map((e) => e.toJson()).toList(),
     'goal_items': goalItems.map((e) => e.toJson()).toList(),
   };

@@ -101,16 +101,16 @@ class GoalItemModel {
 
   static String _typeToJson(GoalType type) => type.toApiString();
 
-  @JsonKey(name: 'min_target')
+  @JsonKey(name: 'min_target', defaultValue: 0)
   final int minTarget;
 
-  @JsonKey(name: 'unit')
+  @JsonKey(name: 'unit', defaultValue: '')
   final String unit;
 
-  @JsonKey(name: 'label')
+  @JsonKey(name: 'label', defaultValue: '')
   final String label;
 
-  @JsonKey(name: 'desc')
+  @JsonKey(name: 'desc', defaultValue: '')
   final String desc;
 
   @JsonKey(name: 'user_exercise_ids')
