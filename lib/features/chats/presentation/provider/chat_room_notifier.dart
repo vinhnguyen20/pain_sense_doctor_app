@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:app_doctor/core/services/auth/token_service.dart';
-import 'package:app_doctor/features/chats/data/datasources/chat_ws_datasource.dart';
 import 'package:app_doctor/features/chats/data/models/chat_ws_event.dart';
 import 'package:app_doctor/features/chats/domain/entites/message.dart';
 import 'package:app_doctor/features/chats/presentation/provider/chat_providers.dart';
@@ -102,10 +100,13 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   String _conversationId;
   final String _patientId;
 
-  ChatWsDataSource? _wsDs;
   StreamSubscription<ChatWsEvent>? _wsSubscription;
   Timer? _cacheDebounceTimer;
+  Timer? _pollingTimer;
   bool _isDisposed = false;
+  bool _isRefreshingLatest = false;
+  bool _isMarkingRead = false;
+  bool _markReadRequested = false;
   DateTime? _lastHydratedCacheAt;
 
   ChatRoomNotifier(ChatRoomSession session)
@@ -116,9 +117,9 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
   ChatRoomState build() {
     ref.onDispose(() {
       _isDisposed = true;
+      _pollingTimer?.cancel();
       _wsSubscription?.cancel();
       _cacheDebounceTimer?.cancel();
-      _wsDs?.dispose();
     });
 
     Future.microtask(_initialize);
@@ -145,34 +146,64 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       await loadHistory();
     }
     await _connectWs();
+    _startPolling();
     await markAsRead();
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (_isDisposed || !ref.mounted) return;
+      _refreshLatestMessage();
+    });
   }
 
   Future<void> _refreshLatestMessage() async {
     if (_conversationId.isEmpty) return;
     if (_isDisposed || !ref.mounted) return;
+    if (_isRefreshingLatest) return;
+    _isRefreshingLatest = true;
 
-    final response = await ref
-        .read(getMessagesPageUseCaseProvider)
-        .call(conversationId: _conversationId, limit: _historyPageSize);
-    if (_isDisposed || !ref.mounted) return;
-    if (response.isFailure || response.data == null) return;
+    try {
+      final response = await ref
+          .read(getMessagesPageUseCaseProvider)
+          .call(conversationId: _conversationId, limit: _historyPageSize);
+      if (_isDisposed || !ref.mounted) return;
+      if (response.isFailure || response.data == null) return;
 
-    final items = response.data!.items;
-    if (items.isEmpty) return;
+      final items = response.data!.items;
+      if (items.isEmpty) return;
 
-    final messages = [...state.messages];
-    for (final item in items) {
-      final index = messages.indexWhere((m) => m.id == item.id);
-      if (index >= 0) {
-        messages[index] = item;
-      } else {
-        messages.add(item);
+      final messages = [...state.messages];
+      var hasNew = false;
+      var hasChanges = false;
+      for (final item in items) {
+        final index = messages.indexWhere((m) => _sameId(m.id, item.id));
+        if (index >= 0) {
+          if (messages[index] != item) {
+            messages[index] = item;
+            hasChanges = true;
+          }
+        } else {
+          messages.add(item);
+          hasNew = true;
+          hasChanges = true;
+        }
       }
+      if (hasChanges) {
+        messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+        state = state.copyWith(messages: messages);
+        _schedulePersistCache();
+      }
+      if (hasNew) {
+        ref
+            .read(conversationsProvider.notifier)
+            .clearUnreadCount(_conversationId, _patientId);
+        unawaited(markAsRead());
+      }
+    } finally {
+      _isRefreshingLatest = false;
     }
-    messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-    state = state.copyWith(messages: messages);
-    _schedulePersistCache();
   }
 
   Future<void> loadHistory() async {
@@ -328,10 +359,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
           );
 
       if (createRes.isFailure || createRes.data == null) {
-        state = state.copyWith(
-          isSending: false,
-          error: createRes.message,
-        );
+        state = state.copyWith(isSending: false, error: createRes.message);
         return;
       }
 
@@ -365,26 +393,42 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
   Future<void> markAsRead() async {
     if (_conversationId.isEmpty) return;
-
-    final response = await ref
-        .read(markConversationAsReadUseCaseProvider)
-        .call(conversationId: _conversationId);
-
-    if (response.isFailure) {
-      state = state.copyWith(error: response.message);
+    if (_isMarkingRead) {
+      _markReadRequested = true;
       return;
     }
+    _isMarkingRead = true;
 
-    final currentMainUserId = ref.read(userProvider).user?.id ?? '';
-    final currentChatUserId = state.connectedUserId ?? '';
-    final readerId = currentMainUserId.isNotEmpty
-        ? currentMainUserId
-        : currentChatUserId;
-    if (readerId.isNotEmpty) {
-      _markIncomingMessagesAsReadForCurrentUser(
-        readerId: readerId,
-        currentUserIds: _buildCurrentUserIds(),
-      );
+    try {
+      do {
+        _markReadRequested = false;
+        final response = await ref
+            .read(markConversationAsReadUseCaseProvider)
+            .call(conversationId: _conversationId);
+
+        if (_isDisposed || !ref.mounted) return;
+        if (response.isFailure) {
+          state = state.copyWith(error: response.message);
+          return;
+        }
+
+        final currentMainUserId = ref.read(userProvider).user?.id ?? '';
+        final currentChatUserId = state.connectedUserId ?? '';
+        final readerId = currentMainUserId.isNotEmpty
+            ? currentMainUserId
+            : currentChatUserId;
+        if (readerId.isNotEmpty) {
+          _markIncomingMessagesAsReadForCurrentUser(
+            readerId: readerId,
+            currentUserIds: _buildCurrentUserIds(),
+          );
+        }
+        ref
+            .read(conversationsProvider.notifier)
+            .clearUnreadCount(_conversationId, _patientId);
+      } while (_markReadRequested);
+    } finally {
+      _isMarkingRead = false;
     }
   }
 
@@ -395,20 +439,22 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
     state = state.copyWith(isConnectingWs: true, clearError: true);
 
-    final chatDs = ref.read(chatRemoteDataSourceProvider);
-
-    _wsDs?.dispose();
-    _wsDs = ChatWsDataSource(
-      conversationId: _conversationId,
-      getAccessToken: () =>
-          ref.read(tokenServiceProvider.notifier).getAccessToken(),
-      parseMessage: chatDs.parseMessage,
-      parseConversation: chatDs.parseConversation,
-    );
-
     _wsSubscription?.cancel();
-    _wsSubscription = _wsDs?.events.listen(_handleWsEvent, onError: (_) {});
-    await _wsDs?.connect();
+    final ws = ref
+        .read(conversationsProvider.notifier)
+        .realtimeConnectionFor(_conversationId);
+    if (ws == null) {
+      state = state.copyWith(isConnectingWs: false, isWsConnected: false);
+      return;
+    }
+    _wsSubscription = ws.events.listen(_handleWsEvent, onError: (_) {});
+    await ws.connect();
+    if (_isDisposed || !ref.mounted) return;
+    state = state.copyWith(
+      isConnectingWs: false,
+      isWsConnected: ws.isConnected,
+      connectedUserId: ws.connectedUserId,
+    );
   }
 
   void _handleWsEvent(ChatWsEvent event) {
@@ -433,7 +479,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
           '[WS_CHAT] Message received id=${message.id} convId=${message.conversationId} currentConvId=$_conversationId',
         );
         if (message.conversationId.isEmpty ||
-            message.conversationId == _conversationId) {
+            _sameId(message.conversationId, _conversationId)) {
           debugPrint('[WS_CHAT] Appending message');
           _appendOrUpdateMessage(message);
         } else {
@@ -477,7 +523,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
   void disconnectWs({bool shouldUpdateState = true}) {
     _wsSubscription?.cancel();
-    _wsDs?.disconnect();
+    _wsSubscription = null;
     if (shouldUpdateState && ref.mounted) {
       state = state.copyWith(isConnectingWs: false, isWsConnected: false);
     }
@@ -544,7 +590,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
   void _appendOrUpdateMessage(Message message) {
     final items = [...state.messages];
-    final index = items.indexWhere((item) => item.id == message.id);
+    final index = items.indexWhere((item) => _sameId(item.id, message.id));
+    final isNewMessage = index < 0;
     if (index >= 0) {
       items[index] = message;
     } else {
@@ -554,11 +601,32 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     state = state.copyWith(messages: items);
     _schedulePersistCache();
 
-    ref.read(conversationsProvider.notifier).updateLastMessage(
-      conversationId: _conversationId,
-      message: message,
-      patientId: _patientId,
-    );
+    final currentMainUserId = ref.read(userProvider).user?.id ?? '';
+    final currentChatUserId = state.connectedUserId ?? '';
+    final senderId = message.senderId.trim().toLowerCase();
+    final isFromMe =
+        (currentMainUserId.isNotEmpty &&
+            senderId == currentMainUserId.trim().toLowerCase()) ||
+        (currentChatUserId.isNotEmpty &&
+            senderId == currentChatUserId.trim().toLowerCase());
+    final isFromPatient = _patientId.trim().isNotEmpty
+        ? _sameId(message.senderId, _patientId)
+        : !isFromMe;
+
+    ref
+        .read(conversationsProvider.notifier)
+        .updateLastMessage(
+          conversationId: _conversationId,
+          message: message,
+          patientId: _patientId,
+        );
+
+    if (isFromPatient && isNewMessage) {
+      ref
+          .read(conversationsProvider.notifier)
+          .clearUnreadCount(_conversationId, _patientId);
+      unawaited(markAsRead());
+    }
   }
 
   List<Message> _mergeSortedWithoutDuplicates(
@@ -590,7 +658,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     required String readerId,
     required Set<String> currentUserIds,
   }) {
-    final readerNormalized = (readerId);
+    final readerNormalized = readerId.trim().toLowerCase();
     if (readerNormalized.isEmpty ||
         !currentUserIds.contains(readerNormalized)) {
       return;
@@ -598,10 +666,10 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
     var hasChanges = false;
     final updated = state.messages.map((message) {
-      final sender = (message.senderId);
+      final sender = message.senderId.trim().toLowerCase();
       if (currentUserIds.contains(sender)) return message;
       final alreadyRead = message.readByIds.any(
-        (id) => (id) == readerNormalized,
+        (id) => id.trim().toLowerCase() == readerNormalized,
       );
       if (alreadyRead) return message;
       hasChanges = true;
@@ -617,8 +685,13 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     final mainId = ref.read(userProvider).user?.id;
     final chatId = state.connectedUserId;
     return {
-      if (mainId != null && mainId.isNotEmpty) mainId,
-      if (chatId != null && chatId.isNotEmpty) chatId,
+      if (mainId != null && mainId.trim().isNotEmpty)
+        mainId.trim().toLowerCase(),
+      if (chatId != null && chatId.trim().isNotEmpty)
+        chatId.trim().toLowerCase(),
     };
   }
+
+  bool _sameId(String a, String b) =>
+      a.trim().toLowerCase() == b.trim().toLowerCase();
 }
