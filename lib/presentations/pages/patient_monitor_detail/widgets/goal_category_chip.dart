@@ -38,12 +38,12 @@ class GoalCategoryChips extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? cs.primary.withValues(alpha: 0.12)
+                  ? AppPalette.primaryBlue.withValues(alpha: 0.12)
                   : context.commonColors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
-                    ? cs.primary
+                    ? AppPalette.primaryBlue
                     : cs.outline.withValues(alpha: 0.6),
                 width: isSelected ? 1.5 : 1,
               ),
@@ -55,7 +55,7 @@ class GoalCategoryChips extends StatelessWidget {
                   icon,
                   size: 15,
                   color: isSelected
-                      ? cs.primary
+                      ? AppPalette.primaryBlue
                       : cs.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 6),
@@ -67,7 +67,7 @@ class GoalCategoryChips extends StatelessWidget {
                         ? FontWeight.w600
                         : FontWeight.normal,
                     color: isSelected
-                        ? cs.primary
+                        ? AppPalette.primaryBlue
                         : cs.onSurface.withValues(alpha: 0.75),
                   ),
                 ),
@@ -110,12 +110,12 @@ class GoalCategoryMultiChips extends StatelessWidget {
             padding: AppInsets.chip,
             decoration: BoxDecoration(
               color: isSelected
-                  ? cs.primary.withValues(alpha: 0.12)
+                  ? AppPalette.primaryBlue.withValues(alpha: 0.12)
                   : context.commonColors.transparent,
               borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(
                 color: isSelected
-                    ? cs.primary
+                    ? AppPalette.primaryBlue
                     : cs.outline.withValues(alpha: 0.6),
                 width: isSelected ? AppBorder.strong : AppBorder.regular,
               ),
@@ -127,7 +127,7 @@ class GoalCategoryMultiChips extends StatelessWidget {
                   icon,
                   size: AppSize.iconSm,
                   color: isSelected
-                      ? cs.primary
+                      ? AppPalette.primaryBlue
                       : cs.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: AppSpacing.s6),
@@ -137,7 +137,7 @@ class GoalCategoryMultiChips extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isSelected
-                        ? cs.primary
+                        ? AppPalette.primaryBlue
                         : cs.onSurface.withValues(alpha: 0.75),
                   ),
                 ),
@@ -146,7 +146,7 @@ class GoalCategoryMultiChips extends StatelessWidget {
                   Icon(
                     Icons.check_circle_rounded,
                     size: AppSize.iconSm,
-                    color: cs.primary,
+                    color: AppPalette.primaryBlue,
                   ),
                 ],
               ],

@@ -31,7 +31,7 @@ class GoalConsentCheckbox extends StatelessWidget {
             child: Checkbox(
               value: value,
               onChanged: (v) => onChanged(v ?? false),
-              activeColor: cs.primary,
+              activeColor: AppPalette.primaryBlue,
               side: BorderSide(color: cs.outline),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(3),

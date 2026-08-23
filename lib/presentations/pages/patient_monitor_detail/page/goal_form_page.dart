@@ -145,12 +145,6 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
       _goalItemDescCtrls[category]!.text = _goal.description;
     }
     _applyCreatePrefillItems();
-    if (widget.useClinicianLayout &&
-        _isCreating &&
-        !_selectedGoalCategories.values.any((selected) => selected)) {
-      _selectedGoalCategories[_goal.category] = true;
-    }
-
     if (_isEditing && widget.originalGoalItems != null) {
       for (final item in widget.originalGoalItems!) {
         final category = GoalCategory.fromGoalType(item.type);
@@ -285,7 +279,18 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
   ) {
     return GoalExercisePlanDraft(
       exerciseId: exerciseId,
-      scheduleConfig: const [],
+      scheduleConfig: [
+        GoalExerciseScheduleDraft(
+          exerciseDate: DateUtilsHelper.normalizeDate(startDate),
+          slots: const [
+            GoalExerciseSlotDraft(
+              period: 'morning',
+              time: '07:00',
+              instruction: '',
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -606,7 +611,11 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
   Future<void> _submitCreateMode() async {
     final now = DateTime.now();
-    final startDate = _goal.startDate ?? DateTime(now.year, now.month, now.day);
+    final startDate = _goal.startDate;
+    if (startDate == null) {
+      AppSnackbar.error(context, 'Start Date is required.');
+      return;
+    }
     final endDate = _goal.endDate;
     if (endDate == null) {
       AppSnackbar.error(context, 'End Date is required.');
@@ -646,14 +655,13 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
     final goalItems = <UserGoalItem>[];
     for (final category in selectedCategories) {
-      final title = _goalItemTitleCtrls[category]!.text.trim();
+      var title = _goalItemTitleCtrls[category]!.text.trim();
       final description = _goalItemDescCtrls[category]!.text.trim();
       final parsedTarget = _parseNumericTarget(
         _goalItemTargetCtrls[category]!.text,
       );
       if (title.isEmpty) {
-        AppSnackbar.error(context, 'Please enter title for ${category.label}.');
-        return;
+        title = category.label;
       }
 
       num minTarget;
@@ -677,6 +685,9 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
           unit: category.unit,
           label: title,
           desc: description,
+          userExerciseIds: category == GoalCategory.yoga
+              ? (selectedExerciseIds.isNotEmpty ? selectedExerciseIds : null)
+              : null,
         ),
       );
     }
@@ -875,14 +886,13 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
     final goalItems = <UserGoalItem>[];
     for (final category in selectedCategories) {
-      final title = _goalItemTitleCtrls[category]!.text.trim();
+      var title = _goalItemTitleCtrls[category]!.text.trim();
       final description = _goalItemDescCtrls[category]!.text.trim();
       final parsedTarget = _parseNumericTarget(
         _goalItemTargetCtrls[category]!.text,
       );
       if (title.isEmpty) {
-        AppSnackbar.error(context, 'Please enter title for ${category.label}.');
-        return;
+        title = category.label;
       }
       num minTarget;
       if (category == GoalCategory.yoga) {
@@ -963,37 +973,56 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
             assignedDate: assignedDate,
             startDate: startDate,
             endDate: endDate,
-            doctorInstruction: plan.doctorInstruction.trim().isEmpty
-                ? null
-                : plan.doctorInstruction.trim(),
-            scheduleConfig: plan.scheduleConfig
-                .map(
-                  (schedule) => UserGoalScheduleConfig(
-                    exerciseDate: DateUtilsHelper.normalizeDate(
-                      schedule.exerciseDate,
+            doctorInstruction: plan.doctorInstruction.trim(),
+            scheduleConfig: plan.scheduleConfig.isEmpty
+                ? [
+                    UserGoalScheduleConfig(
+                      exerciseDate: DateUtilsHelper.normalizeDate(startDate),
+                      sessionsCount: 1,
+                      slots: const [
+                        UserGoalScheduleSlot(
+                          period: 'morning',
+                          time: '07:00',
+                          instruction: '',
+                        ),
+                      ],
                     ),
-                    sessionsCount: schedule.slots.isEmpty
-                        ? 1
-                        : schedule.slots.length,
-                    slots: schedule.slots
-                        .map(
-                          (slot) => UserGoalScheduleSlot(
-                            period: DateUtilsHelper.normalizePeriod(
-                              slot.period,
-                              slot.time,
-                            ),
-                            time: DateUtilsHelper.extractScheduleTime(
-                              slot.time,
-                            ),
-                            instruction: slot.instruction.trim().isEmpty
-                                ? null
-                                : slot.instruction.trim(),
+                  ]
+                : plan.scheduleConfig
+                      .map(
+                        (schedule) => UserGoalScheduleConfig(
+                          exerciseDate: DateUtilsHelper.normalizeDate(
+                            schedule.exerciseDate,
                           ),
-                        )
-                        .toList(),
-                  ),
-                )
-                .toList(),
+                          sessionsCount: schedule.slots.isEmpty
+                              ? 1
+                              : schedule.slots.length,
+                          slots: schedule.slots.isEmpty
+                              ? const [
+                                  UserGoalScheduleSlot(
+                                    period: 'morning',
+                                    time: '07:00',
+                                    instruction: '',
+                                  ),
+                                ]
+                              : schedule.slots
+                                    .map(
+                                      (slot) => UserGoalScheduleSlot(
+                                        period: DateUtilsHelper.normalizePeriod(
+                                          slot.period,
+                                          slot.time,
+                                        ),
+                                        time:
+                                            DateUtilsHelper.extractScheduleTime(
+                                              slot.time,
+                                            ),
+                                        instruction: slot.instruction.trim(),
+                                      ),
+                                    )
+                                    .toList(),
+                        ),
+                      )
+                      .toList(),
           ),
         )
         .toList();
@@ -1127,6 +1156,19 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
         _selectedGoalCategories[value] = value == category;
       }
       if (category != GoalCategory.yoga) {
+        _goal = _goal.copyWith(
+          selectedExerciseIds: const [],
+          selectedExercisePlans: const [],
+        );
+      }
+    });
+  }
+
+  void _toggleClinicianCategory(GoalCategory category) {
+    setState(() {
+      final nextValue = !(_selectedGoalCategories[category] ?? false);
+      _selectedGoalCategories[category] = nextValue;
+      if (category == GoalCategory.yoga && !nextValue) {
         _goal = _goal.copyWith(
           selectedExerciseIds: const [],
           selectedExercisePlans: const [],
@@ -1289,6 +1331,370 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
         'patientId': widget.patientId,
         'originalGoalItems': widget.originalGoalItems,
       },
+    );
+  }
+
+  Widget _buildClinicianCreateGoalForm({
+    required List<Exercise> availableExercises,
+  }) {
+    final userState = ref.watch(userProvider);
+    final fullName = userState.user?.fullName.trim();
+    final doctorName = fullName == null || fullName.isEmpty
+        ? 'Doctor'
+        : 'Dr. $fullName';
+
+    return Scaffold(
+      backgroundColor: AppPalette.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = context.isCompactShell;
+            final width = compact
+                ? constraints.maxWidth
+                : constraints.maxWidth < 1208
+                ? 1208.0
+                : constraints.maxWidth;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: width,
+                height: constraints.maxHeight,
+                child: Padding(
+                  padding: EdgeInsets.all(compact ? AppSpacing.s16 : 30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.showClinicianHeader) ...[
+                        ClinicianHeader(
+                          doctorName: doctorName,
+                          onNotificationPressed: () {},
+                        ),
+                        const SizedBox(height: 30),
+                      ],
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: 'Back',
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => context.pop(),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            color: AppPalette.secondaryBlue,
+                          ),
+                          const SizedBox(width: AppSpacing.s8),
+                          Expanded(
+                            child: Text(
+                              'Create Goal',
+                              style: AppTypography.display1.copyWith(
+                                color: AppPalette.secondaryBlue,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.s20),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: compact ? 0 : 50,
+                            ),
+                            child: Column(
+                              children: [
+                                _buildClinicianGoalTypesSection(),
+                                const SizedBox(height: AppSpacing.s16),
+                                _buildClinicianSharedScheduleSection(),
+                                const SizedBox(height: AppSpacing.s16),
+                                _buildClinicianGoalDetailsSection(
+                                  availableExercises: availableExercises,
+                                ),
+                                const SizedBox(height: AppSpacing.s16),
+                                GoalConsentCheckbox(
+                                  value: _goal.patientConsent,
+                                  onChanged: (value) => setState(
+                                    () => _goal = _goal.copyWith(
+                                      patientConsent: value,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.s20),
+                                _buildClinicianCreateActions(compact: compact),
+                                const SizedBox(height: AppSpacing.s20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClinicianGoalTypesSection() {
+    return _ClinicianFormSection(
+      title: 'Goal Types',
+      subtitle: 'Choose 1 to 3 goal types for one shared date range.',
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: AppSpacing.s12,
+        runSpacing: AppSpacing.s10,
+        children: [
+          _ClinicianGoalTypeButton(
+            label: 'Steps / Walking',
+            icon: Icons.directions_walk_rounded,
+            selected: _selectedGoalCategories[GoalCategory.steps] ?? false,
+            onPressed: () => _toggleClinicianCategory(GoalCategory.steps),
+          ),
+          _ClinicianGoalTypeButton(
+            label: 'Yoga / Meditation',
+            icon: Icons.self_improvement_rounded,
+            selected: _selectedGoalCategories[GoalCategory.yoga] ?? false,
+            onPressed: () => _toggleClinicianCategory(GoalCategory.yoga),
+          ),
+          _ClinicianGoalTypeButton(
+            label: 'Activity Time',
+            icon: Icons.timer_outlined,
+            selected:
+                _selectedGoalCategories[GoalCategory.activityTime] ?? false,
+            onPressed: () =>
+                _toggleClinicianCategory(GoalCategory.activityTime),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClinicianSharedScheduleSection() {
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return _ClinicianFormSection(
+      title: 'Shared Schedule',
+      subtitle: 'This date range applies to every selected goal item.',
+      child: Column(
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.s10,
+            runSpacing: AppSpacing.s10,
+            children: [
+              _ClinicianChoiceButton(
+                label: 'Daily',
+                selected: _goal.frequency == GoalFrequency.daily,
+                onPressed: () => setState(
+                  () => _goal = _goal.copyWith(frequency: GoalFrequency.daily),
+                ),
+              ),
+              _ClinicianChoiceButton(
+                label: 'Certain Days',
+                selected: _goal.frequency == GoalFrequency.weekly,
+                onPressed: () => setState(
+                  () => _goal = _goal.copyWith(frequency: GoalFrequency.weekly),
+                ),
+              ),
+              _ClinicianChoiceButton(
+                label: 'Monthly',
+                selected: _goal.frequency == GoalFrequency.monthly,
+                onPressed: () => setState(
+                  () =>
+                      _goal = _goal.copyWith(frequency: GoalFrequency.monthly),
+                ),
+              ),
+            ],
+          ),
+          if (_goal.frequency == GoalFrequency.weekly) ...[
+            const SizedBox(height: AppSpacing.s14),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.s8,
+              runSpacing: AppSpacing.s8,
+              children: List.generate(dayLabels.length, (index) {
+                return _ClinicianDayButton(
+                  label: dayLabels[index],
+                  selected: _selectedWeekDays.contains(index),
+                  enabled: true,
+                  onPressed: () => setState(() {
+                    if (!_selectedWeekDays.add(index)) {
+                      _selectedWeekDays.remove(index);
+                    }
+                  }),
+                );
+              }),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s14),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.s10,
+            runSpacing: AppSpacing.s10,
+            children: [
+              _ClinicianDateButton(
+                label: _formatClinicianDate(_goal.startDate, 'Start Date...'),
+                onPressed: () => _pickClinicianDate(isStartDate: true),
+              ),
+              _ClinicianDateButton(
+                label: _formatClinicianDate(_goal.endDate, 'End Date...'),
+                onPressed: () => _pickClinicianDate(isStartDate: false),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClinicianGoalDetailsSection({
+    required List<Exercise> availableExercises,
+  }) {
+    final selectedCategories = GoalCategory.values
+        .where((category) => _selectedGoalCategories[category] == true)
+        .toList();
+    return _ClinicianFormSection(
+      title: 'Goal Details',
+      subtitle:
+          'Fill details for each selected goal type. Each goal item has independent content.',
+      child: selectedCategories.isEmpty
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.s14),
+              decoration: const BoxDecoration(
+                color: AppPalette.white,
+                borderRadius: AppCorners.r12,
+              ),
+              child: Text(
+                'Please select at least one goal type above.',
+                style: AppTypography.defaultBody2.copyWith(
+                  color: AppPalette.medGray,
+                ),
+              ),
+            )
+          : Column(
+              children: [
+                for (final category in selectedCategories) ...[
+                  _buildClinicianGoalItemEditor(
+                    category: category,
+                    availableExercises: availableExercises,
+                  ),
+                  if (category != selectedCategories.last)
+                    const SizedBox(height: AppSpacing.s14),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _buildClinicianGoalItemEditor({
+    required GoalCategory category,
+    required List<Exercise> availableExercises,
+  }) {
+    final titleController = _goalItemTitleCtrls[category]!;
+    final targetController = _goalItemTargetCtrls[category]!;
+    final descriptionController = _goalItemDescCtrls[category]!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.s16),
+      decoration: const BoxDecoration(
+        color: AppPalette.white,
+        borderRadius: AppCorners.r20,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(category.icon, color: AppPalette.secondaryBlue),
+              const SizedBox(width: AppSpacing.s8),
+              Text(
+                category.label,
+                style: AppTypography.titleBig1.copyWith(
+                  color: AppPalette.secondaryBlue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          Text(
+            category.targetLabel,
+            style: AppTypography.defaultBody2.copyWith(
+              color: AppPalette.secondaryBlue,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s10),
+          Center(
+            child: _ClinicianTargetInput(
+              controller: targetController,
+              readOnly: category == GoalCategory.yoga,
+              computedValue: category == GoalCategory.yoga
+                  ? _computedYogaTarget
+                  : null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          _ClinicianLabeledField(
+            label: 'Title',
+            controller: titleController,
+            hint: 'e.g. ${category.label}',
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          _ClinicianLabeledField(
+            label: 'Description',
+            controller: descriptionController,
+            hint: 'Describe why this goal is important...',
+            height: 84,
+            maxLines: 3,
+          ),
+          if (category == GoalCategory.yoga) ...[
+            const SizedBox(height: AppSpacing.s16),
+            _buildYogaSection(availableExercises: availableExercises),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClinicianCreateActions({required bool compact}) {
+    final cancelButton = SizedBox(
+      height: 50,
+      child: OutlinedButton(
+        onPressed: _isSubmitting ? null : () => context.pop(),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppPalette.secondaryBlue,
+          side: const BorderSide(color: AppPalette.secondaryBlue),
+          shape: const RoundedRectangleBorder(borderRadius: AppCorners.r20),
+          textStyle: AppTypography.titleBig1,
+        ),
+        child: const Text('Cancel'),
+      ),
+    );
+    final createButton = GoalActionButton(
+      label: _isSubmitting ? 'Creating...' : 'Create Goal',
+      width: double.infinity,
+      onPressed: _isSubmitting ? null : _onSubmit,
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          createButton,
+          const SizedBox(height: AppSpacing.s10),
+          cancelButton,
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: cancelButton),
+        const SizedBox(width: AppSpacing.s16),
+        Expanded(flex: 2, child: createButton),
+      ],
     );
   }
 
@@ -1648,7 +2054,13 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
   Widget build(BuildContext context) {
     final availableExercises = ref.watch(exercisePickerProvider).exercises;
 
-    if (widget.useClinicianLayout && (_isCreating || _isEditing)) {
+    if (widget.useClinicianLayout && _isCreating) {
+      return _buildClinicianCreateGoalForm(
+        availableExercises: availableExercises,
+      );
+    }
+
+    if (widget.useClinicianLayout && _isEditing) {
       return _buildClinicianGoalForm(availableExercises: availableExercises);
     }
 
@@ -1787,6 +2199,89 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ClinicianFormSection extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  const _ClinicianFormSection({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.s20),
+      decoration: const BoxDecoration(
+        color: AppPalette.white,
+        borderRadius: AppCorners.r20,
+        border: Border.fromBorderSide(BorderSide(color: AppLightColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.titleBig1.copyWith(
+              color: AppPalette.secondaryBlue,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          Text(
+            subtitle,
+            style: AppTypography.defaultBody2.copyWith(
+              color: AppPalette.medGray,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicianLabeledField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String hint;
+  final double height;
+  final int maxLines;
+
+  const _ClinicianLabeledField({
+    required this.label,
+    required this.controller,
+    required this.hint,
+    this.height = 50,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.defaultBody2.copyWith(
+            color: AppPalette.secondaryBlue,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s6),
+        _ClinicianGoalTextField(
+          controller: controller,
+          hint: hint,
+          height: height,
+          maxLines: maxLines,
+        ),
+      ],
     );
   }
 }

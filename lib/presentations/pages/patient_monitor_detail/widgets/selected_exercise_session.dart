@@ -205,7 +205,7 @@ class _ExercisePlanCard extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: AppCorners.r12,
                 borderSide: BorderSide(
-                  color: cs.primary,
+                  color: AppPalette.primaryBlue,
                   width: AppBorder.strong,
                 ),
               ),
@@ -392,7 +392,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
                       size: 16,
                       color: widget.readOnly
                           ? cs.onSurface.withValues(alpha: 0.5)
-                          : cs.primary,
+                          : AppPalette.primaryBlue,
                     ),
                     const SizedBox(width: AppSpacing.s4),
                     Text(
@@ -400,7 +400,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
                       style: context.bodySmall?.copyWith(
                         color: widget.readOnly
                             ? cs.onSurface.withValues(alpha: 0.7)
-                            : cs.primary,
+                            : AppPalette.primaryBlue,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -409,7 +409,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
                       Icon(
                         Icons.edit_rounded,
                         size: 12,
-                        color: cs.primary.withValues(alpha: 0.7),
+                        color: AppPalette.primaryBlue.withValues(alpha: 0.7),
                       ),
                     ],
                   ],
@@ -439,7 +439,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
                         ? Icons.expand_less_rounded
                         : Icons.expand_more_rounded,
                     size: 18,
-                    color: cs.primary,
+                    color: AppPalette.primaryBlue,
                   ),
                   const SizedBox(width: AppSpacing.s4),
                   Text(
@@ -449,7 +449,7 @@ class _ScheduleDayCardState extends State<_ScheduleDayCard> {
                         ? 'Hide time slots (${slots.length})'
                         : 'Show time slots (${slots.length})',
                     style: context.bodySmall?.copyWith(
-                      color: cs.primary,
+                      color: AppPalette.primaryBlue,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

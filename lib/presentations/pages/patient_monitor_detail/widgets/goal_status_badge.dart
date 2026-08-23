@@ -16,12 +16,12 @@ class GoalStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: active
-            ? cs.primary.withValues(alpha: 0.1)
+            ? AppPalette.primaryBlue.withValues(alpha: 0.1)
             : context.goalColors.paused.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: active
-              ? cs.primary.withValues(alpha: 0.4)
+              ? AppPalette.primaryBlue.withValues(alpha: 0.4)
               : context.goalColors.paused.withValues(alpha: 0.4),
         ),
       ),
@@ -31,7 +31,7 @@ class GoalStatusBadge extends StatelessWidget {
           Icon(
             active ? Icons.check_circle_outline : Icons.pending_outlined,
             size: 14,
-            color: active ? cs.primary : context.goalColors.paused,
+            color: active ? AppPalette.primaryBlue : context.goalColors.paused,
           ),
           const SizedBox(width: 6),
           Text(
@@ -39,7 +39,9 @@ class GoalStatusBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: active ? cs.primary : context.goalColors.paused,
+              color: active
+                  ? AppPalette.primaryBlue
+                  : context.goalColors.paused,
             ),
           ),
         ],

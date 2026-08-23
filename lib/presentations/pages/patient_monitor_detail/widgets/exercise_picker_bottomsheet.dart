@@ -100,7 +100,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                           fontSize: 13,
                           color: _selected.isEmpty
                               ? cs.onSurface.withValues(alpha: 0.45)
-                              : cs.primary,
+                              : AppPalette.primaryBlue,
                           fontWeight: _selected.isEmpty
                               ? FontWeight.normal
                               : FontWeight.w600,
@@ -245,12 +245,12 @@ class _ExerciseTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       decoration: BoxDecoration(
         color: isSelected
-            ? cs.primary.withValues(alpha: 0.08)
+            ? AppPalette.primaryBlue.withValues(alpha: 0.08)
             : context.commonColors.transparent,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isSelected
-              ? cs.primary.withValues(alpha: 0.35)
+              ? AppPalette.primaryBlue.withValues(alpha: 0.35)
               : context.commonColors.transparent,
           width: 1.2,
         ),
@@ -264,7 +264,7 @@ class _ExerciseTile extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: isSelected
-                ? cs.primary.withValues(alpha: 0.15)
+                ? AppPalette.primaryBlue.withValues(alpha: 0.15)
                 : cs.outline.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
@@ -272,7 +272,7 @@ class _ExerciseTile extends StatelessWidget {
             Icons.fitness_center,
             size: 20,
             color: isSelected
-                ? cs.primary
+                ? AppPalette.primaryBlue
                 : cs.onSurface.withValues(alpha: 0.5),
           ),
         ),
@@ -281,7 +281,7 @@ class _ExerciseTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? cs.primary : cs.onSurface,
+            color: isSelected ? AppPalette.primaryBlue : cs.onSurface,
           ),
         ),
         subtitle: Text(
@@ -296,7 +296,7 @@ class _ExerciseTile extends StatelessWidget {
           child: isSelected
               ? Icon(
                   Icons.check_circle_rounded,
-                  color: cs.primary,
+                  color: AppPalette.primaryBlue,
                   size: 22,
                   key: const ValueKey('checked'),
                 )
