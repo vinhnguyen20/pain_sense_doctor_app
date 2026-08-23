@@ -1,26 +1,43 @@
 import 'package:app_doctor/common/widgets/compact_navigation_bar.dart';
 import 'package:app_doctor/common/widgets/sidebar_navigation.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class BottomNavigationScaffold extends StatefulWidget {
+class BottomNavigationScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const BottomNavigationScaffold({super.key, required this.navigationShell});
 
   @override
-  State<BottomNavigationScaffold> createState() =>
+  ConsumerState<BottomNavigationScaffold> createState() =>
       _BottomNavigationScaffoldState();
 }
 
-class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
+class _BottomNavigationScaffoldState
+    extends ConsumerState<BottomNavigationScaffold> {
   DateTime? _lastBackPressed;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final state = ref.read(conversationsProvider);
+      if (state.conversations.isEmpty && !state.isLoading) {
+        ref.read(conversationsProvider.notifier).fetchConversations(
+          showLoading: false,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktopCanvas;
+    final unreadCount = ref.watch(unreadMessagesCountProvider);
 
     if (isDesktop) {
       return GestureDetector(
@@ -61,8 +78,8 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
         body: widget.navigationShell,
         bottomNavigationBar: CompactNavigationBar(
           currentIndex: widget.navigationShell.currentIndex,
-          destinations: const [
-            CompactNavDestination(
+          destinations: [
+            const CompactNavDestination(
               icon: Icons.home_outlined,
               label: 'Home',
               branchIndex: 0,
@@ -71,13 +88,14 @@ class _BottomNavigationScaffoldState extends State<BottomNavigationScaffold> {
               icon: Icons.chat_bubble_outline_rounded,
               label: 'Connect',
               branchIndex: 1,
+              badgeCount: unreadCount,
             ),
-            CompactNavDestination(
+            const CompactNavDestination(
               icon: Icons.flag_outlined,
               label: 'Goals',
               branchIndex: 3,
             ),
-            CompactNavDestination(
+            const CompactNavDestination(
               icon: Icons.calendar_month_outlined,
               label: 'Schedule',
               branchIndex: 4,

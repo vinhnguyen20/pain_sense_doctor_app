@@ -1,14 +1,18 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SidebarNavigation extends StatelessWidget {
+class SidebarNavigation extends ConsumerWidget {
   final StatefulNavigationShell? navigationShell;
 
   const SidebarNavigation({super.key, this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadMessagesCountProvider);
+
     return Container(
       width: AppLayout.sidebarWidth,
       color: AppPalette.backgroundLight,
@@ -45,6 +49,7 @@ class SidebarNavigation extends StatelessWidget {
                     _NavItem(
                       icon: Icons.chat_bubble_outline_rounded,
                       label: 'Connect',
+                      badgeCount: unreadCount,
                       isSelected: navigationShell?.currentIndex == 1,
                       onTap: () {
                         FocusManager.instance.primaryFocus?.unfocus();
@@ -106,18 +111,21 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final int? badgeCount;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
     required this.label,
     required this.isSelected,
+    this.badgeCount,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = isSelected ? AppPalette.secondaryBlue : AppPalette.medGray;
+    final hasBadge = badgeCount != null && badgeCount! > 0;
 
     return Material(
       color: isSelected ? AppPalette.white : Colors.transparent,
@@ -135,7 +143,51 @@ class _NavItem extends StatelessWidget {
                 SizedBox(
                   width: 36,
                   height: 36,
-                  child: Center(child: Icon(icon, size: 36, color: color)),
+                  child: Center(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(icon, size: 36, color: color),
+                        if (hasBadge)
+                          Positioned(
+                            top: -2,
+                            right: -6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppPalette.white
+                                      : AppPalette.backgroundLight,
+                                  width: 1.5,
+                                ),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                badgeCount! > 99
+                                    ? '99+'
+                                    : badgeCount.toString(),
+                                style: const TextStyle(
+                                  color: AppPalette.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 30),
                 Expanded(
