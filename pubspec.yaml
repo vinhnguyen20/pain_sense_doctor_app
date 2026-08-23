@@ -58,6 +58,8 @@ flutter:
     - assets/images/icon/exercises/
     - assets/images/logo/ps_logo_full.png
     - assets/images/logo/ps_logo_full_white.png
+    - assets/images/logo/logo_full_color.jpg
+    - assets/images/logo/logo_full_color_no_bg.png
     - assets/images/logo/ps_logo.jpg
     - assets/images/avatar/avatar.png
     - assets/images/avatar/Cameron Taylor.png

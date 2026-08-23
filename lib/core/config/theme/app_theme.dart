@@ -70,7 +70,7 @@ class AppTheme {
         if (states.contains(WidgetState.disabled)) {
           return cs.onSurface.withValues(alpha: 0.12);
         }
-        return cs.primary;
+        return AppPalette.primaryBlue;
       }),
       overlayColor: WidgetStatePropertyAll(
         cs.onPrimary.withValues(alpha: 0.08),
@@ -98,7 +98,9 @@ class AppTheme {
         }
         return BorderSide(color: cs.outline.withValues(alpha: 0.75));
       }),
-      overlayColor: WidgetStatePropertyAll(cs.primary.withValues(alpha: 0.06)),
+      overlayColor: WidgetStatePropertyAll(
+        AppPalette.primaryBlue.withValues(alpha: 0.06),
+      ),
     );
   }
 
@@ -127,9 +129,11 @@ class AppTheme {
         if (states.contains(WidgetState.disabled)) {
           return cs.onSurface.withValues(alpha: 0.38);
         }
-        return cs.primary;
+        return AppPalette.primaryBlue;
       }),
-      overlayColor: WidgetStatePropertyAll(cs.primary.withValues(alpha: 0.08)),
+      overlayColor: WidgetStatePropertyAll(
+        AppPalette.primaryBlue.withValues(alpha: 0.08),
+      ),
     );
   }
 

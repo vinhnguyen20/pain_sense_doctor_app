@@ -1,6 +1,7 @@
 import 'package:app_doctor/core/config/routers/bottom_navigation.dart';
 import 'package:app_doctor/core/config/routers/router_notifier.dart';
 import 'package:app_doctor/features/auth/presentation/pages/login_page.dart';
+import 'package:app_doctor/features/auth/presentation/pages/patient_onboarding_pages.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
 import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
@@ -35,21 +36,28 @@ class AppRouter {
 
     return GoRouter(
       navigatorKey: rootNavigatorKey,
-      initialLocation: '/login',
+      initialLocation: '/intro',
       refreshListenable: notifier,
       debugLogDiagnostics: true,
       redirect: (context, state) {
         final authState = ref.read(authProvider);
         final location = state.matchedLocation;
-        final isOnLogin = location == '/login';
+        final isOnPublicAuthRoute =
+            location == '/login' ||
+            location == '/intro' ||
+            location == '/welcome' ||
+            location == '/patient-login' ||
+            location == '/register' ||
+            location == '/profile-setup' ||
+            location.startsWith('/survey/');
 
         if (authState.isInitial) return null;
 
-        if (authState.isAuthenticated && isOnLogin) {
+        if (authState.isAuthenticated && isOnPublicAuthRoute) {
           return '/home';
         }
 
-        if (authState.isUnauthenticated && !isOnLogin) {
+        if (authState.isUnauthenticated && !isOnPublicAuthRoute) {
           return '/login';
         }
 
@@ -60,6 +68,60 @@ class AppRouter {
           path: '/login',
           name: 'login',
           builder: (context, state) => const LoginPage(),
+        ),
+        GoRoute(
+          path: '/intro',
+          name: 'patient-intro',
+          builder: (context, state) => const PatientIntroPage(),
+        ),
+        GoRoute(
+          path: '/welcome',
+          name: 'patient-welcome',
+          builder: (context, state) => const PatientWelcomePage(),
+        ),
+        GoRoute(
+          path: '/patient-login',
+          name: 'patient-login',
+          builder: (context, state) => const PatientLoginPage(),
+        ),
+        GoRoute(
+          path: '/register',
+          name: 'patient-register',
+          builder: (context, state) => const PatientAccountCreationPage(),
+        ),
+        GoRoute(
+          path: '/profile-setup',
+          name: 'patient-profile-setup',
+          builder: (context, state) => const PatientProfileSetupPage(),
+        ),
+        GoRoute(
+          path: '/survey/pain-duration',
+          name: 'patient-survey-pain-duration',
+          builder: (context, state) =>
+              const PatientSurveyPage(step: PatientSurveyStep.painDuration),
+        ),
+        GoRoute(
+          path: '/survey/pain-level',
+          name: 'patient-survey-pain-level',
+          builder: (context, state) =>
+              const PatientSurveyPage(step: PatientSurveyStep.painLevel),
+        ),
+        GoRoute(
+          path: '/survey/activity-levels',
+          name: 'patient-survey-activity-levels',
+          builder: (context, state) =>
+              const PatientSurveyPage(step: PatientSurveyStep.activityLevels),
+        ),
+        GoRoute(
+          path: '/survey/activity',
+          name: 'patient-survey-activity',
+          builder: (context, state) =>
+              const PatientSurveyPage(step: PatientSurveyStep.activity),
+        ),
+        GoRoute(
+          path: '/survey/complete',
+          name: 'patient-survey-complete',
+          builder: (context, state) => const PatientSurveyCompletePage(),
         ),
         GoRoute(
           path: '/goal-form',
