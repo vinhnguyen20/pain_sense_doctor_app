@@ -4,6 +4,7 @@ import 'package:app_doctor/features/user/data/repository/user_repository_impl.da
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/domain/repository/user_repository.dart';
 import 'package:app_doctor/features/user/domain/usecases/get_current_user_usecase.dart';
+import 'package:app_doctor/features/user/domain/usecases/get_patient_by_id_usecase.dart';
 import 'package:app_doctor/features/user/domain/usecases/get_patients_usecase.dart';
 import 'package:app_doctor/features/user/domain/usecases/update_user_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,3 +57,20 @@ GetCurrentUserUseCase getCurrentUserUseCase(Ref ref) {
 GetAllPatientsUseCase getAllPatientsUseCase(Ref ref) {
   return GetAllPatientsUseCase(ref.read(userRepositoryProvider));
 }
+
+@riverpod
+GetPatientByIdUseCase getPatientByIdUseCase(Ref ref) {
+  return GetPatientByIdUseCase(ref.read(userRepositoryProvider));
+}
+
+final patientDetailProvider =
+    FutureProvider.autoDispose.family<Patient?, String>((ref, patientId) async {
+      final normalizedId = patientId.trim();
+      if (normalizedId.isEmpty) return null;
+      final response =
+          await ref.read(getPatientByIdUseCaseProvider).call(normalizedId);
+      if (response.isSuccess) {
+        return response.data;
+      }
+      throw Exception(response.message);
+    });

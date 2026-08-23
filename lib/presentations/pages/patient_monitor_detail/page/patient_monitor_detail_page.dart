@@ -2,6 +2,7 @@ import 'package:app_doctor/common/widgets/custom_app_bar.dart';
 import 'package:app_doctor/common/widgets/tab_bar_widget.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/alerts_tab.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/chat_tab.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/diary_tab.dart';
@@ -48,21 +49,21 @@ class _PatientDetailPageState extends ConsumerState<PatientMonitorDetail> {
   void _onIndexSelected(int index) =>
       setState(() => _selectedTab = _tabs[index]);
 
-  Widget _buildContent() {
+  Widget _buildContent(Patient patient) {
     return switch (_selectedTab) {
-      'Overview' => OverviewTab(patient: widget.patient),
+      'Overview' => OverviewTab(patient: patient),
       'Goals' => GoalsTab(
         patientId: _patientId,
-        logs: widget.patient.trackingLogs,
+        logs: patient.trackingLogs,
       ),
-      'Chat' => ChatTab(patient: widget.patient, patientId: _patientId),
+      'Chat' => ChatTab(patient: patient, patientId: _patientId),
       'Diary' => DiaryTab(patientId: _patientId),
-      'Alerts' => AlertsTab(patientId: _patientId, patient: widget.patient),
+      'Alerts' => AlertsTab(patientId: _patientId, patient: patient),
       _ => _PlaceholderTab(tab: _selectedTab),
     };
   }
 
-  Widget _buildMobileBody(BuildContext context) {
+  Widget _buildMobileBody(BuildContext context, Patient patient) {
     return Column(
       children: [
         Padding(
@@ -73,12 +74,12 @@ class _PatientDetailPageState extends ConsumerState<PatientMonitorDetail> {
             onCategorySelected: _onTabSelected,
           ),
         ),
-        Expanded(child: _buildContent()),
+        Expanded(child: _buildContent(patient)),
       ],
     );
   }
 
-  Widget _buildTabletBody(BuildContext context) {
+  Widget _buildTabletBody(BuildContext context, Patient patient) {
     final extended = context.isExpanded;
 
     return Row(
@@ -117,23 +118,26 @@ class _PatientDetailPageState extends ConsumerState<PatientMonitorDetail> {
           thickness: AppBorder.thin,
           color: context.border,
         ),
-        Expanded(child: _buildContent()),
+        Expanded(child: _buildContent(patient)),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final patientAsync = ref.watch(patientDetailProvider(_patientId));
+    final patient = patientAsync.value ?? widget.patient;
+
     return Scaffold(
       backgroundColor: context.background,
       appBar: CustomAppBar(
-        title: widget.patient.fullName,
-        subtitle: 'Age ${widget.patient.age ?? 'Age not specified'}',
+        title: patient.fullName,
+        subtitle: 'Age ${patient.age ?? 'Age not specified'}',
         showBackButton: true,
       ),
       body: context.isMobile
-          ? _buildMobileBody(context)
-          : _buildTabletBody(context),
+          ? _buildMobileBody(context, patient)
+          : _buildTabletBody(context, patient),
     );
   }
 }

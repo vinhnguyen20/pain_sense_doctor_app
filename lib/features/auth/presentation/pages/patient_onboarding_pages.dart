@@ -1,5 +1,8 @@
+import 'package:app_doctor/common/widgets/app_snackbar.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 enum PatientSurveyStep { painDuration, painLevel, activityLevels, activity }
@@ -47,17 +50,18 @@ class PatientWelcomePage extends StatelessWidget {
   }
 }
 
-class PatientLoginPage extends StatefulWidget {
+class PatientLoginPage extends ConsumerStatefulWidget {
   const PatientLoginPage({super.key});
 
   @override
-  State<PatientLoginPage> createState() => _PatientLoginPageState();
+  ConsumerState<PatientLoginPage> createState() => _PatientLoginPageState();
 }
 
-class _PatientLoginPageState extends State<PatientLoginPage> {
+class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -68,9 +72,15 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthViewState>(authProvider, (previous, next) {
+      if (next.state == AuthState.error && next.errorMessage != null) {
+        AppSnackbar.error(context, next.errorMessage!);
+      }
+    });
+
     return PatientOnboardingFrame(
       title: 'Welcome to PainSense',
-      subtitle: 'Login to continue your pain management journey.',
+      subtitle: 'Login to continue.',
       body: _FormCard(
         title: 'Login',
         children: [
@@ -96,9 +106,43 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
           ),
         ],
       ),
-      onBack: () => context.go('/welcome'),
-      onNext: () => _showComingSoon(context),
+      actions: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _PatientButton(
+            label: 'Back',
+            onPressed: _isSubmitting ? null : () => context.go('/welcome'),
+          ),
+          _PatientButton(
+            label: _isSubmitting ? 'Logging in...' : 'Login',
+            onPressed: _isSubmitting ? null : _handleLogin,
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      AppSnackbar.error(context, 'Please enter your email and password.');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await ref
+          .read(authProvider.notifier)
+          .signInWithEmailPassword(email, password);
+
+      if (mounted && ref.read(authProvider).isAuthenticated) {
+        context.go('/home');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 }
 
@@ -566,10 +610,7 @@ class _WelcomeCard extends StatelessWidget {
         children: [
           const _PatientBrand(lockupWidth: 420, showTagline: true),
           const SizedBox(height: 115),
-          _PatientButton(
-            label: 'Login',
-            onPressed: () => context.go('/patient-login'),
-          ),
+          _PatientButton(label: 'Login', onPressed: () => context.go('/login')),
           const SizedBox(height: 18),
           _PatientButton(
             label: 'Create Account',
@@ -785,8 +826,12 @@ class _PatientFormField extends StatelessWidget {
             filled: true,
             fillColor: AppPalette.white,
             hoverColor: AppPalette.transparent,
+            isDense: true,
             suffixIcon: suffix,
-            contentPadding: const EdgeInsets.all(8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(67),
               borderSide: BorderSide.none,
@@ -980,12 +1025,4 @@ class _PatientButton extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showComingSoon(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Patient login will be connected to the API next.'),
-    ),
-  );
 }

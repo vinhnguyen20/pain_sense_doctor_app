@@ -4,6 +4,7 @@ import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/lbp_score_card.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/seven_7_day_trend.dart';
 import 'package:flutter/material.dart';
@@ -31,10 +32,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
         trackingAsync.asData?.value.firstOrNull?.summary.lbpFormula ?? '';
     final isTablet = context.isTablet;
     Future<void> handleRefresh() async {
+      ref.invalidate(patientDetailProvider(_patientId));
       ref.invalidate(patientTrackingSummary7DaysProvider(_patientId));
       ref.invalidate(diaryAdherenceProvider(_patientId));
       try {
         await Future.wait([
+          ref.read(patientDetailProvider(_patientId).future),
           ref.read(patientTrackingSummary7DaysProvider(_patientId).future),
           ref.read(diaryAdherenceProvider(_patientId).future),
         ]);

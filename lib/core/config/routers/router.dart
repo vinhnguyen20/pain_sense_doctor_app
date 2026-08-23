@@ -1,11 +1,11 @@
 import 'package:app_doctor/core/config/routers/bottom_navigation.dart';
 import 'package:app_doctor/core/config/routers/router_notifier.dart';
-import 'package:app_doctor/features/auth/presentation/pages/login_page.dart';
 import 'package:app_doctor/features/auth/presentation/pages/patient_onboarding_pages.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
 import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
+import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
@@ -13,6 +13,7 @@ import 'package:app_doctor/presentations/pages/appointments/page/patient_appoint
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/goals/page/clinician_goals_page.dart';
+import 'package:app_doctor/presentations/pages/goals/page/clinician_goal_detail_page.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/goal_form_page.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/page/patient_monitor_detail_page.dart';
@@ -34,6 +35,12 @@ class AppRouter {
   static GoRouter createRouter(WidgetRef ref) {
     final notifier = ref.read(routerProvider.notifier);
 
+    String resolvePatientId(Map<String, dynamic>? extra) {
+      final explicitId = (extra?['patientId'] as String?)?.trim();
+      if (explicitId != null && explicitId.isNotEmpty) return explicitId;
+      return ref.read(selectedPatientProvider)?.id.trim() ?? '';
+    }
+
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: '/intro',
@@ -46,7 +53,6 @@ class AppRouter {
             location == '/login' ||
             location == '/intro' ||
             location == '/welcome' ||
-            location == '/patient-login' ||
             location == '/register' ||
             location == '/profile-setup' ||
             location.startsWith('/survey/');
@@ -67,7 +73,7 @@ class AppRouter {
         GoRoute(
           path: '/login',
           name: 'login',
-          builder: (context, state) => const LoginPage(),
+          builder: (context, state) => const PatientLoginPage(),
         ),
         GoRoute(
           path: '/intro',
@@ -78,11 +84,6 @@ class AppRouter {
           path: '/welcome',
           name: 'patient-welcome',
           builder: (context, state) => const PatientWelcomePage(),
-        ),
-        GoRoute(
-          path: '/patient-login',
-          name: 'patient-login',
-          builder: (context, state) => const PatientLoginPage(),
         ),
         GoRoute(
           path: '/register',
@@ -133,7 +134,7 @@ class AppRouter {
               mode: extra?['mode'] ?? GoalFormMode.create,
               initialGoal: extra?['initialGoal'],
               originalGoalItems: extra?['originalGoalItems'],
-              patientId: (extra?['patientId'] as String?)?.trim() ?? '',
+              patientId: resolvePatientId(extra),
               prefillGoalItems:
                   (extra?['prefillGoalItems'] as List<dynamic>? ?? const [])
                       .whereType<Map<String, dynamic>>()
@@ -289,8 +290,7 @@ class AppRouter {
                           mode: extra?['mode'] ?? GoalFormMode.create,
                           initialGoal: extra?['initialGoal'],
                           originalGoalItems: extra?['originalGoalItems'],
-                          patientId:
-                              (extra?['patientId'] as String?)?.trim() ?? '',
+                          patientId: resolvePatientId(extra),
                           prefillGoalItems:
                               (extra?['prefillGoalItems'] as List<dynamic>? ??
                                       const [])
@@ -298,6 +298,25 @@ class AppRouter {
                                   .toList(),
                           useClinicianLayout: true,
                           showClinicianHeader: false,
+                        );
+                      },
+                    ),
+                    GoRoute(
+                      path: 'detail',
+                      name: 'patient-goal-detail',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>?;
+                        final goal = extra?['goal'] as UserGoalModel?;
+                        final patient = extra?['patient'] as Patient?;
+                        if (goal == null || patient == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Goal not found')),
+                          );
+                        }
+                        return ClinicianGoalDetailPage(
+                          goal: goal,
+                          patient: patient,
+                          insidePatientDashboard: true,
                         );
                       },
                     ),
@@ -434,14 +453,34 @@ class AppRouter {
                           mode: extra?['mode'] ?? GoalFormMode.create,
                           initialGoal: extra?['initialGoal'],
                           originalGoalItems: extra?['originalGoalItems'],
-                          patientId:
-                              (extra?['patientId'] as String?)?.trim() ?? '',
+                          patientId: resolvePatientId(extra),
                           prefillGoalItems:
                               (extra?['prefillGoalItems'] as List<dynamic>? ??
                                       const [])
                                   .whereType<Map<String, dynamic>>()
                                   .toList(),
                           useClinicianLayout: true,
+                        );
+                      },
+                    ),
+                    GoRoute(
+                      path: 'detail',
+                      name: 'clinician-goal-detail',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>?;
+                        final goal = extra?['goal'] as UserGoalModel?;
+                        final patient = extra?['patient'] as Patient?;
+                        if (goal == null || patient == null) {
+                          return const Scaffold(
+                            body: Center(child: Text('Goal not found')),
+                          );
+                        }
+                        return ClinicianGoalDetailPage(
+                          goal: goal,
+                          patient: patient,
+                          insidePatientDashboard:
+                              extra?['insidePatientDashboard'] as bool? ??
+                              false,
                         );
                       },
                     ),

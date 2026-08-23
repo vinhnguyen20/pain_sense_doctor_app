@@ -54,6 +54,23 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
+  Future<ApiResponse<Patient?>> getPatientById(String patientId) async {
+    try {
+      final response = await _dataSource.getPatientById(patientId);
+      if (response.isSuccess && response.data != null) {
+        return ApiResponse.success(response.data!.toEntity());
+      }
+      return ApiResponse(
+        code: response.code,
+        message: response.message,
+        data: null,
+      );
+    } catch (e, stackTrace) {
+      return ApiResponse.failure(e, stackTrace);
+    }
+  }
+
+  @override
   Future<ApiResponse<User>> updateUser(User user) async {
     try {
       await _dataSource.updateUser(UserModel.fromEntity(user));

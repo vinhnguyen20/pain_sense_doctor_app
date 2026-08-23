@@ -93,23 +93,49 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     context.pushNamed('clinician-patient-goals', extra: patient);
   }
 
+  void _openGoalDetail(UserGoalModel goal) {
+    final patient = _selectedPatient;
+    if (patient == null) return;
+    final routeName = widget.insidePatientDashboard
+        ? 'patient-goal-detail'
+        : 'clinician-goal-detail';
+
+    context.pushNamed(
+      routeName,
+      extra: {
+        'goal': goal,
+        'patient': patient,
+        'insidePatientDashboard': widget.insidePatientDashboard,
+      },
+    );
+  }
+
   Future<void> _openCreateGoal() async {
     final patient = _selectedPatient;
     if (patient == null) return;
+    final patientId = patient.id.trim();
+    if (patientId.isEmpty) {
+      AppSnackbar.error(context, 'Patient id is missing. Cannot create goal.');
+      return;
+    }
     final result = await context.pushNamed(
       widget.insidePatientDashboard
           ? 'patient-goal-form'
           : 'clinician-goal-form',
-      extra: {'mode': GoalFormMode.create, 'patientId': patient.id},
+      extra: {'mode': GoalFormMode.create, 'patientId': patientId},
     );
     if (result != null) {
       ref.invalidate(patientUserGoalsProvider(patient.id));
     }
   }
 
-  Future<void> _editGoal(UserGoalModel goal) async {
+  Future<void> _editGoal(UserGoalModel goal, {String? patientId}) async {
     final patient = _selectedPatient;
-    if (patient == null) return;
+    final resolvedPatientId = (patientId ?? patient?.id ?? '').trim();
+    if (resolvedPatientId.isEmpty) {
+      AppSnackbar.error(context, 'Patient id is missing. Cannot edit goal.');
+      return;
+    }
     final result = await context.pushNamed(
       widget.insidePatientDashboard
           ? 'patient-goal-form'
@@ -118,10 +144,10 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
         'mode': GoalFormMode.edit,
         'initialGoal': goal.toGoalModel(),
         'originalGoalItems': goal.goalItems,
-        'patientId': patient.id,
+        'patientId': resolvedPatientId,
       },
     );
-    if (result != null) {
+    if (result != null && patient != null) {
       ref.invalidate(patientUserGoalsProvider(patient.id));
     }
   }
@@ -437,6 +463,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
         rows.add(
           ClinicianGoalRow(
             goal: goal,
+            onOpen: () => _openGoalDetail(goal),
             onAssign: _openCreateGoal,
             onEdit: () => _editGoal(goal),
             onDelete: () => _deleteGoal(goal),

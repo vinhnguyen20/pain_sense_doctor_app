@@ -4,16 +4,15 @@ import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:app_doctor/common/widgets/activity_tracker.dart';
 import 'package:app_doctor/features/chats/domain/entites/appointment.dart';
 import 'package:app_doctor/features/chats/presentation/provider/appointment_notifier.dart';
 import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_entry.dart';
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_activity.dart';
-import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'seven_7_day_trend.dart';
 import 'patient_dashboard_dimensions.dart';
+import 'patient_detail_dialog.dart';
 import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 
@@ -310,7 +309,13 @@ class PatientOverviewCard extends StatelessWidget {
             height: 31,
             child: ElevatedButton(
               onPressed: () {
-                context.pushNamed('patient-monitor-detail', extra: patient);
+                showDialog(
+                  context: context,
+                  builder: (context) => PatientDetailDialog(
+                    patientId: patient.id,
+                    initialPatient: patient,
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppPalette.secondaryBlue,

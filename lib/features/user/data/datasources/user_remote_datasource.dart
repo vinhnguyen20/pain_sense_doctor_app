@@ -54,6 +54,24 @@ class UserRemoteDataSource {
     }
   }
 
+  Future<ApiResponse<PatientModel>> getPatientById(String patientId) async {
+    try {
+      final normalizedId = patientId.trim();
+      final result = await _client.get<ApiResponse<PatientModel>>(
+        '/users/patient/$normalizedId',
+        fromJson: (json) {
+          return ApiResponse<PatientModel>.fromJson(
+            json,
+            (data) => PatientModel.fromJson(data as Map<String, dynamic>),
+          );
+        },
+      );
+      return result;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<ApiResponse<UserModel>> updateUser(UserModel user) async {
     try {
       final result = await _client.put<ApiResponse<UserModel>>(

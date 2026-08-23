@@ -11,4 +11,5 @@ abstract class UserRepository {
     int? limit,
     String? search,
   });
+  Future<ApiResponse<Patient?>> getPatientById(String patientId);
 }

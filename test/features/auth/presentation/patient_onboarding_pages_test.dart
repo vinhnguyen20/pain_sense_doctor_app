@@ -1,14 +1,15 @@
 import 'package:app_doctor/features/auth/presentation/pages/patient_onboarding_pages.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   Future<void> pumpPage(WidgetTester tester, Widget page) async {
-    await tester.pumpWidget(MaterialApp(home: page));
+    await tester.pumpWidget(ProviderScope(child: MaterialApp(home: page)));
     await tester.pump();
   }
 
-  testWidgets('welcome and patient login expose the designed actions', (
+  testWidgets('welcome and normal login expose the designed actions', (
     tester,
   ) async {
     await pumpPage(tester, const PatientWelcomePage());
@@ -21,7 +22,8 @@ void main() {
     await pumpPage(tester, const PatientLoginPage());
     expect(find.text('E-Mail'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
+    expect(find.text('Login'), findsNWidgets(2));
+    expect(find.text('Next'), findsNothing);
   });
 
   testWidgets('registration and profile screens expose all designed fields', (

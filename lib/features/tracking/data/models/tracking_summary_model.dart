@@ -51,8 +51,17 @@ class TrackingSummaryModel extends TrackingSummary
   @override
   final String lbpFormula;
 
+  @JsonKey(name: 'adherence', defaultValue: 0.0, fromJson: _parseDouble)
+  @override
+  final double adherence;
+
   static String _parseLabel(dynamic value) => value?.toString() ?? '';
   static String _parseString(dynamic value) => value?.toString() ?? '';
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
   const TrackingSummaryModel({
     required this.totalMinWalk,
@@ -66,6 +75,7 @@ class TrackingSummaryModel extends TrackingSummary
     required this.cadence,
     required this.latestLabel,
     this.lbpFormula = '',
+    this.adherence = 0.0,
   }) : super(
          totalMinWalk: totalMinWalk,
          totalTimeAlive: totalTimeAlive,
@@ -78,10 +88,17 @@ class TrackingSummaryModel extends TrackingSummary
          cadence: cadence,
          latestLabel: latestLabel,
          lbpFormula: lbpFormula,
+         adherence: adherence,
        );
 
-  factory TrackingSummaryModel.fromJson(Map<String, dynamic> json) =>
-      _$TrackingSummaryModelFromJson(json);
+  factory TrackingSummaryModel.fromJson(Map<String, dynamic> json) {
+    // Handle both 'adherence' and 'adherence_rate' if backend sends either
+    final mutableJson = Map<String, dynamic>.from(json);
+    if (!mutableJson.containsKey('adherence') && mutableJson.containsKey('adherence_rate')) {
+      mutableJson['adherence'] = mutableJson['adherence_rate'];
+    }
+    return _$TrackingSummaryModelFromJson(mutableJson);
+  }
 
   Map<String, dynamic> toJson() => _$TrackingSummaryModelToJson(this);
 
@@ -98,6 +115,7 @@ class TrackingSummaryModel extends TrackingSummary
     cadence: cadence,
     latestLabel: latestLabel,
     lbpFormula: lbpFormula,
+    adherence: adherence,
   );
 
   factory TrackingSummaryModel.fromEntity(TrackingSummary entity) =>
@@ -113,6 +131,7 @@ class TrackingSummaryModel extends TrackingSummary
         cadence: entity.cadence,
         latestLabel: entity.latestLabel,
         lbpFormula: entity.lbpFormula,
+        adherence: entity.adherence,
       );
 
   TrackingSummaryModel copyWith({
@@ -127,6 +146,7 @@ class TrackingSummaryModel extends TrackingSummary
     int? cadence,
     String? latestLabel,
     String? lbpFormula,
+    double? adherence,
   }) {
     return TrackingSummaryModel(
       totalMinWalk: totalMinWalk ?? this.totalMinWalk,
@@ -140,6 +160,7 @@ class TrackingSummaryModel extends TrackingSummary
       cadence: cadence ?? this.cadence,
       latestLabel: latestLabel ?? this.latestLabel,
       lbpFormula: lbpFormula ?? this.lbpFormula,
+      adherence: adherence ?? this.adherence,
     );
   }
 }

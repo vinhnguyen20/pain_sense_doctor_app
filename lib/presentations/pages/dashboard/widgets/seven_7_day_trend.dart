@@ -32,26 +32,48 @@ class SevenDayTrendCard extends ConsumerWidget {
       final labelIndex = day.weekday == 7 ? 0 : day.weekday;
       dateLabels.add(weekdays[labelIndex]);
 
+      final dayKey =
+          '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+
       final trackItem = trackingData.where((t) {
         final d = t.logDate;
-        return d.year == day.year && d.month == day.month && d.day == day.day;
+        final dKey =
+            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+        final dLocal = d.toLocal();
+        final dLocalKey =
+            '${dLocal.year}-${dLocal.month.toString().padLeft(2, '0')}-${dLocal.day.toString().padLeft(2, '0')}';
+        return dKey == dayKey ||
+            dLocalKey == dayKey ||
+            (d.year == day.year && d.month == day.month && d.day == day.day);
       }).firstOrNull;
 
       postureScores.add(trackItem?.summary.posture.toDouble() ?? 0.0);
 
-      final diaryItem = diaryState.entries.where((d) {
-        return d.date.year == day.year && d.date.month == day.month && d.date.day == day.day;
-      }).firstOrNull;
+      // Prioritize adherence.overall from 7-day summary item, then summary.adherence, then diary fallback
+      double adherence = trackItem?.adherence?.overall.toDouble() ??
+          trackItem?.summary.adherence.toDouble() ??
+          0.0;
 
-      double adherence = 0;
-      if (diaryItem != null && diaryItem.diary.isNotEmpty) {
-        double total = 0;
-        int valid = 0;
-        for (final a in diaryItem.diary) {
-          total += a.percent;
-          valid++;
+      if (adherence == 0.0) {
+        final diaryItem = diaryState.entries.where((d) {
+          final dt = d.date;
+          final dtKey =
+              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          return dtKey == dayKey ||
+              (dt.year == day.year &&
+                  dt.month == day.month &&
+                  dt.day == day.day);
+        }).firstOrNull;
+
+        if (diaryItem != null && diaryItem.diary.isNotEmpty) {
+          double total = 0;
+          int valid = 0;
+          for (final a in diaryItem.diary) {
+            total += a.percent;
+            valid++;
+          }
+          if (valid > 0) adherence = total / valid;
         }
-        if (valid > 0) adherence = total / valid;
       }
       adherenceScores.add(adherence);
     }

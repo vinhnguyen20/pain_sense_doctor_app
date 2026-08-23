@@ -12,6 +12,7 @@ class TrackingSummary extends Equatable {
   final int cadence;
   final String latestLabel;
   final String lbpFormula;
+  final double adherence;
 
   const TrackingSummary({
     required this.totalMinWalk,
@@ -25,6 +26,7 @@ class TrackingSummary extends Equatable {
     required this.cadence,
     required this.latestLabel,
     this.lbpFormula = '',
+    this.adherence = 0.0,
   });
 
   @override
@@ -40,5 +42,6 @@ class TrackingSummary extends Equatable {
     cadence,
     latestLabel,
     lbpFormula,
+    adherence,
   ];
 }

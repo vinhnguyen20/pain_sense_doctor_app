@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('expands a parent goal to show every goal item detail', (
+  testWidgets('renders goal title and triggers onOpen callback', (
     tester,
   ) async {
+    var opened = false;
     final goal = UserGoalModel(
       id: 'goal-1',
       patientId: 'patient-1',
@@ -40,6 +41,7 @@ void main() {
         home: Scaffold(
           body: ClinicianGoalRow(
             goal: goal,
+            onOpen: () => opened = true,
             onAssign: () {},
             onEdit: () {},
             onDelete: () {},
@@ -48,16 +50,11 @@ void main() {
       ),
     );
 
-    expect(find.text('2 goal items'), findsOneWidget);
+    expect(find.text('Daily steps (+1)'), findsOneWidget);
 
     await tester.tap(find.byType(InkWell).first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Daily steps'), findsOneWidget);
-    expect(find.text('5000 steps'), findsOneWidget);
-    expect(find.text('Walk safely every day'), findsOneWidget);
-    expect(find.text('Morning yoga'), findsOneWidget);
-    expect(find.text('2 exercises'), findsOneWidget);
-    expect(find.text('Improve mobility'), findsOneWidget);
+    expect(opened, isTrue);
   });
 }

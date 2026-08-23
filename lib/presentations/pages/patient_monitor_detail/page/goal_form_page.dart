@@ -1040,6 +1040,10 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
 
   String _resolveCreateGoalErrorMessage(String rawMessage) {
     final normalized = rawMessage.trim().toLowerCase();
+    if (normalized.contains('overlapping date range') ||
+        normalized.contains('overlap')) {
+      return 'This exercise is already assigned to this patient during an overlapping date range. Choose another exercise or date range.';
+    }
     if (normalized.contains('đã tồn tại trong ngày hôm nay') ||
         normalized.contains('already exists') ||
         normalized.contains('already existed')) {
@@ -1443,32 +1447,34 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     return _ClinicianFormSection(
       title: 'Goal Types',
       subtitle: 'Choose 1 to 3 goal types for one shared date range.',
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: AppSpacing.s12,
-        runSpacing: AppSpacing.s10,
-        children: [
-          _ClinicianGoalTypeButton(
-            label: 'Steps / Walking',
-            icon: Icons.directions_walk_rounded,
-            selected: _selectedGoalCategories[GoalCategory.steps] ?? false,
-            onPressed: () => _toggleClinicianCategory(GoalCategory.steps),
-          ),
-          _ClinicianGoalTypeButton(
-            label: 'Yoga / Meditation',
-            icon: Icons.self_improvement_rounded,
-            selected: _selectedGoalCategories[GoalCategory.yoga] ?? false,
-            onPressed: () => _toggleClinicianCategory(GoalCategory.yoga),
-          ),
-          _ClinicianGoalTypeButton(
-            label: 'Activity Time',
-            icon: Icons.timer_outlined,
-            selected:
-                _selectedGoalCategories[GoalCategory.activityTime] ?? false,
-            onPressed: () =>
-                _toggleClinicianCategory(GoalCategory.activityTime),
-          ),
-        ],
+      child: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpacing.s12,
+          runSpacing: AppSpacing.s10,
+          children: [
+            _ClinicianGoalTypeButton(
+              label: 'Steps / Walking',
+              icon: Icons.directions_walk_rounded,
+              selected: _selectedGoalCategories[GoalCategory.steps] ?? false,
+              onPressed: () => _toggleClinicianCategory(GoalCategory.steps),
+            ),
+            _ClinicianGoalTypeButton(
+              label: 'Yoga / Meditation',
+              icon: Icons.self_improvement_rounded,
+              selected: _selectedGoalCategories[GoalCategory.yoga] ?? false,
+              onPressed: () => _toggleClinicianCategory(GoalCategory.yoga),
+            ),
+            _ClinicianGoalTypeButton(
+              label: 'Activity Time',
+              icon: Icons.timer_outlined,
+              selected:
+                  _selectedGoalCategories[GoalCategory.activityTime] ?? false,
+              onPressed: () =>
+                  _toggleClinicianCategory(GoalCategory.activityTime),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1480,70 +1486,79 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
       subtitle: 'This date range applies to every selected goal item.',
       child: Column(
         children: [
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: AppSpacing.s10,
-            runSpacing: AppSpacing.s10,
-            children: [
-              _ClinicianChoiceButton(
-                label: 'Daily',
-                selected: _goal.frequency == GoalFrequency.daily,
-                onPressed: () => setState(
-                  () => _goal = _goal.copyWith(frequency: GoalFrequency.daily),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.s10,
+              runSpacing: AppSpacing.s10,
+              children: [
+                _ClinicianChoiceButton(
+                  label: 'Daily',
+                  selected: _goal.frequency == GoalFrequency.daily,
+                  onPressed: () => setState(
+                    () =>
+                        _goal = _goal.copyWith(frequency: GoalFrequency.daily),
+                  ),
                 ),
-              ),
-              _ClinicianChoiceButton(
-                label: 'Certain Days',
-                selected: _goal.frequency == GoalFrequency.weekly,
-                onPressed: () => setState(
-                  () => _goal = _goal.copyWith(frequency: GoalFrequency.weekly),
+                _ClinicianChoiceButton(
+                  label: 'Certain Days',
+                  selected: _goal.frequency == GoalFrequency.weekly,
+                  onPressed: () => setState(
+                    () =>
+                        _goal = _goal.copyWith(frequency: GoalFrequency.weekly),
+                  ),
                 ),
-              ),
-              _ClinicianChoiceButton(
-                label: 'Monthly',
-                selected: _goal.frequency == GoalFrequency.monthly,
-                onPressed: () => setState(
-                  () =>
-                      _goal = _goal.copyWith(frequency: GoalFrequency.monthly),
+                _ClinicianChoiceButton(
+                  label: 'Monthly',
+                  selected: _goal.frequency == GoalFrequency.monthly,
+                  onPressed: () => setState(
+                    () => _goal = _goal.copyWith(
+                      frequency: GoalFrequency.monthly,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (_goal.frequency == GoalFrequency.weekly) ...[
             const SizedBox(height: AppSpacing.s14),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: AppSpacing.s8,
-              runSpacing: AppSpacing.s8,
-              children: List.generate(dayLabels.length, (index) {
-                return _ClinicianDayButton(
-                  label: dayLabels[index],
-                  selected: _selectedWeekDays.contains(index),
-                  enabled: true,
-                  onPressed: () => setState(() {
-                    if (!_selectedWeekDays.add(index)) {
-                      _selectedWeekDays.remove(index);
-                    }
-                  }),
-                );
-              }),
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: AppSpacing.s8,
+                runSpacing: AppSpacing.s8,
+                children: List.generate(dayLabels.length, (index) {
+                  return _ClinicianDayButton(
+                    label: dayLabels[index],
+                    selected: _selectedWeekDays.contains(index),
+                    enabled: true,
+                    onPressed: () => setState(() {
+                      if (!_selectedWeekDays.add(index)) {
+                        _selectedWeekDays.remove(index);
+                      }
+                    }),
+                  );
+                }),
+              ),
             ),
           ],
           const SizedBox(height: AppSpacing.s14),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: AppSpacing.s10,
-            runSpacing: AppSpacing.s10,
-            children: [
-              _ClinicianDateButton(
-                label: _formatClinicianDate(_goal.startDate, 'Start Date...'),
-                onPressed: () => _pickClinicianDate(isStartDate: true),
-              ),
-              _ClinicianDateButton(
-                label: _formatClinicianDate(_goal.endDate, 'End Date...'),
-                onPressed: () => _pickClinicianDate(isStartDate: false),
-              ),
-            ],
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.s10,
+              runSpacing: AppSpacing.s10,
+              children: [
+                _ClinicianDateButton(
+                  label: _formatClinicianDate(_goal.startDate, 'Start Date...'),
+                  onPressed: () => _pickClinicianDate(isStartDate: true),
+                ),
+                _ClinicianDateButton(
+                  label: _formatClinicianDate(_goal.endDate, 'End Date...'),
+                  onPressed: () => _pickClinicianDate(isStartDate: false),
+                ),
+              ],
+            ),
           ),
         ],
       ),
