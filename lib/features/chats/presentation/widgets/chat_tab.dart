@@ -68,13 +68,10 @@ class _ChatTabState extends ConsumerState<ChatTab> {
   }
 
   int _getUnreadCount(Conversation conversation, String? currentUserId) {
-    if (currentUserId == null) return 0;
-    for (final item in conversation.unreadInfo) {
-      if (item.userId == currentUserId) {
-        return item.count;
-      }
-    }
-    return 0;
+    return resolveDoctorUnreadCount(
+      conversation,
+      currentUserIds: [if (currentUserId != null) currentUserId],
+    );
   }
 }
 

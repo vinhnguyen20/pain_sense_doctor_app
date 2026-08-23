@@ -121,6 +121,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                 ),
               ),
             ),
+            const SizedBox(width: 24),
             Expanded(
               child: Center(
                 child: Container(
@@ -161,6 +162,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                 ),
               ),
             ),
+            const SizedBox(width: 24),
             SizedBox(
               width: 50,
               height: 50,
@@ -248,7 +250,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                     icon: Icon(Icons.add, color: context.primary, size: 22),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 24),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -274,7 +276,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 24),
                 CircleAvatar(
                   backgroundColor: context.primary,
                   radius: 24,

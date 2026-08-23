@@ -66,6 +66,9 @@ class _ClinicianConnectPageState extends ConsumerState<ClinicianConnectPage> {
   }
 
   void _openChat(Conversation conversation, Patient patient) {
+    ref
+        .read(conversationsProvider.notifier)
+        .clearUnreadCount(conversation.id, patient.id);
     context.go(
       '/connect/chat',
       extra: {'conversation': conversation, 'patient': patient},
@@ -317,11 +320,16 @@ class _PatientChatList extends StatelessWidget {
 
   Conversation? _conversationFor(Patient patient) {
     final patientId = patient.id.trim().toLowerCase();
+    final patientName = patient.fullName.trim().toLowerCase();
     for (final conversation in conversations) {
       final hasMatch = conversation.participants.any(
         (p) => p.trim().toLowerCase() == patientId,
       );
       if (hasMatch) return conversation;
+      if (patientName.isNotEmpty &&
+          conversation.name.trim().toLowerCase() == patientName) {
+        return conversation;
+      }
     }
     return null;
   }

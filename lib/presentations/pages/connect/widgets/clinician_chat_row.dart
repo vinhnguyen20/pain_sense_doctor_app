@@ -1,5 +1,6 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
+import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,11 @@ class ClinicianChatRow extends StatelessWidget {
         ? 'No recent message'
         : message;
     final textStyle = AppTypography.defaultBody2.copyWith(height: 1);
+
+    final currentConversation = conversation;
+    final unreadCount = currentConversation == null
+        ? 0
+        : resolveDoctorUnreadCount(currentConversation, patientId: patient.id);
 
     if (context.isCompactShell) {
       return Material(
@@ -93,7 +99,33 @@ class ClinicianChatRow extends StatelessWidget {
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: onChat,
-                    child: const Text('Chat'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Chat'),
+                        if (unreadCount > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : unreadCount.toString(),
+                              style: const TextStyle(
+                                color: AppPalette.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -187,23 +219,63 @@ class ClinicianChatRow extends StatelessWidget {
               SizedBox(
                 width: 88,
                 height: 50,
-                child: TextButton(
-                  onPressed: onChat,
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppPalette.white,
-                    foregroundColor: AppPalette.secondaryBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned.fill(
+                      child: TextButton(
+                        onPressed: onChat,
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppPalette.white,
+                          foregroundColor: AppPalette.secondaryBlue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: Text(
+                          'Chat',
+                          style: AppTypography.buttonLarge.copyWith(
+                            color: AppPalette.secondaryBlue,
+                            height: 1,
+                          ),
+                        ),
+                      ),
                     ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(
-                    'Chat',
-                    style: AppTypography.buttonLarge.copyWith(
-                      color: AppPalette.secondaryBlue,
-                      height: 1,
-                    ),
-                  ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppPalette.surfaceLight,
+                              width: 1.5,
+                            ),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: AppPalette.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
