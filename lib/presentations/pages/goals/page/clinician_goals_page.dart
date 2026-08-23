@@ -434,16 +434,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       );
     } else {
       for (final goal in goals) {
-        final item = goal.goalItems.firstOrNull;
-        final title = item?.label.trim().isNotEmpty == true
-            ? item!.label.trim()
-            : item == null
-            ? 'Goal'
-            : '${item.minTarget} ${item.unit} ${item.type.displayName}';
         rows.add(
           ClinicianGoalRow(
-            icon: item?.type.icon ?? Icons.flag_outlined,
-            title: title,
+            goal: goal,
             onAssign: _openCreateGoal,
             onEdit: () => _editGoal(goal),
             onDelete: () => _deleteGoal(goal),
