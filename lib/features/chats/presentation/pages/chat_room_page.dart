@@ -39,6 +39,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   final ScrollController _scrollController = ScrollController();
   late ChatRoomNotifier _chatRoomController;
   late ChatRoomSession _chatSession;
+  bool _showScrollToBottom = false;
+  int _newMessagesCountWhileScrolled = 0;
 
   @override
   void initState() {
@@ -116,45 +118,56 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     _scrollToBottom(animated: true);
   }
 
-  bool _isNearBottom([double threshold = 180]) {
+  bool _isAtBottom([double threshold = 60]) {
     if (!_scrollController.hasClients) return true;
-    final position = _scrollController.position;
-    final isDesktop = widget.patient != null && !widget.embedded;
-    if (isDesktop) {
-      return (position.maxScrollExtent - position.pixels) <= threshold;
-    }
-    return position.pixels <= threshold;
+    return _scrollController.offset <= threshold;
   }
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final position = _scrollController.position;
-    final isDesktop = widget.patient != null && !widget.embedded;
-    if (isDesktop) {
-      if (position.pixels > 140) return;
-    } else {
-      if (position.pixels < position.maxScrollExtent - 140) return;
+    final offset = _scrollController.offset;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+
+    final shouldShowButton = offset > 80;
+    if (_showScrollToBottom != shouldShowButton) {
+      setState(() {
+        _showScrollToBottom = shouldShowButton;
+        if (!shouldShowButton) {
+          _newMessagesCountWhileScrolled = 0;
+        }
+      });
+    } else if (!shouldShowButton && _newMessagesCountWhileScrolled > 0) {
+      setState(() {
+        _newMessagesCountWhileScrolled = 0;
+      });
     }
-    ref.read(chatRoomProvider(_chatSession).notifier).loadOlderMessages();
+
+    // In reverse ListView: top (oldest messages) is at maxScrollExtent
+    if (offset >= maxScroll - 140) {
+      ref.read(chatRoomProvider(_chatSession).notifier).loadOlderMessages();
+    }
   }
 
   void _scrollToBottom({required bool animated}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
 
-      final isDesktop = widget.patient != null && !widget.embedded;
-      final target = isDesktop
-          ? _scrollController.position.maxScrollExtent
-          : 0.0;
-
       if (animated) {
         _scrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 180),
+          0.0,
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
         );
       } else {
-        _scrollController.jumpTo(target);
+        _scrollController.jumpTo(0.0);
+      }
+
+      if (mounted &&
+          (_showScrollToBottom || _newMessagesCountWhileScrolled > 0)) {
+        setState(() {
+          _showScrollToBottom = false;
+          _newMessagesCountWhileScrolled = 0;
+        });
       }
     });
   }
@@ -164,14 +177,23 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     final currentCount = next.messages.length;
     if (currentCount == 0) return;
 
-    final previousLastId = previousCount == 0 ? '' : previous!.messages.last.id;
+    final previousLastId =
+        previousCount == 0 ? '' : previous!.messages.last.id;
     final currentLastId = next.messages.last.id;
     final hasNewTailMessage =
         currentCount > previousCount && currentLastId != previousLastId;
 
     if (!hasNewTailMessage) return;
-    if (_isNearBottom()) {
+
+    if (_isAtBottom()) {
       _scrollToBottom(animated: true);
+    } else {
+      if (mounted) {
+        setState(() {
+          _showScrollToBottom = true;
+          _newMessagesCountWhileScrolled += (currentCount - previousCount);
+        });
+      }
     }
   }
 
@@ -231,10 +253,23 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                 ),
               ],
               Expanded(
-                child: _buildMessages(
-                  state: chatState,
-                  liveConversation: liveConversation,
-                  patient: activePatient,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    _buildMessages(
+                      state: chatState,
+                      liveConversation: liveConversation,
+                      patient: activePatient,
+                    ),
+                    if (_showScrollToBottom)
+                      Positioned(
+                        bottom: 12,
+                        child: _ScrollToBottomButton(
+                          newMessagesCount: _newMessagesCountWhileScrolled,
+                          onTap: () => _scrollToBottom(animated: true),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (!widget.embedded && activePatient != null)
@@ -298,8 +333,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                     : 'Realtime Off',
                 style: context.labelSmall?.copyWith(
                   color: chatState.isWsConnected
-                      ? context.chatColors.online
-                      : context.chatColors.offline,
+                    ? context.chatColors.online
+                    : context.chatColors.offline,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -435,54 +470,65 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
 
     final showPaginationHeader =
         state.hasMoreHistory || state.isLoadingMoreHistory;
+    final isDesktopView = patient != null && !widget.embedded;
 
-    if (patient != null && !widget.embedded) {
-      return Align(
-        alignment: Alignment.bottomCenter,
+    final listView = ListView.builder(
+      controller: _scrollController,
+      reverse: true,
+      cacheExtent: 1200,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktopView ? 0 : 16,
+        vertical: isDesktopView ? 20 : 16,
+      ),
+      itemCount: displayMessages.length + (showPaginationHeader ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (showPaginationHeader && index == displayMessages.length) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SizedBox(
+              height: 24,
+              child: Center(
+                child: state.isLoadingMoreHistory
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        'Pull to load older messages',
+                        style: context.labelSmall?.copyWith(
+                          color: context.onSurface.withValues(alpha: 0.45),
+                        ),
+                      ),
+              ),
+            ),
+          );
+        }
+
+        final messageIndex = displayMessages.length - 1 - index;
+        final message = displayMessages[messageIndex];
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: isDesktopView ? 20 : 12),
+          child: ChatMessageBubble(
+            patient: patient,
+            compact: isDesktopView,
+            key: ValueKey(message.id),
+            msg: message,
+            currentUserIds: currentUserIds,
+            currentRole: currentRole,
+          ),
+        );
+      },
+    );
+
+    if (isDesktopView) {
+      return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 972),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(top: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showPaginationHeader)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: Center(
-                      child: state.isLoadingMoreHistory
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              'Pull to load older messages',
-                              style: context.labelSmall?.copyWith(
-                                color: context.onSurface.withValues(
-                                  alpha: 0.45,
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                for (int i = 0; i < displayMessages.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 20),
-                  ChatMessageBubble(
-                    patient: patient,
-                    compact: true,
-                    key: ValueKey(displayMessages[i].id),
-                    msg: displayMessages[i],
-                    currentUserIds: currentUserIds,
-                    currentRole: currentRole,
-                  ),
-                ],
-              ],
-            ),
-          ),
+          child: listView,
         ),
       );
     }
@@ -490,58 +536,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     return RefreshIndicator(
       onRefresh: () =>
           ref.read(chatRoomProvider(_chatSession).notifier).loadHistory(),
-      child: ListView.builder(
-        controller: _scrollController,
-        reverse: true,
-        cacheExtent: 1200,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.all(16),
-        itemCount: displayMessages.length + (showPaginationHeader ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (showPaginationHeader && index == displayMessages.length) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: SizedBox(
-                height: 24,
-                child: Center(
-                  child: state.isLoadingMoreHistory
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Pull up to load older messages',
-                          style: context.labelSmall?.copyWith(
-                            color: context.onSurface.withValues(alpha: 0.45),
-                          ),
-                        ),
-                ),
-              ),
-            );
-          }
-
-          final messageIndex = displayMessages.length - 1 - index;
-          final message = displayMessages[messageIndex];
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ChatMessageBubble(
-                  patient: patient,
-                  compact: false,
-                  key: ValueKey(message.id),
-                  msg: message,
-                  currentUserIds: currentUserIds,
-                  currentRole: currentRole,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      child: listView,
     );
   }
 
@@ -561,6 +556,87 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       status: 'sent',
       type: 'text',
       content: MessageContent(text: text),
+    );
+  }
+}
+
+class _ScrollToBottomButton extends StatelessWidget {
+  final int newMessagesCount;
+  final VoidCallback onTap;
+
+  const _ScrollToBottomButton({
+    required this.newMessagesCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNewMessages = newMessagesCount > 0;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: child,
+        );
+      },
+      child: Material(
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.28),
+        shape: hasNewMessages
+            ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))
+            : const CircleBorder(),
+        color: hasNewMessages ? AppPalette.secondaryBlue : AppPalette.white,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: hasNewMessages
+              ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))
+              : const CircleBorder(),
+          child: Container(
+            padding: hasNewMessages
+                ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+                : const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: hasNewMessages
+                    ? AppPalette.secondaryBlue
+                    : AppPalette.medGray.withValues(alpha: 0.5),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: hasNewMessages
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.arrow_downward_rounded,
+                        size: 16,
+                        color: AppPalette.white,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        newMessagesCount > 1
+                            ? '$newMessagesCount new messages'
+                            : 'New message',
+                        style: context.labelSmall?.copyWith(
+                          color: AppPalette.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 24,
+                    color: AppPalette.secondaryBlue,
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }
