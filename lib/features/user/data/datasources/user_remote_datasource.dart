@@ -74,9 +74,13 @@ class UserRemoteDataSource {
 
   Future<ApiResponse<UserModel>> updateUser(UserModel user) async {
     try {
+      final userId = user.id.trim();
+      if (userId.isEmpty) {
+        throw ArgumentError('user_id (path parameter) is required to update user.');
+      }
       final result = await _client.put<ApiResponse<UserModel>>(
-        '/users/doctor',
-        data: user.toJson(),
+        '/users/$userId',
+        data: user.toUpdateJson(),
         fromJson: (json) => ApiResponse<UserModel>.fromJson(
           json,
           (data) => UserModel.fromJson(data),

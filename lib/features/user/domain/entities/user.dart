@@ -8,6 +8,10 @@ class User extends Equatable {
   final String? firstName;
   final String? lastName;
   final String? address;
+  final String? avatarUrl;
+  final String? facebookId;
+  final String? gmailId;
+  final String? appleId;
   final String? birthdate;
   final Gender? gender;
   final EmergencyContact? emergencyContact;
@@ -23,6 +27,10 @@ class User extends Equatable {
     this.firstName,
     this.lastName,
     this.address,
+    this.avatarUrl,
+    this.facebookId,
+    this.gmailId,
+    this.appleId,
     this.birthdate,
     this.gender,
     this.emergencyContact,
@@ -54,6 +62,10 @@ class User extends Equatable {
     String? firstName,
     String? lastName,
     String? address,
+    String? avatarUrl,
+    String? facebookId,
+    String? gmailId,
+    String? appleId,
     String? birthdate,
     Gender? gender,
     EmergencyContact? emergencyContact,
@@ -69,6 +81,10 @@ class User extends Equatable {
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       address: address ?? this.address,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      facebookId: facebookId ?? this.facebookId,
+      gmailId: gmailId ?? this.gmailId,
+      appleId: appleId ?? this.appleId,
       birthdate: birthdate ?? this.birthdate,
       gender: gender ?? this.gender,
       emergencyContact: emergencyContact ?? this.emergencyContact,
@@ -87,6 +103,10 @@ class User extends Equatable {
     firstName,
     lastName,
     address,
+    avatarUrl,
+    facebookId,
+    gmailId,
+    appleId,
     birthdate,
     gender,
     emergencyContact,

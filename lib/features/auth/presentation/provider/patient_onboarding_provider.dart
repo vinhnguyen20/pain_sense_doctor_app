@@ -12,6 +12,7 @@ class PatientOnboardingState {
   final Map<int, String> answers;
   final DateTime startedAt;
   final String? accessToken;
+  final String? userId;
   final bool registrationCompleted;
   final bool isSubmitting;
   final bool isLoadingSurvey;
@@ -24,6 +25,7 @@ class PatientOnboardingState {
     this.answers = const {},
     required this.startedAt,
     this.accessToken,
+    this.userId,
     this.registrationCompleted = false,
     this.isSubmitting = false,
     this.isLoadingSurvey = false,
@@ -37,6 +39,7 @@ class PatientOnboardingState {
     Map<int, String>? answers,
     DateTime? startedAt,
     String? accessToken,
+    String? userId,
     bool? registrationCompleted,
     bool? isSubmitting,
     bool? isLoadingSurvey,
@@ -50,6 +53,7 @@ class PatientOnboardingState {
       answers: answers ?? this.answers,
       startedAt: startedAt ?? this.startedAt,
       accessToken: accessToken ?? this.accessToken,
+      userId: userId ?? this.userId,
       registrationCompleted:
           registrationCompleted ?? this.registrationCompleted,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -97,9 +101,18 @@ class PatientOnboardingController extends Notifier<PatientOnboardingState> {
         return false;
       }
 
+      String? userId;
+      try {
+        final userInfo = await ref
+            .read(authRemoteDataSourceProvider)
+            .getCurrentUserInfo(token.accessToken);
+        userId = userInfo.data?.id;
+      } catch (_) {}
+
       state = state.copyWith(
         registrationCompleted: true,
         accessToken: token.accessToken,
+        userId: userId,
       );
       return true;
     } catch (error, stackTrace) {
@@ -128,9 +141,32 @@ class PatientOnboardingController extends Notifier<PatientOnboardingState> {
     );
 
     try {
+      String? userId = state.userId;
+      if (userId == null || userId.trim().isEmpty) {
+        final userInfo = await ref
+            .read(authRemoteDataSourceProvider)
+            .getCurrentUserInfo(token);
+        userId = userInfo.data?.id;
+        if (userId != null && userId.trim().isNotEmpty) {
+          state = state.copyWith(userId: userId);
+        }
+      }
+
+      if (userId == null || userId.trim().isEmpty) {
+        state = state.copyWith(
+          errorMessage: 'Unable to resolve user ID for profile update.',
+        );
+        return false;
+      }
+
       final profileResult = await ref
           .read(authRemoteDataSourceProvider)
-          .updatePatientProfile(profile: profile, accessToken: token);
+          .updateDoctorProfile(
+            userId: userId,
+            profile: profile,
+            registration: state.registration,
+            accessToken: token,
+          );
       if (profileResult.isFailure) {
         state = state.copyWith(errorMessage: profileResult.message);
         return false;

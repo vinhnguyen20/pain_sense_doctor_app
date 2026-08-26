@@ -37,6 +37,22 @@ class PatientModel extends Patient
   @override
   final String? address;
 
+  @JsonKey(name: 'avatar_url')
+  @override
+  final String? avatarUrl;
+
+  @JsonKey(name: 'facebook_id')
+  @override
+  final String? facebookId;
+
+  @JsonKey(name: 'gmail_id')
+  @override
+  final String? gmailId;
+
+  @JsonKey(name: 'apple_id')
+  @override
+  final String? appleId;
+
   @JsonKey(name: 'birthdate')
   @override
   final String? birthdate;
@@ -73,6 +89,10 @@ class PatientModel extends Patient
     this.firstName,
     this.lastName,
     this.address,
+    this.avatarUrl,
+    this.facebookId,
+    this.gmailId,
+    this.appleId,
     this.birthdate,
     this.gender,
     this.emergencyContact,
@@ -87,6 +107,10 @@ class PatientModel extends Patient
          firstName: firstName,
          lastName: lastName,
          address: address,
+         avatarUrl: avatarUrl,
+         facebookId: facebookId,
+         gmailId: gmailId,
+         appleId: appleId,
          birthdate: birthdate,
          gender: gender,
          emergencyContact: emergencyContact,
@@ -110,6 +134,10 @@ class PatientModel extends Patient
       firstName: firstName,
       lastName: lastName,
       address: address,
+      avatarUrl: avatarUrl,
+      facebookId: facebookId,
+      gmailId: gmailId,
+      appleId: appleId,
       birthdate: birthdate,
       gender: gender,
       emergencyContact: emergencyContact?.toEntity(),
@@ -128,6 +156,10 @@ class PatientModel extends Patient
       firstName: entity.firstName,
       lastName: entity.lastName,
       address: entity.address,
+      avatarUrl: entity.avatarUrl,
+      facebookId: entity.facebookId,
+      gmailId: entity.gmailId,
+      appleId: entity.appleId,
       birthdate: entity.birthdate,
       gender: entity.gender,
       emergencyContact: entity.emergencyContact != null

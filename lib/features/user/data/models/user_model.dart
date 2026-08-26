@@ -34,6 +34,22 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
   @override
   final String? address;
 
+  @JsonKey(name: 'avatar_url')
+  @override
+  final String? avatarUrl;
+
+  @JsonKey(name: 'facebook_id')
+  @override
+  final String? facebookId;
+
+  @JsonKey(name: 'gmail_id')
+  @override
+  final String? gmailId;
+
+  @JsonKey(name: 'apple_id')
+  @override
+  final String? appleId;
+
   @JsonKey(name: 'birthdate')
   @override
   final String? birthdate;
@@ -58,6 +74,10 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
     this.firstName,
     this.lastName,
     this.address,
+    this.avatarUrl,
+    this.facebookId,
+    this.gmailId,
+    this.appleId,
     this.birthdate,
     this.gender,
     this.emergencyContact,
@@ -70,6 +90,10 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
          firstName: firstName,
          lastName: lastName,
          address: address,
+         avatarUrl: avatarUrl,
+         facebookId: facebookId,
+         gmailId: gmailId,
+         appleId: appleId,
          birthdate: birthdate,
          gender: gender,
          emergencyContact: emergencyContact,
@@ -81,6 +105,23 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
 
   Map<String, dynamic> toJson() => _$UserModelToJson(this);
 
+  Map<String, dynamic> toUpdateJson() => <String, dynamic>{
+    'first_name': firstName,
+    'last_name': lastName,
+    'email': email,
+    'phone': phone,
+    'country_code': countryCode,
+    'address': address,
+    'avatar_url': avatarUrl,
+    'facebook_id': facebookId,
+    'gmail_id': gmailId,
+    'apple_id': appleId,
+    'birthdate': birthdate,
+    'gender': _genderToJson(gender),
+    if (emergencyContact != null)
+      'emergency_contact': emergencyContact?.toJson(),
+  };
+
   @override
   User toEntity() {
     return User(
@@ -91,6 +132,10 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
       firstName: firstName,
       lastName: lastName,
       address: address,
+      avatarUrl: avatarUrl,
+      facebookId: facebookId,
+      gmailId: gmailId,
+      appleId: appleId,
       birthdate: birthdate,
       gender: gender,
       emergencyContact: emergencyContact?.toEntity(),
@@ -107,6 +152,10 @@ class UserModel extends User with EntityConvertible<UserModel, User> {
       firstName: entity.firstName,
       lastName: entity.lastName,
       address: entity.address,
+      avatarUrl: entity.avatarUrl,
+      facebookId: entity.facebookId,
+      gmailId: entity.gmailId,
+      appleId: entity.appleId,
       birthdate: entity.birthdate,
       gender: entity.gender,
       emergencyContact: entity.emergencyContact != null

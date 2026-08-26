@@ -40,9 +40,19 @@ class PatientProfileSetup {
     this.countryCode = '+84',
   });
 
-  Map<String, dynamic> toUpdateJson(DateTime now) {
+  Map<String, dynamic> toUpdateJson(
+    DateTime now, {
+    PatientRegistration? registration,
+  }) {
     final birthYear = now.year - age;
     return {
+      if (registration != null) ...{
+        'first_name': registration.firstName,
+        'last_name': registration.lastName,
+        'email': registration.email,
+        'phone': registration.phone,
+        'country_code': registration.countryCode,
+      },
       'birthdate': DateTime.utc(birthYear, 1, 1).toIso8601String(),
       'emergency_contact': {
         'name': emergencyContactName,
