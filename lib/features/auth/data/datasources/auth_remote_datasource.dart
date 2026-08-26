@@ -28,12 +28,31 @@ class AuthRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<void>> registerPatient(
+  Future<ApiResponse<void>> registerDoctor(
     PatientRegistration registration,
   ) async {
     return _client.post<ApiResponse<void>>(
-      '/users/patient',
+      '/users/doctor',
       data: registration.toJson(),
+      fromJson: (json) =>
+          ApiResponse<void>.fromJson(json as Map<String, dynamic>, null),
+    );
+  }
+
+  Future<ApiResponse<void>> registerPatient(
+    PatientRegistration registration,
+  ) async {
+    return registerDoctor(registration);
+  }
+
+  Future<ApiResponse<void>> updateDoctorProfile({
+    required PatientProfileSetup profile,
+    required String accessToken,
+  }) async {
+    return _client.put<ApiResponse<void>>(
+      '/users/doctor',
+      data: profile.toUpdateJson(DateTime.now()),
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       fromJson: (json) =>
           ApiResponse<void>.fromJson(json as Map<String, dynamic>, null),
     );
@@ -43,12 +62,6 @@ class AuthRemoteDataSource {
     required PatientProfileSetup profile,
     required String accessToken,
   }) async {
-    return _client.put<ApiResponse<void>>(
-      '/users/patient',
-      data: profile.toUpdateJson(DateTime.now()),
-      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
-      fromJson: (json) =>
-          ApiResponse<void>.fromJson(json as Map<String, dynamic>, null),
-    );
+    return updateDoctorProfile(profile: profile, accessToken: accessToken);
   }
 }

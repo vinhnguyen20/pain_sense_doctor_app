@@ -75,7 +75,7 @@ class UserRemoteDataSource {
   Future<ApiResponse<UserModel>> updateUser(UserModel user) async {
     try {
       final result = await _client.put<ApiResponse<UserModel>>(
-        '/users/patient',
+        '/users/doctor',
         data: user.toJson(),
         fromJson: (json) => ApiResponse<UserModel>.fromJson(
           json,
