@@ -674,9 +674,6 @@ class DailyGoalsCard extends ConsumerWidget {
           .where((item) => item.type == type)
           .firstOrNull;
       final goalItem = goalItems.where((item) => item.type == type).firstOrNull;
-      final title = goalItem?.label.trim().isNotEmpty == true
-          ? goalItem!.label
-          : type.toApiString();
       final description = goalItem?.desc.trim().isNotEmpty == true
           ? goalItem!.desc
           : 'No goal assigned.';
@@ -696,7 +693,9 @@ class DailyGoalsCard extends ConsumerWidget {
             child: _GoalSummaryItem(
               goalItem: goalItem,
               activity: activity,
-              defaultTitle: title,
+              // Keep the three Daily Goals labels stable even when a goal
+              // uses a custom label in the API response.
+              defaultTitle: type.toApiString(),
               defaultDescription: description,
             ),
           ),
@@ -759,7 +758,7 @@ class _GoalSummaryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int percent = 0;
-    String title = activity?.label ?? defaultTitle;
+    final title = defaultTitle;
     String desc = defaultDescription;
     Color color = const Color(0xFF58E8EA);
 
