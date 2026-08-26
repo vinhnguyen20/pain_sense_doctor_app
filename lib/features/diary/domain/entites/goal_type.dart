@@ -14,9 +14,9 @@ enum GoalType {
   };
 
   String toApiString() => switch (this) {
-    GoalType.stepsWalking => 'Steps/Walking',
-    GoalType.yogaMeditation => 'Yoga/Meditation',
-    GoalType.activityWalk => 'Activity_Walk',
+    GoalType.stepsWalking => 'Steps',
+    GoalType.yogaMeditation => 'Yoga',
+    GoalType.activityWalk => 'Walk',
     GoalType.unknown => '',
   };
 
