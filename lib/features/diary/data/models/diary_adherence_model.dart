@@ -1,19 +1,10 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'diary_adherence_model.g.dart';
-
-@JsonSerializable(explicitToJson: true)
 class PatientDiaryAdherenceModel {
-  @JsonKey(name: 'overall')
   final double overall;
 
-  @JsonKey(name: 'status')
   final String status;
 
-  @JsonKey(name: 'color')
   final String color;
 
-  @JsonKey(name: 'by_type')
   final Map<String, ActivityAdherence> byType;
 
   const PatientDiaryAdherenceModel({
@@ -23,24 +14,48 @@ class PatientDiaryAdherenceModel {
     required this.byType,
   });
 
-  factory PatientDiaryAdherenceModel.fromJson(Map<String, dynamic> json) =>
-      _$PatientDiaryAdherenceModelFromJson(json);
+  factory PatientDiaryAdherenceModel.fromJson(Map<String, dynamic> json) {
+    final rawByType = json['by_type'];
+    final byType = <String, ActivityAdherence>{};
+    if (rawByType is Map) {
+      for (final entry in rawByType.entries) {
+        final value = entry.value;
+        if (value is Map) {
+          byType[entry.key.toString()] = ActivityAdherence.fromJson(
+            Map<String, dynamic>.from(value),
+          );
+        }
+      }
+    }
 
-  Map<String, dynamic> toJson() => _$PatientDiaryAdherenceModelToJson(this);
+    return PatientDiaryAdherenceModel(
+      overall: _toDouble(json['overall']),
+      status: json['status']?.toString() ?? '',
+      color: json['color']?.toString() ?? '',
+      byType: byType,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'overall': overall,
+    'status': status,
+    'color': color,
+    'by_type': byType.map((key, value) => MapEntry(key, value.toJson())),
+  };
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
 }
 
-@JsonSerializable()
 class ActivityAdherence {
-  @JsonKey(name: 'avg_percent')
   final double avgPercent;
 
-  @JsonKey(name: 'total_days')
   final int totalDays;
 
-  @JsonKey(name: 'status')
   final String status;
 
-  @JsonKey(name: 'color')
   final String color;
 
   const ActivityAdherence({
@@ -50,8 +65,23 @@ class ActivityAdherence {
     required this.color,
   });
 
-  factory ActivityAdherence.fromJson(Map<String, dynamic> json) =>
-      _$ActivityAdherenceFromJson(json);
+  factory ActivityAdherence.fromJson(Map<String, dynamic> json) {
+    final rawPercent = json['avg_percent'] ?? json['percent'];
+    final rawDays = json['total_days'];
+    return ActivityAdherence(
+      avgPercent: PatientDiaryAdherenceModel._toDouble(rawPercent),
+      totalDays: rawDays is num
+          ? rawDays.toInt()
+          : int.tryParse(rawDays?.toString() ?? '') ?? 1,
+      status: json['status']?.toString() ?? '',
+      color: json['color']?.toString() ?? '',
+    );
+  }
 
-  Map<String, dynamic> toJson() => _$ActivityAdherenceToJson(this);
+  Map<String, dynamic> toJson() => {
+    'avg_percent': avgPercent,
+    'total_days': totalDays,
+    'status': status,
+    'color': color,
+  };
 }

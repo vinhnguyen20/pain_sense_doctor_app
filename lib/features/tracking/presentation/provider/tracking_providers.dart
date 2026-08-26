@@ -4,6 +4,7 @@ import 'package:app_doctor/features/tracking/data/models/tracking_summary_item_m
 import 'package:app_doctor/features/tracking/data/repository/tracking_repository_impl.dart';
 import 'package:app_doctor/features/tracking/domain/repository/tracking_repository.dart';
 import 'package:app_doctor/features/tracking/domain/usecases/get_patient_tracking_summary_7days_use_case.dart';
+import 'package:app_doctor/features/diary/data/models/diary_adherence_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -47,3 +48,18 @@ final patientTrackingSummary7DaysProvider =
 
       return result.data ?? [];
     }, retry: (retryCount, error) => null);
+
+final patientTrackingAdherence7DaysProvider =
+    Provider.family<AsyncValue<PatientDiaryAdherenceModel?>, String>((
+      ref,
+      patientId,
+    ) {
+      return ref.watch(patientTrackingSummary7DaysProvider(patientId)).whenData(
+        (items) {
+          final withAdherence =
+              items.where((item) => item.adherence != null).toList()
+                ..sort((a, b) => b.logDate.compareTo(a.logDate));
+          return withAdherence.firstOrNull?.adherence;
+        },
+      );
+    });
