@@ -1,6 +1,10 @@
 import 'package:app_doctor/common/widgets/app_snackbar.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/core/utils/validators.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
+import 'package:app_doctor/features/auth/domain/entities/patient_registration.dart';
+import 'package:app_doctor/features/auth/presentation/provider/patient_onboarding_provider.dart';
+import 'package:app_doctor/features/survey/data/models/survey_definition_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,6 +64,8 @@ class PatientLoginPage extends ConsumerStatefulWidget {
 class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _emailError;
+  String? _passwordError;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
 
@@ -68,6 +74,21 @@ class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _validateEmail([String? value]) {
+    final err = AppValidators.validateEmail(value ?? _emailController.text);
+    if (_emailError != err) {
+      setState(() => _emailError = err);
+    }
+  }
+
+  void _validatePassword([String? value]) {
+    final text = value ?? _passwordController.text;
+    final err = text.isEmpty ? 'Please enter your password.' : null;
+    if (_passwordError != err) {
+      setState(() => _passwordError = err);
+    }
   }
 
   @override
@@ -88,11 +109,15 @@ class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
             label: 'E-Mail',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            errorText: _emailError,
+            onChanged: _validateEmail,
           ),
           _PatientFormField(
             label: 'Password',
             controller: _passwordController,
             obscureText: _obscurePassword,
+            errorText: _passwordError,
+            onChanged: _validatePassword,
             suffix: IconButton(
               tooltip: _obscurePassword ? 'Show password' : 'Hide password',
               onPressed: () =>
@@ -126,8 +151,17 @@ class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      AppSnackbar.error(context, 'Please enter your email and password.');
+    final emailErr = AppValidators.validateEmail(email);
+    final passwordErr = password.isEmpty ? 'Please enter your password.' : null;
+
+    setState(() {
+      _emailError = emailErr;
+      _passwordError = passwordErr;
+    });
+
+    final firstError = emailErr ?? passwordErr;
+    if (firstError != null) {
+      AppSnackbar.error(context, firstError);
       return;
     }
 
@@ -146,34 +180,110 @@ class _PatientLoginPageState extends ConsumerState<PatientLoginPage> {
   }
 }
 
-class PatientAccountCreationPage extends StatefulWidget {
+class PatientAccountCreationPage extends ConsumerStatefulWidget {
   const PatientAccountCreationPage({super.key});
 
   @override
-  State<PatientAccountCreationPage> createState() =>
+  ConsumerState<PatientAccountCreationPage> createState() =>
       _PatientAccountCreationPageState();
 }
 
 class _PatientAccountCreationPageState
-    extends State<PatientAccountCreationPage> {
+    extends ConsumerState<PatientAccountCreationPage> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  String? _firstNameError;
+  String? _lastNameError;
+  String? _emailError;
+  String? _phoneError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final registration = ref.read(patientOnboardingProvider).registration;
+    if (registration != null) {
+      _firstNameController.text = registration.firstName;
+      _lastNameController.text = registration.lastName;
+      _emailController.text = registration.email;
+      _phoneController.text = registration.phone;
+      _passwordController.text = registration.password;
+      _confirmPasswordController.text = registration.password;
+    }
+  }
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  void _validateFirstName([String? value]) {
+    final err = AppValidators.validateName(
+      value ?? _firstNameController.text,
+      fieldName: 'First name',
+    );
+    if (_firstNameError != err) setState(() => _firstNameError = err);
+  }
+
+  void _validateLastName([String? value]) {
+    final err = AppValidators.validateName(
+      value ?? _lastNameController.text,
+      fieldName: 'Last name',
+    );
+    if (_lastNameError != err) setState(() => _lastNameError = err);
+  }
+
+  void _validateEmail([String? value]) {
+    final err = AppValidators.validateEmail(value ?? _emailController.text);
+    if (_emailError != err) setState(() => _emailError = err);
+  }
+
+  void _validatePhone([String? value]) {
+    final err = AppValidators.validatePhone(
+      value ?? _phoneController.text,
+      fieldName: 'Phone number',
+    );
+    if (_phoneError != err) setState(() => _phoneError = err);
+  }
+
+  void _validatePassword([String? value]) {
+    final err = AppValidators.validatePassword(
+      value ?? _passwordController.text,
+    );
+    if (_passwordError != err) setState(() => _passwordError = err);
+    if (_confirmPasswordController.text.isNotEmpty) {
+      _validateConfirmPassword();
+    }
+  }
+
+  void _validateConfirmPassword([String? value]) {
+    final err = AppValidators.validateConfirmPassword(
+      value ?? _confirmPasswordController.text,
+      _passwordController.text,
+    );
+    if (_confirmPasswordError != err) {
+      setState(() => _confirmPasswordError = err);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final onboarding = ref.watch(patientOnboardingProvider);
     return PatientOnboardingFrame(
       title: 'Welcome to PainSense',
       subtitle: 'Let’s start by getting you set up with an account.',
@@ -184,47 +294,177 @@ class _PatientAccountCreationPageState
           _PatientFormField(
             label: 'First Name',
             controller: _firstNameController,
+            errorText: _firstNameError,
+            onChanged: _validateFirstName,
           ),
           _PatientFormField(
             label: 'Last Name',
             controller: _lastNameController,
+            errorText: _lastNameError,
+            onChanged: _validateLastName,
           ),
           _PatientFormField(
             label: 'E-Mail',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            errorText: _emailError,
+            onChanged: _validateEmail,
+          ),
+          _PatientFormField(
+            label: 'Phone',
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            errorText: _phoneError,
+            onChanged: _validatePhone,
           ),
           _PatientFormField(
             label: 'Password',
             controller: _passwordController,
-            obscureText: true,
+            obscureText: _obscurePassword,
+            errorText: _passwordError,
+            onChanged: _validatePassword,
+            suffix: IconButton(
+              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+            ),
           ),
           _PatientFormField(
             label: 'Re-Enter Password',
             controller: _confirmPasswordController,
-            obscureText: true,
+            obscureText: _obscureConfirmPassword,
+            errorText: _confirmPasswordError,
+            onChanged: _validateConfirmPassword,
+            suffix: IconButton(
+              tooltip: _obscureConfirmPassword
+                  ? 'Show password'
+                  : 'Hide password',
+              onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+              ),
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+            ),
           ),
         ],
       ),
       onBack: () => context.go('/welcome'),
-      onNext: () => context.go('/profile-setup'),
+      nextLabel: onboarding.isSubmitting ? 'Creating...' : 'Next',
+      onNext: onboarding.isSubmitting ? null : () => _handleRegistration(),
     );
+  }
+
+  Future<void> _handleRegistration() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+    final confirmation = _confirmPasswordController.text;
+
+    final firstNameErr = AppValidators.validateName(
+      firstName,
+      fieldName: 'First name',
+    );
+    final lastNameErr = AppValidators.validateName(
+      lastName,
+      fieldName: 'Last name',
+    );
+    final emailErr = AppValidators.validateEmail(email);
+    final phoneErr = AppValidators.validatePhone(
+      phone,
+      fieldName: 'Phone number',
+    );
+    final passwordErr = AppValidators.validatePassword(password);
+    final confirmPasswordErr = AppValidators.validateConfirmPassword(
+      confirmation,
+      password,
+    );
+
+    setState(() {
+      _firstNameError = firstNameErr;
+      _lastNameError = lastNameErr;
+      _emailError = emailErr;
+      _phoneError = phoneErr;
+      _passwordError = passwordErr;
+      _confirmPasswordError = confirmPasswordErr;
+    });
+
+    final firstError = firstNameErr ??
+        lastNameErr ??
+        emailErr ??
+        phoneErr ??
+        passwordErr ??
+        confirmPasswordErr;
+
+    if (firstError != null) {
+      AppSnackbar.error(context, firstError);
+      return;
+    }
+
+    final success = await ref
+        .read(patientOnboardingProvider.notifier)
+        .registerAccount(
+          PatientRegistration(
+            email: email,
+            phone: phone,
+            firstName: firstName,
+            lastName: lastName,
+            password: password,
+          ),
+        );
+    if (!mounted) return;
+    if (success) {
+      context.go('/profile-setup');
+    } else {
+      AppSnackbar.error(
+        context,
+        ref.read(patientOnboardingProvider).errorMessage ??
+            'Unable to create the account.',
+      );
+    }
   }
 }
 
-class PatientProfileSetupPage extends StatefulWidget {
+class PatientProfileSetupPage extends ConsumerStatefulWidget {
   const PatientProfileSetupPage({super.key});
 
   @override
-  State<PatientProfileSetupPage> createState() =>
+  ConsumerState<PatientProfileSetupPage> createState() =>
       _PatientProfileSetupPageState();
 }
 
-class _PatientProfileSetupPageState extends State<PatientProfileSetupPage> {
+class _PatientProfileSetupPageState
+    extends ConsumerState<PatientProfileSetupPage> {
   final _ageController = TextEditingController();
   final _contactController = TextEditingController();
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
+
+  String? _ageError;
+  String? _contactNameError;
+  String? _contactEmailError;
+  String? _contactPhoneError;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(patientOnboardingProvider).profile;
+    if (profile != null) {
+      _ageController.text = profile.age.toString();
+      _contactController.text = profile.emergencyContactName;
+      _contactEmailController.text = profile.emergencyContactEmail;
+      _contactPhoneController.text = profile.emergencyContactPhone;
+    }
+  }
 
   @override
   void dispose() {
@@ -235,8 +475,37 @@ class _PatientProfileSetupPageState extends State<PatientProfileSetupPage> {
     super.dispose();
   }
 
+  void _validateAge([String? value]) {
+    final err = AppValidators.validateAge(value ?? _ageController.text);
+    if (_ageError != err) setState(() => _ageError = err);
+  }
+
+  void _validateContactName([String? value]) {
+    final err = AppValidators.validateName(
+      value ?? _contactController.text,
+      fieldName: 'Emergency contact name',
+    );
+    if (_contactNameError != err) setState(() => _contactNameError = err);
+  }
+
+  void _validateContactEmail([String? value]) {
+    final err = AppValidators.validateEmail(
+      value ?? _contactEmailController.text,
+    );
+    if (_contactEmailError != err) setState(() => _contactEmailError = err);
+  }
+
+  void _validateContactPhone([String? value]) {
+    final err = AppValidators.validatePhone(
+      value ?? _contactPhoneController.text,
+      fieldName: 'Emergency contact phone',
+    );
+    if (_contactPhoneError != err) setState(() => _contactPhoneError = err);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final onboarding = ref.watch(patientOnboardingProvider);
     return PatientOnboardingFrame(
       title: 'About You',
       subtitle:
@@ -248,20 +517,28 @@ class _PatientProfileSetupPageState extends State<PatientProfileSetupPage> {
             label: 'Age',
             controller: _ageController,
             keyboardType: TextInputType.number,
+            errorText: _ageError,
+            onChanged: _validateAge,
           ),
           _PatientFormField(
             label: 'Emergency Contact',
             controller: _contactController,
+            errorText: _contactNameError,
+            onChanged: _validateContactName,
           ),
           _PatientFormField(
             label: 'EC E-Mail',
             controller: _contactEmailController,
             keyboardType: TextInputType.emailAddress,
+            errorText: _contactEmailError,
+            onChanged: _validateContactEmail,
           ),
           _PatientFormField(
             label: 'EC Phone #',
             controller: _contactPhoneController,
             keyboardType: TextInputType.phone,
+            errorText: _contactPhoneError,
+            onChanged: _validateContactPhone,
           ),
           const SizedBox(height: 12),
           Text(
@@ -272,24 +549,85 @@ class _PatientProfileSetupPageState extends State<PatientProfileSetupPage> {
         ],
       ),
       onBack: () => context.go('/register'),
-      onNext: () => context.go('/survey/pain-duration'),
+      nextLabel: onboarding.isSubmitting ? 'Saving...' : 'Next',
+      onNext: onboarding.isSubmitting ? null : () => _handleProfile(),
     );
+  }
+
+  Future<void> _handleProfile() async {
+    final ageText = _ageController.text.trim();
+    final contactName = _contactController.text.trim();
+    final contactEmail = _contactEmailController.text.trim();
+    final contactPhone = _contactPhoneController.text.trim();
+
+    final ageErr = AppValidators.validateAge(ageText);
+    final nameErr = AppValidators.validateName(
+      contactName,
+      fieldName: 'Emergency contact name',
+    );
+    final emailErr = AppValidators.validateEmail(contactEmail);
+    final phoneErr = AppValidators.validatePhone(
+      contactPhone,
+      fieldName: 'Emergency contact phone',
+    );
+
+    setState(() {
+      _ageError = ageErr;
+      _contactNameError = nameErr;
+      _contactEmailError = emailErr;
+      _contactPhoneError = phoneErr;
+    });
+
+    final firstError = ageErr ?? nameErr ?? emailErr ?? phoneErr;
+    if (firstError != null) {
+      AppSnackbar.error(context, firstError);
+      return;
+    }
+
+    final age = int.parse(ageText);
+
+    final success = await ref
+        .read(patientOnboardingProvider.notifier)
+        .saveProfileAndLoadSurvey(
+          PatientProfileSetup(
+            age: age,
+            emergencyContactName: contactName,
+            emergencyContactEmail: contactEmail,
+            emergencyContactPhone: contactPhone,
+          ),
+        );
+    if (!mounted) return;
+    if (success) {
+      context.go('/survey/pain-duration');
+    } else {
+      AppSnackbar.error(
+        context,
+        ref.read(patientOnboardingProvider).errorMessage ??
+            'Unable to start the survey.',
+      );
+    }
   }
 }
 
-class PatientSurveyPage extends StatefulWidget {
+class PatientSurveyPage extends ConsumerStatefulWidget {
   final PatientSurveyStep step;
 
   const PatientSurveyPage({super.key, required this.step});
 
   @override
-  State<PatientSurveyPage> createState() => _PatientSurveyPageState();
+  ConsumerState<PatientSurveyPage> createState() => _PatientSurveyPageState();
 }
 
-class _PatientSurveyPageState extends State<PatientSurveyPage> {
-  String? _selected;
-  String? _selectedSitting;
-  String? _selectedWalking;
+class _PatientSurveyPageState extends ConsumerState<PatientSurveyPage> {
+  @override
+  void initState() {
+    super.initState();
+    if (ref.read(patientOnboardingProvider).registrationCompleted) {
+      Future.microtask(
+        () => ref.read(patientOnboardingProvider.notifier).ensureSurveyLoaded(),
+      );
+    }
+  }
 
   int get _pageNumber => switch (widget.step) {
     PatientSurveyStep.painDuration => 1,
@@ -300,6 +638,7 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
 
   @override
   Widget build(BuildContext context) {
+    final onboarding = ref.watch(patientOnboardingProvider);
     final content = switch (widget.step) {
       PatientSurveyStep.painDuration => _buildPainDuration(),
       PatientSurveyStep.painLevel => _buildPainLevel(),
@@ -315,39 +654,46 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
       progress: _pageNumber / 5,
       body: content,
       onBack: _goBack,
-      onNext: _goNext,
+      nextLabel: onboarding.isSubmitting ? 'Submitting...' : 'Next',
+      onNext: onboarding.isSubmitting ? null : () => _goNext(),
     );
   }
 
   Widget _buildPainDuration() => _SurveyCard(
     title: 'Your Back Pain',
-    question: 'How long have you been dealing with lower back pain?',
+    question: _questionTitle(
+      0,
+      'How long have you been dealing with lower back pain?',
+    ),
     child: _ChoiceList(
-      values: const [
+      values: _questionOptions(0, const [
         '1-3 Days',
         '1-3 Weeks',
         '1 Month',
         '3 Months+',
         '1+ Years',
-      ],
-      selected: _selected,
-      onSelected: (value) => setState(() => _selected = value),
+      ]),
+      selected: _answer(0),
+      onSelected: (value) => _selectAnswer(0, value),
     ),
   );
 
   Widget _buildPainLevel() => _SurveyCard(
     title: 'Your Back Pain',
-    question: 'Rate your back pain on a scale from 1-10, 10 being the worst.',
+    question: _questionTitle(
+      1,
+      'Rate your back pain on a scale from 1-10, 10 being the worst.',
+    ),
     child: _ChoiceWrap(
-      values: List.generate(10, (index) => '${index + 1}'),
-      selected: _selected,
-      onSelected: (value) => setState(() => _selected = value),
+      values: _questionOptions(1, List.generate(10, (index) => '${index + 1}')),
+      selected: _answer(1),
+      onSelected: (value) => _selectAnswer(1, value),
     ),
   );
 
   Widget _buildActivityLevels() => _SurveyCard(
     title: 'Your Activity Levels',
-    question: 'How many hours a day do you spend sitting?',
+    question: _questionTitle(2, 'How many hours a day do you spend sitting?'),
     child: SizedBox(
       width: double.infinity,
       child: Column(
@@ -355,7 +701,7 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
         children: [
           Center(
             child: _ChoiceWrap(
-              values: const [
+              values: _questionOptions(2, const [
                 '1',
                 '2',
                 '3',
@@ -366,20 +712,20 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
                 '8',
                 '9',
                 '10+',
-              ],
-              selected: _selectedSitting,
-              onSelected: (value) => setState(() => _selectedSitting = value),
+              ]),
+              selected: _answer(2),
+              onSelected: (value) => _selectAnswer(2, value),
             ),
           ),
           const SizedBox(height: 22),
           Text(
-            'How many hours a day do you spend walking?',
+            _questionTitle(3, 'How many hours a day do you spend walking?'),
             style: AppTypography.heading2.copyWith(color: AppPalette.black),
           ),
           const SizedBox(height: 14),
           Center(
             child: _ChoiceWrap(
-              values: const [
+              values: _questionOptions(3, const [
                 '1',
                 '2',
                 '3',
@@ -390,9 +736,9 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
                 '8',
                 '9',
                 '10+',
-              ],
-              selected: _selectedWalking,
-              onSelected: (value) => setState(() => _selectedWalking = value),
+              ]),
+              selected: _answer(3),
+              onSelected: (value) => _selectAnswer(3, value),
             ),
           ),
         ],
@@ -402,23 +748,54 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
 
   Widget _buildActivity() => _SurveyCard(
     title: 'Your Activity',
-    question:
-        'Approximately how much time do you spend in a day actively exercising?',
+    question: _questionTitle(
+      4,
+      'Approximately how much time do you spend in a day actively exercising?',
+    ),
     child: _ChoiceList(
-      values: const [
+      values: _questionOptions(4, const [
         'None',
         '10-20 Minutes',
         '30 Minutes',
         '1 Hour',
         '1.5 Hours',
         '2 Hours+',
-      ],
-      selected: _selected,
-      onSelected: (value) => setState(() => _selected = value),
+      ]),
+      selected: _answer(4),
+      onSelected: (value) => _selectAnswer(4, value),
       buttonHeight: 40,
       itemGap: 5,
     ),
   );
+
+  SurveyQuestionModel? _question(int index) {
+    final questions = ref.watch(patientOnboardingProvider).survey?.questions;
+    if (questions == null || index < 0 || index >= questions.length) {
+      return null;
+    }
+    return questions[index];
+  }
+
+  String _questionTitle(int index, String fallback) {
+    final title = _question(index)?.title.trim();
+    return _displayText(title?.isNotEmpty == true ? title! : fallback);
+  }
+
+  List<String> _questionOptions(int index, List<String> fallback) {
+    final options = _question(index)?.options ?? const <SurveyOptionModel>[];
+    if (options.isEmpty) return fallback;
+    return options.map((option) => _displayText(option.content)).toList();
+  }
+
+  String? _answer(int index) {
+    return ref.watch(patientOnboardingProvider).answers[index];
+  }
+
+  void _selectAnswer(int index, String value) {
+    ref.read(patientOnboardingProvider.notifier).selectAnswer(index, value);
+  }
+
+  static String _displayText(String value) => value.replaceAll('–', '-');
 
   void _goBack() {
     final previous = switch (widget.step) {
@@ -430,7 +807,32 @@ class _PatientSurveyPageState extends State<PatientSurveyPage> {
     context.go(previous);
   }
 
-  void _goNext() {
+  Future<void> _goNext() async {
+    final indexes = switch (widget.step) {
+      PatientSurveyStep.painDuration => const [0],
+      PatientSurveyStep.painLevel => const [1],
+      PatientSurveyStep.activityLevels => const [2, 3],
+      PatientSurveyStep.activity => const [4],
+    };
+    final controller = ref.read(patientOnboardingProvider.notifier);
+    if (!controller.hasAnswers(indexes)) {
+      AppSnackbar.error(context, 'Please select an answer before continuing.');
+      return;
+    }
+
+    if (widget.step == PatientSurveyStep.activity) {
+      final submitted = await controller.submitSurvey();
+      if (!mounted) return;
+      if (!submitted) {
+        AppSnackbar.error(
+          context,
+          ref.read(patientOnboardingProvider).errorMessage ??
+              'Unable to submit the survey.',
+        );
+        return;
+      }
+    }
+
     final next = switch (widget.step) {
       PatientSurveyStep.painDuration => '/survey/pain-level',
       PatientSurveyStep.painLevel => '/survey/activity-levels',
@@ -471,6 +873,7 @@ class PatientOnboardingFrame extends StatelessWidget {
   final Widget? actions;
   final VoidCallback? onBack;
   final VoidCallback? onNext;
+  final String nextLabel;
 
   const PatientOnboardingFrame({
     super.key,
@@ -482,6 +885,7 @@ class PatientOnboardingFrame extends StatelessWidget {
     this.actions,
     this.onBack,
     this.onNext,
+    this.nextLabel = 'Next',
   });
 
   @override
@@ -567,7 +971,7 @@ class PatientOnboardingFrame extends StatelessWidget {
                                   onPressed: onBack,
                                 ),
                                 _PatientButton(
-                                  label: 'Next',
+                                  label: nextLabel,
                                   onPressed: onNext,
                                 ),
                               ],
@@ -631,6 +1035,7 @@ class _FormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dense = children.length > 5;
     return _OnboardingCard(
       width: double.infinity,
       height: height,
@@ -643,11 +1048,11 @@ class _FormCard extends StatelessWidget {
               fontSize: 32,
             ),
           ),
-          const SizedBox(height: 45),
+          SizedBox(height: dense ? 30 : 45),
           for (var index = 0; index < children.length; index++) ...[
             children[index],
             if (index < children.length - 1)
-              const SizedBox(height: AppSpacing.s20),
+              SizedBox(height: dense ? 10 : AppSpacing.s20),
           ],
         ],
       ),
@@ -747,7 +1152,7 @@ class _OnboardingCard extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < 700;
     return Container(
       width: compact ? double.infinity : width,
-      height: compact ? null : height,
+      constraints: height != null ? BoxConstraints(minHeight: height!) : null,
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 22 : 60,
         vertical: compact ? 28 : 33,
@@ -792,12 +1197,14 @@ class _PatientBrand extends StatelessWidget {
   }
 }
 
-class _PatientFormField extends StatelessWidget {
+class _PatientFormField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffix;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
 
   const _PatientFormField({
     required this.label,
@@ -805,66 +1212,121 @@ class _PatientFormField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffix,
+    this.errorText,
+    this.onChanged,
   });
+
+  @override
+  State<_PatientFormField> createState() => _PatientFormFieldState();
+}
+
+class _PatientFormFieldState extends State<_PatientFormField> {
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (mounted && _isFocused != _focusNode.hasFocus) {
+      setState(() => _isFocused = _focusNode.hasFocus);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 700;
-    final input = SizedBox(
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+
+    final border = hasError
+        ? Border.all(color: const Color(0xFFD32F2F), width: 1.5)
+        : _isFocused
+            ? Border.all(color: AppPalette.secondaryBlue, width: 1.5)
+            : null;
+
+    final input = AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
       height: 48,
-      child: Material(
+      decoration: BoxDecoration(
         color: AppPalette.white,
         borderRadius: BorderRadius.circular(67),
+        border: border,
+      ),
+      child: Center(
         child: TextField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
+          controller: widget.controller,
+          focusNode: _focusNode,
+          obscureText: widget.obscureText,
+          keyboardType: widget.keyboardType,
+          onChanged: widget.onChanged,
           cursorColor: AppPalette.secondaryBlue,
           textAlignVertical: TextAlignVertical.center,
           style: AppTypography.heading2.copyWith(color: AppPalette.black),
           decoration: InputDecoration(
-            filled: true,
-            fillColor: AppPalette.white,
-            hoverColor: AppPalette.transparent,
+            filled: false,
             isDense: true,
-            suffixIcon: suffix,
+            suffixIcon: widget.suffix,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
+              horizontal: 16,
               vertical: 4,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(67),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(67),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(67),
-              borderSide: BorderSide.none,
-            ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
           ),
         ),
       ),
     );
+
+    final inputWithValidation = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        input,
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 14, top: 4),
+            child: Text(
+              widget.errorText!,
+              style: AppTypography.captionBody1.copyWith(
+                color: const Color(0xFFD32F2F),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+
     if (compact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            widget.label,
             style: AppTypography.heading2.copyWith(
               color: AppPalette.black,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
-          input,
+          inputWithValidation,
         ],
       );
     }
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 260,
@@ -872,14 +1334,14 @@ class _PatientFormField extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              label,
+              widget.label,
               textAlign: TextAlign.right,
               style: AppTypography.heading2.copyWith(color: AppPalette.black),
             ),
           ),
         ),
         const SizedBox(width: 20),
-        Expanded(child: input),
+        Expanded(child: inputWithValidation),
       ],
     );
   }

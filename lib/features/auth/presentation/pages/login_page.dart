@@ -2,6 +2,7 @@ import 'package:app_doctor/common/widgets/app_snackbar.dart';
 import 'package:app_doctor/common/widgets/custom_button.dart';
 import 'package:app_doctor/common/widgets/custom_text_field.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/core/utils/validators.dart';
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,7 +74,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'PainSense | AI Wearable  for Low Back Pain Monitoring & Early Detection',
+                        'PainSense | AI Wearable  for Low Back Pain Monitoring & Early Detection',
                         textAlign: TextAlign.center,
                         style: context.bodySmall?.copyWith(
                           color: context.onSurface.withValues(alpha: .5),
@@ -96,12 +97,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         hintText: 'Enter your email address',
                         prefixIcon: Icons.alternate_email_rounded,
                         keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your username or email';
-                          }
-                          return null;
-                        },
+                        validator: AppValidators.validateEmail,
                       ),
 
                       const SizedBox(height: 14),
@@ -117,9 +113,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: context.onSurface.withValues(alpha: .45),
-                            size: 20,
                           ),
+                          color: context.onSurface.withValues(alpha: .45),
                           onPressed: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;

@@ -34,6 +34,7 @@ void main() {
       'First Name',
       'Last Name',
       'E-Mail',
+      'Phone',
       'Password',
       'Re-Enter Password',
     ]) {

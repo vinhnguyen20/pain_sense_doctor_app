@@ -1,5 +1,6 @@
 import 'package:app_doctor/core/network/dio/api_response.dart';
 import 'package:app_doctor/features/auth/domain/entities/user.dart';
+import 'package:app_doctor/features/auth/domain/entities/patient_registration.dart';
 import 'package:app_doctor/features/auth/domain/repository/auth_repository.dart';
 import 'package:app_doctor/features/auth/domain/usecases/sign_in_with_email_password_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,13 @@ class _FakeAuthRepository implements AuthRepository {
   final ApiResponse<AuthToken> response;
 
   _FakeAuthRepository(this.response);
+
+  @override
+  Future<ApiResponse<void>> registerPatient(
+    PatientRegistration registration,
+  ) async {
+    return ApiResponse<void>.success(null);
+  }
 
   @override
   Future<ApiResponse<AuthToken>> signInWithEmailPassword(
