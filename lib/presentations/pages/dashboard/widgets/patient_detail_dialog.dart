@@ -2,11 +2,9 @@ import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/core/utils/utils.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/domain/entities/user.dart';
-import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PatientDetailDialog extends ConsumerWidget {
+class PatientDetailDialog extends StatelessWidget {
   final String patientId;
   final Patient? initialPatient;
 
@@ -17,11 +15,8 @@ class PatientDetailDialog extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final patientAsync = ref.watch(patientDetailProvider(patientId));
-    final patient = patientAsync.value ?? initialPatient;
-    final isLoading = patientAsync.isLoading && patient == null;
-    final hasError = patientAsync.hasError && patient == null;
+  Widget build(BuildContext context) {
+    final patient = initialPatient;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -51,29 +46,13 @@ class PatientDetailDialog extends ConsumerWidget {
                   // Dialog Header
                   _buildHeader(context, patient),
 
-                  if (patientAsync.isLoading)
-                    const LinearProgressIndicator(
-                      minHeight: 3,
-                      backgroundColor: AppPalette.surfaceLight,
-                      valueColor: AlwaysStoppedAnimation(AppPalette.secondaryBlue),
-                    ),
-
                   // Dialog Body
                   Flexible(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 240,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: AppPalette.secondaryBlue,
-                                ),
-                              ),
-                            )
-                          : hasError
-                              ? _buildErrorView(context, ref, patientAsync.error.toString())
-                              : _buildPatientDetails(context, patient!),
+                      child: patient != null
+                          ? _buildPatientDetails(context, patient)
+                          : _buildUnavailableView(context),
                     ),
                   ),
 
@@ -93,7 +72,9 @@ class PatientDetailDialog extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
       decoration: const BoxDecoration(
         color: AppPalette.surfaceLight,
-        border: Border(bottom: BorderSide(color: AppPalette.medGray, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: AppPalette.medGray, width: 0.5),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -176,7 +157,9 @@ class PatientDetailDialog extends ConsumerWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: isOnlineOrActive ? const Color(0xFF2E7D32) : AppPalette.black,
+              color: isOnlineOrActive
+                  ? const Color(0xFF2E7D32)
+                  : AppPalette.black,
             ),
           ),
         ],
@@ -202,7 +185,7 @@ class PatientDetailDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorView(BuildContext context, WidgetRef ref, String error) {
+  Widget _buildUnavailableView(BuildContext context) {
     return SizedBox(
       height: 200,
       child: Column(
@@ -211,26 +194,16 @@ class PatientDetailDialog extends ConsumerWidget {
           Icon(Icons.error_outline_rounded, size: 40, color: context.error),
           const SizedBox(height: 12),
           Text(
-            'Failed to load patient details',
+            'Patient details are unavailable',
             style: AppTypography.titleSmall1.copyWith(color: context.error),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            error,
+            'Close this dialog and refresh the patient list.',
             style: AppTypography.defaultBody2.copyWith(
               color: context.onSurface.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.invalidate(patientDetailProvider(patientId)),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Retry'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppPalette.secondaryBlue,
-              foregroundColor: AppPalette.white,
-            ),
           ),
         ],
       ),
@@ -257,13 +230,21 @@ class PatientDetailDialog extends ConsumerWidget {
                 label: 'Age / Date of Birth',
                 value: _formatAgeAndDob(patient),
               ),
-              const Divider(height: 20, thickness: 0.5, color: AppPalette.medGray),
+              const Divider(
+                height: 20,
+                thickness: 0.5,
+                color: AppPalette.medGray,
+              ),
               _buildInfoRow(
                 icon: Icons.person_outline_rounded,
                 label: 'Gender',
                 value: _formatGender(patient.gender),
               ),
-              const Divider(height: 20, thickness: 0.5, color: AppPalette.medGray),
+              const Divider(
+                height: 20,
+                thickness: 0.5,
+                color: AppPalette.medGray,
+              ),
               _buildInfoRow(
                 icon: Icons.phone_outlined,
                 label: 'Phone Number',
@@ -271,7 +252,11 @@ class PatientDetailDialog extends ConsumerWidget {
                     ? patient.phone!
                     : 'Not provided',
               ),
-              const Divider(height: 20, thickness: 0.5, color: AppPalette.medGray),
+              const Divider(
+                height: 20,
+                thickness: 0.5,
+                color: AppPalette.medGray,
+              ),
               _buildInfoRow(
                 icon: Icons.email_outlined,
                 label: 'Email Address',
@@ -279,7 +264,11 @@ class PatientDetailDialog extends ConsumerWidget {
                     ? patient.email!
                     : 'Not provided',
               ),
-              const Divider(height: 20, thickness: 0.5, color: AppPalette.medGray),
+              const Divider(
+                height: 20,
+                thickness: 0.5,
+                color: AppPalette.medGray,
+              ),
               _buildInfoRow(
                 icon: Icons.location_on_outlined,
                 label: 'Address',
@@ -297,7 +286,10 @@ class PatientDetailDialog extends ConsumerWidget {
         if (patient.emergencyContact != null &&
             (patient.emergencyContact!.name.isNotEmpty ||
                 patient.emergencyContact!.phone.isNotEmpty)) ...[
-          _buildSectionHeader('Emergency Contact', Icons.contact_phone_outlined),
+          _buildSectionHeader(
+            'Emergency Contact',
+            Icons.contact_phone_outlined,
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -314,12 +306,17 @@ class PatientDetailDialog extends ConsumerWidget {
                       ? patient.emergencyContact!.name
                       : 'Not provided',
                 ),
-                const Divider(height: 20, thickness: 0.5, color: AppPalette.medGray),
+                const Divider(
+                  height: 20,
+                  thickness: 0.5,
+                  color: AppPalette.medGray,
+                ),
                 _buildInfoRow(
                   icon: Icons.phone_in_talk_outlined,
                   label: 'Contact Phone',
                   value: patient.emergencyContact!.phone.isNotEmpty
-                      ? '${patient.emergencyContact!.countryCode} ${patient.emergencyContact!.phone}'.trim()
+                      ? '${patient.emergencyContact!.countryCode} ${patient.emergencyContact!.phone}'
+                            .trim()
                       : 'Not provided',
                 ),
               ],
@@ -330,7 +327,10 @@ class PatientDetailDialog extends ConsumerWidget {
 
         // Section: Monitoring / Tracking Status
         if (patient.trackingLogs != null) ...[
-          _buildSectionHeader('Health & LBP Status', Icons.monitor_heart_outlined),
+          _buildSectionHeader(
+            'Health & LBP Status',
+            Icons.monitor_heart_outlined,
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -366,10 +366,14 @@ class PatientDetailDialog extends ConsumerWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: colorFromHex(patient.trackingLogs?.color)
-                        .withValues(alpha: 0.15),
+                    color: colorFromHex(
+                      patient.trackingLogs?.color,
+                    ).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -461,9 +465,14 @@ class PatientDetailDialog extends ConsumerWidget {
               backgroundColor: AppPalette.secondaryBlue,
               foregroundColor: AppPalette.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Close',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -472,7 +481,8 @@ class PatientDetailDialog extends ConsumerWidget {
 
   String _formatAgeAndDob(Patient patient) {
     final ageStr = patient.age != null ? '${patient.age} years old' : '';
-    final dobStr = patient.birthdate != null && patient.birthdate!.trim().isNotEmpty
+    final dobStr =
+        patient.birthdate != null && patient.birthdate!.trim().isNotEmpty
         ? patient.birthdate!.trim()
         : '';
     if (ageStr.isNotEmpty && dobStr.isNotEmpty) {

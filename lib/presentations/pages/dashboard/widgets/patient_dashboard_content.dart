@@ -14,6 +14,7 @@ import 'seven_7_day_trend.dart';
 import 'patient_dashboard_dimensions.dart';
 import 'patient_detail_dialog.dart';
 import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
+import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 
 class DashboardStyles {
@@ -658,79 +659,49 @@ class DailyGoalsCard extends ConsumerWidget {
       );
     }
 
-    // Show from todayEntry diary if available, otherwise fallback to goalItems
-    List<Widget> children = [];
-    if (todayEntry != null && todayEntry.diary.isNotEmpty) {
-      final visibleItems = todayEntry.diary.take(3).toList();
-      for (var index = 0; index < visibleItems.length; index++) {
-        final a = visibleItems[index];
-        GoalItemModel? matchingGoalItem = goalItems.where((g) {
-          final keyword = g.type.name.toLowerCase();
-          final gLabel = g.label.toLowerCase();
-          final aLabel = a.label.toLowerCase();
-          return aLabel.contains(keyword) || aLabel.contains(gLabel);
-        }).firstOrNull;
+    // Daily Goals always has the same three slots. The API may omit a goal or
+    // today's activity, but the slot remains visible with a 0% progress ring.
+    const dailyGoalTypes = [
+      GoalType.yogaMeditation,
+      GoalType.stepsWalking,
+      GoalType.activityWalk,
+    ];
 
-        children.add(
-          Padding(
-            padding: EdgeInsets.only(
-              right: context.isCompactShell || index == visibleItems.length - 1
-                  ? 0
-                  : 120,
-              bottom: context.isCompactShell && index != visibleItems.length - 1
-                  ? AppSpacing.s16
-                  : 0,
-            ),
-            child: SizedBox(
-              width: context.isCompactShell ? double.infinity : 250,
-              child: _GoalSummaryItem(
-                goalItem: matchingGoalItem,
-                activity: a,
-                defaultTitle: a.label,
-                defaultDescription: a.desc,
-              ),
-            ),
+    final children = <Widget>[];
+    for (var index = 0; index < dailyGoalTypes.length; index++) {
+      final type = dailyGoalTypes[index];
+      final activity = todayEntry?.diary
+          .where((item) => item.type == type)
+          .firstOrNull;
+      final goalItem = goalItems.where((item) => item.type == type).firstOrNull;
+      final title = goalItem?.label.trim().isNotEmpty == true
+          ? goalItem!.label
+          : type.toApiString();
+      final description = goalItem?.desc.trim().isNotEmpty == true
+          ? goalItem!.desc
+          : 'No goal assigned.';
+
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(
+            right: context.isCompactShell || index == dailyGoalTypes.length - 1
+                ? 0
+                : 120,
+            bottom: context.isCompactShell && index != dailyGoalTypes.length - 1
+                ? AppSpacing.s16
+                : 0,
           ),
-        );
-      }
-    } else if (goalItems.isNotEmpty) {
-      final visibleItems = goalItems.take(3).toList();
-      for (var index = 0; index < visibleItems.length; index++) {
-        final g = visibleItems[index];
-        children.add(
-          Padding(
-            padding: EdgeInsets.only(
-              right: context.isCompactShell || index == visibleItems.length - 1
-                  ? 0
-                  : 120,
-              bottom: context.isCompactShell && index != visibleItems.length - 1
-                  ? AppSpacing.s16
-                  : 0,
+          child: SizedBox(
+            width: context.isCompactShell ? double.infinity : 250,
+            child: _GoalSummaryItem(
+              goalItem: goalItem,
+              activity: activity,
+              defaultTitle: title,
+              defaultDescription: description,
             ),
-            child: SizedBox(
-              width: context.isCompactShell ? double.infinity : 250,
-              child: _GoalSummaryItem(
-                goalItem: g,
-                activity: null,
-                defaultTitle: g.label,
-                defaultDescription: g.desc,
-              ),
-            ),
-          ),
-        );
-      }
-    } else {
-      children = [
-        SizedBox(
-          width: context.isCompactShell ? double.infinity : 250,
-          child: const _GoalSummaryItem(
-            goalItem: null,
-            activity: null,
-            defaultTitle: '—',
-            defaultDescription: 'No goal assigned.',
           ),
         ),
-      ];
+      );
     }
 
     return Container(
@@ -991,7 +962,8 @@ class _TodayExerciseGoalsCardState
                             false),
                   )
                   .firstOrNull;
-              final isCompleted = slotCompleted ||
+              final isCompleted =
+                  slotCompleted ||
                   (matchingActivity != null &&
                       matchingActivity.percent >= 100.0);
               todayExercises.add({'label': label, 'completed': isCompleted});
@@ -1227,7 +1199,9 @@ class AdherenceScoreCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adherenceAsync = ref.watch(diaryAdherenceProvider(patient.id));
+    final adherenceAsync = ref.watch(
+      patientTrackingAdherence7DaysProvider(patient.id),
+    );
 
     return Container(
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),

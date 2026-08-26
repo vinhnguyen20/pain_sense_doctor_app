@@ -1,5 +1,4 @@
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
-import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,15 +10,16 @@ class SevenDayTrendCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final trackingAsync = ref.watch(patientTrackingSummary7DaysProvider(patientId));
-    final diaryState = ref.watch(patientDiaryProvider(patientId));
+    final trackingAsync = ref.watch(
+      patientTrackingSummary7DaysProvider(patientId),
+    );
 
     if (trackingAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     final trackingData = trackingAsync.value ?? [];
-    
+
     final now = DateTime.now();
     final List<double> postureScores = [];
     final List<double> adherenceScores = [];
@@ -49,40 +49,25 @@ class SevenDayTrendCard extends ConsumerWidget {
 
       postureScores.add(trackItem?.summary.posture.toDouble() ?? 0.0);
 
-      // Prioritize adherence.overall from 7-day summary item, then summary.adherence, then diary fallback
-      double adherence = trackItem?.adherence?.overall.toDouble() ??
+      // Adherence is returned together with each day in the tracking summary.
+      double adherence =
+          trackItem?.adherence?.overall.toDouble() ??
           trackItem?.summary.adherence.toDouble() ??
           0.0;
-
-      if (adherence == 0.0) {
-        final diaryItem = diaryState.entries.where((d) {
-          final dt = d.date;
-          final dtKey =
-              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-          return dtKey == dayKey ||
-              (dt.year == day.year &&
-                  dt.month == day.month &&
-                  dt.day == day.day);
-        }).firstOrNull;
-
-        if (diaryItem != null && diaryItem.diary.isNotEmpty) {
-          double total = 0;
-          int valid = 0;
-          for (final a in diaryItem.diary) {
-            total += a.percent;
-            valid++;
-          }
-          if (valid > 0) adherence = total / valid;
-        }
-      }
       adherenceScores.add(adherence);
     }
 
     const postureColor = Color(0xFF58E8EA);
     const adherenceColor = Color(0xFF206EB0);
 
-    final postureSpots = List.generate(7, (i) => FlSpot(i.toDouble(), postureScores[i]));
-    final adherenceSpots = List.generate(7, (i) => FlSpot(i.toDouble(), adherenceScores[i]));
+    final postureSpots = List.generate(
+      7,
+      (i) => FlSpot(i.toDouble(), postureScores[i]),
+    );
+    final adherenceSpots = List.generate(
+      7,
+      (i) => FlSpot(i.toDouble(), adherenceScores[i]),
+    );
 
     final postureLine = LineChartBarData(
       spots: postureSpots,
@@ -121,9 +106,11 @@ class SevenDayTrendCard extends ConsumerWidget {
     return Column(
       children: [
         SizedBox(
-          height: 220, 
+          height: 220,
           child: Padding(
-            padding: const EdgeInsets.only(right: 10), // Prevent right marker clipping
+            padding: const EdgeInsets.only(
+              right: 10,
+            ), // Prevent right marker clipping
             child: LineChart(
               LineChartData(
                 clipData: const FlClipData.none(),
@@ -132,21 +119,19 @@ class SevenDayTrendCard extends ConsumerWidget {
                 borderData: FlBorderData(
                   show: true,
                   border: const Border(
-                    left: BorderSide(
-                      color: Color(0xFFC8C8C8),
-                      width: 1,
-                    ),
-                    bottom: BorderSide(
-                      color: Color(0xFFC8C8C8),
-                      width: 1,
-                    ),
+                    left: BorderSide(color: Color(0xFFC8C8C8), width: 1),
+                    bottom: BorderSide(color: Color(0xFFC8C8C8), width: 1),
                     right: BorderSide.none,
                     top: BorderSide.none,
                   ),
                 ),
                 titlesData: FlTitlesData(
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -226,18 +211,11 @@ class _LegendItem extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Container(
-                width: 20,
-                height: 3,
-                color: color,
-              ),
+              Container(width: 20, height: 3, color: color),
               Container(
                 width: 11,
                 height: 11,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
             ],
           ),

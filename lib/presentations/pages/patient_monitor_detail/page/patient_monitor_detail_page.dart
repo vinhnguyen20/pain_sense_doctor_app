@@ -2,7 +2,6 @@ import 'package:app_doctor/common/widgets/custom_app_bar.dart';
 import 'package:app_doctor/common/widgets/tab_bar_widget.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
-import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/alerts_tab.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/chat_tab.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/diary_tab.dart';
@@ -52,10 +51,7 @@ class _PatientDetailPageState extends ConsumerState<PatientMonitorDetail> {
   Widget _buildContent(Patient patient) {
     return switch (_selectedTab) {
       'Overview' => OverviewTab(patient: patient),
-      'Goals' => GoalsTab(
-        patientId: _patientId,
-        logs: patient.trackingLogs,
-      ),
+      'Goals' => GoalsTab(patientId: _patientId, logs: patient.trackingLogs),
       'Chat' => ChatTab(patient: patient, patientId: _patientId),
       'Diary' => DiaryTab(patientId: _patientId),
       'Alerts' => AlertsTab(patientId: _patientId, patient: patient),
@@ -125,8 +121,7 @@ class _PatientDetailPageState extends ConsumerState<PatientMonitorDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final patientAsync = ref.watch(patientDetailProvider(_patientId));
-    final patient = patientAsync.value ?? widget.patient;
+    final patient = widget.patient;
 
     return Scaffold(
       backgroundColor: context.background,
