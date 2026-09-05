@@ -832,7 +832,7 @@ class _CreateAppointmentFormState
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _PickerField(
-                        width: context.screenWidth < 360 ? 125 : 140,
+                        width: context.screenWidth < 360 ? 135 : 160,
                         label: _date == null ? 'Date...' : _yyyyMmDd(_date!),
                         onTap: _pickDate,
                       ),
