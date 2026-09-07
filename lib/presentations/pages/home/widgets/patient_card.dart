@@ -132,8 +132,8 @@ class PatientCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed:
                       onDetails ??
-                      () => context.pushNamed(
-                        'patient-monitor-detail',
+                      () => context.goNamed(
+                        'patient-dashboard',
                         extra: patient,
                       ),
                   child: const Text('View Details'),

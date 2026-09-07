@@ -91,8 +91,8 @@ class PatientTableRow extends StatelessWidget {
                 onDetails:
                     onDetails ??
                     () {
-                      context.pushNamed(
-                        'patient-monitor-detail',
+                      context.goNamed(
+                        'patient-dashboard',
                         extra: patient,
                       );
                 },
