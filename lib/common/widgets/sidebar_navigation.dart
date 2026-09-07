@@ -25,7 +25,7 @@ class SidebarNavigation extends ConsumerWidget {
               width: 132.392,
               height: 60,
               child: Image.asset(
-                'assets/images/logo/ps_logo_full.png',
+                'assets/images/logo/logo_full_color_no_bg.png',
                 fit: BoxFit.contain,
               ),
             ),

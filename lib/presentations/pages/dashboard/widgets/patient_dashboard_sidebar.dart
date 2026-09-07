@@ -22,10 +22,17 @@ class PatientDashboardSidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           Center(
-            child: Image.asset(
-              'assets/images/logo/ps_logo_full_white.png',
-              height: 48,
-              fit: BoxFit.contain,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset(
+                'assets/images/logo/logo_full_color_no_bg.png',
+                height: 40,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(height: 40),
