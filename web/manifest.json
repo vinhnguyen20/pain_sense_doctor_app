@@ -1,11 +1,11 @@
 {
-  "name": "app_doctor",
-  "short_name": "app_doctor",
+  "name": "PainSense Doctor",
+  "short_name": "PainSense",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0175C2",
+  "background_color": "#FFFFFF",
   "theme_color": "#0175C2",
-  "description": "A new Flutter project.",
+  "description": "Ứng dụng hỗ trợ bác sĩ theo dõi và quản lý tình trạng đau lưng của bệnh nhân thông qua thiết bị đai thông minh PainSense Belt.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [
