@@ -52,6 +52,7 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - app.env
     - assets/images/icon/icon.png
     - assets/images/icon/Group 241.png
     - assets/images/icon/Painsense Belt.817 1.png

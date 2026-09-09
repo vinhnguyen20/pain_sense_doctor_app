@@ -14,9 +14,10 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   try {
-    await dotenv.load(fileName: ".env");
+    // Use a non-hidden asset so static hosts such as Netlify do not omit it.
+    await dotenv.load(fileName: "app.env");
   } catch (e) {
-    debugPrint("Warning: .env file not found.");
+    debugPrint("Warning: app.env file not found.");
   }
 
   if (kDebugMode) {
