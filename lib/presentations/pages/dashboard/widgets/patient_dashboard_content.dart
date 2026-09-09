@@ -4,9 +4,6 @@ import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:app_doctor/common/widgets/activity_tracker.dart';
-import 'package:app_doctor/features/chats/domain/entites/appointment.dart';
-import 'package:app_doctor/features/chats/presentation/provider/appointment_notifier.dart';
 import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_entry.dart';
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_activity.dart';
@@ -16,6 +13,7 @@ import 'patient_detail_dialog.dart';
 import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
+import 'journey_overview.dart';
 
 class DashboardStyles {
   static const heading = TextStyle(
@@ -357,218 +355,74 @@ class AppointmentTimeline extends ConsumerStatefulWidget {
 
 class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {});
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final appointmentsState = ref.watch(
-      appointmentsByPatientProvider(widget.patient.id),
+    final trackingAsync = ref.watch(
+      patientTrackingSummary7DaysProvider(widget.patient.id),
     );
-
-    Appointment? lastAppointment;
-    Appointment? nextAppointment;
-
-    final list = appointmentsState.appointments.toList();
-    final now = DateTime.now();
-
-    final validAppts = list
-        .where((a) => a.status != AppointmentStatus.cancelled)
-        .toList();
-
-    validAppts.sort((a, b) {
-      final da =
-          _parseRobustDate(a.schedule.date) ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final db =
-          _parseRobustDate(b.schedule.date) ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      return da.compareTo(db);
-    });
-
-    for (final a in validAppts) {
-      final d = _parseRobustDate(a.schedule.date);
-      if (d == null) continue;
-
-      if (d.isBefore(now) && !DateUtils.isSameDay(d, now)) {
-        lastAppointment = a;
-      } else if (d.isAfter(now) || DateUtils.isSameDay(d, now)) {
-        nextAppointment ??= a;
-      }
-    }
-
-    final diaryState = ref.watch(patientDiaryProvider(widget.patient.id));
-    final diaryMap = <String, double>{};
-    for (final entry in diaryState.entries) {
-      final dateKey =
-          '${entry.date.year}-${entry.date.month}-${entry.date.day}';
-
-      if (entry.diary.isNotEmpty) {
-        double total = 0;
-        int valid = 0;
-        for (final a in entry.diary) {
-          total += a.percent;
-          valid++;
-        }
-        if (valid > 0) {
-          diaryMap[dateKey] = total / valid;
-        }
-      }
-    }
-
-    final List<String> labels = [];
-    final List<double?> values = [];
-    final List<Color> barColors = [];
-
-    final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-    for (int i = -6; i <= 7; i++) {
-      final day = now.add(Duration(days: i));
-      labels.add(weekdays[day.weekday - 1]);
-
-      final dateKey = '${day.year}-${day.month}-${day.day}';
-      double? val;
-      if (i <= 0) {
-        val = diaryMap[dateKey];
-      }
-
-      if (val != null) {
-        final normalized = 20.0 + (val / 100.0) * 35.0;
-        values.add(normalized);
-      } else {
-        values.add(null);
-      }
-
-      if (i == 0) {
-        barColors.add(const Color(0xFF58E8EA));
-      } else if (i < 0) {
-        barColors.add(AppPalette.secondaryBlue);
-      } else {
-        barColors.add(AppPalette.surfaceLight);
-      }
-    }
+    final sevenDays = dashboardLastSevenDays();
+    final lastSevenDays = DateTimeRange(
+      start: sevenDays.first,
+      end: sevenDays.last,
+    );
+    final journeyProgress = dashboardSevenDayAdherenceAverage(
+      trackingAsync.value ?? const [],
+      sevenDays,
+    );
 
     return Container(
       width: double.infinity,
       height: 273,
       padding: const EdgeInsets.all(PatientDashboardDimensions.cardPadding),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ActivityTracker(
-              labels: labels,
-              values: values,
-              barColors: barColors,
-              expand: true,
-              barWidth: context.isCompactShell ? 14 : 20,
-              maxBarHeight: 55,
-            ),
+          const Text('Your Journey', style: DashboardStyles.heading),
+          const SizedBox(height: 5),
+          Text(
+            'Last 7 days · ${_formatJourneyDateRange(lastSevenDays)}',
+            style: DashboardStyles.body.copyWith(fontSize: 13),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lastAppointment != null
-                            ? _formatMonthDay(
-                                _parseRobustDate(
-                                      lastAppointment.schedule.date,
-                                    ) ??
-                                    DateTime.now(),
-                              )
-                            : '—',
-                        style: DashboardStyles.category,
-                      ),
-                      Text(
-                        'Last Appt.',
-                        style: DashboardStyles.body.copyWith(
-                          color: AppPalette.secondaryBlue,
+          const SizedBox(height: 24),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => showPatientJourneyOverview(context, widget.patient),
+              borderRadius: BorderRadius.circular(12),
+              mouseCursor: SystemMouseCursors.click,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'You are making great progress',
+                            style: DashboardStyles.heading,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text('Today', style: DashboardStyles.category),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        nextAppointment != null
-                            ? _formatMonthDay(
-                                _parseRobustDate(
-                                      nextAppointment.schedule.date,
-                                    ) ??
-                                    DateTime.now(),
-                              )
-                            : '—',
-                        style: DashboardStyles.category,
-                      ),
-                      Text(
-                        'Next Appt.',
-                        style: DashboardStyles.body.copyWith(
-                          color: AppPalette.secondaryBlue,
+                        const SizedBox(width: 16),
+                        Text(
+                          '${journeyProgress.round()}%',
+                          style: DashboardStyles.category.copyWith(
+                            fontSize: 32,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    nextAppointment != null
-                        ? '${widget.patient.firstName} is on track for their next appointment.'
-                        : 'No upcoming appointment is scheduled.',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardStyles.category,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                SizedBox(
-                  width: PatientDashboardDimensions.buttonWidth,
-                  height: 31,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 6,
-                      ),
-                      backgroundColor: AppPalette.secondaryBlue,
-                      foregroundColor: AppPalette.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          PatientDashboardDimensions.buttonRadius,
-                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: LinearProgressIndicator(
+                        value: journeyProgress / 100,
+                        minHeight: 12,
+                        color: AppPalette.secondaryBlue,
+                        backgroundColor: AppPalette.surfaceLight,
                       ),
                     ),
-                    child: Text('Schedule', style: DashboardStyles.button),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -576,46 +430,13 @@ class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
     );
   }
 
-  DateTime? _parseRobustDate(String dateStr) {
-    var d = DateTime.tryParse(dateStr);
-    if (d != null) return d;
+  String _formatJourneyDate(DateTime date) =>
+      '${date.year}/${date.month.toString().padLeft(2, '0')}/'
+      '${date.day.toString().padLeft(2, '0')}';
 
-    // Handle dd/MM/yyyy or MM/dd/yyyy
-    var parts = dateStr.split('/');
-    if (parts.length == 3 && parts[2].length == 4) {
-      return DateTime.tryParse(
-        '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}',
-      );
-    }
-
-    // Handle dd-MM-yyyy or MM-dd-yyyy
-    parts = dateStr.split('-');
-    if (parts.length == 3 && parts[2].length == 4) {
-      return DateTime.tryParse(
-        '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}',
-      );
-    }
-
-    return null;
-  }
-
-  String _formatMonthDay(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
-  }
+  String _formatJourneyDateRange(DateTimeRange range) =>
+      '${_formatJourneyDate(range.start)} – '
+      '${_formatJourneyDate(range.end)}';
 }
 
 class DailyGoalsCard extends ConsumerWidget {

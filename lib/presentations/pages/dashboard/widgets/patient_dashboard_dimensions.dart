@@ -6,7 +6,7 @@ abstract final class PatientDashboardDimensions {
 
   static const patientCardWidth = 380.0;
   static const appointmentWidth = 589.0;
-  static const firstRowGap = 120.0;
+  static const firstRowGap = 30.0;
 
   static const bottomCardWidth = 370.0;
   static const bottomCardHeight = 423.0;
