@@ -1,7 +1,48 @@
+import 'package:app_doctor/features/tracking/data/models/tracking_summary_item_model.dart';
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+List<DateTime> dashboardLastSevenDays([DateTime? referenceDate]) {
+  final today = DateUtils.dateOnly(referenceDate ?? DateTime.now());
+  return dashboardDaysInRange(
+    DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today),
+  );
+}
+
+List<DateTime> dashboardDaysInRange(DateTimeRange range) {
+  final start = DateUtils.dateOnly(range.start);
+  final end = DateUtils.dateOnly(range.end);
+  final dayCount = end.difference(start).inDays + 1;
+  return List.generate(dayCount, (index) => start.add(Duration(days: index)));
+}
+
+TrackingSummaryItemModel? dashboardTrackingForDay(
+  List<TrackingSummaryItemModel> trackingData,
+  DateTime day,
+) {
+  return trackingData.where((item) {
+    final date = item.logDate;
+    final localDate = date.toLocal();
+    return DateUtils.isSameDay(date, day) ||
+        DateUtils.isSameDay(localDate, day);
+  }).firstOrNull;
+}
+
+double dashboardSevenDayAdherenceAverage(
+  List<TrackingSummaryItemModel> trackingData,
+  List<DateTime> days,
+) {
+  if (days.isEmpty) return 0;
+  final total = days.fold<double>(0, (sum, day) {
+    final item = dashboardTrackingForDay(trackingData, day);
+    final adherence =
+        item?.adherence?.overall ?? item?.summary.adherence.toDouble() ?? 0;
+    return sum + adherence;
+  });
+  return (total / days.length).clamp(0, 100).toDouble();
+}
 
 class SevenDayTrendCard extends ConsumerWidget {
   final String patientId;
@@ -20,32 +61,18 @@ class SevenDayTrendCard extends ConsumerWidget {
 
     final trackingData = trackingAsync.value ?? [];
 
-    final now = DateTime.now();
     final List<double> postureScores = [];
     final List<double> adherenceScores = [];
     final List<String> dateLabels = [];
 
     final weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-    for (int i = 6; i >= 0; i--) {
-      final day = now.subtract(Duration(days: i));
+    final days = dashboardLastSevenDays();
+    for (final day in days) {
       final labelIndex = day.weekday == 7 ? 0 : day.weekday;
       dateLabels.add(weekdays[labelIndex]);
 
-      final dayKey =
-          '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
-
-      final trackItem = trackingData.where((t) {
-        final d = t.logDate;
-        final dKey =
-            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-        final dLocal = d.toLocal();
-        final dLocalKey =
-            '${dLocal.year}-${dLocal.month.toString().padLeft(2, '0')}-${dLocal.day.toString().padLeft(2, '0')}';
-        return dKey == dayKey ||
-            dLocalKey == dayKey ||
-            (d.year == day.year && d.month == day.month && d.day == day.day);
-      }).firstOrNull;
+      final trackItem = dashboardTrackingForDay(trackingData, day);
 
       postureScores.add(trackItem?.summary.posture.toDouble() ?? 0.0);
 
