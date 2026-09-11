@@ -267,10 +267,10 @@ class _PatientJourneyOverviewState
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: LinearProgressIndicator(
-              value: goal.percent / 100,
+              value: (goal.percent / 100).clamp(0.0, 1.0),
               minHeight: 9,
-              color: goal.color,
-              backgroundColor: goal.color.withValues(alpha: .14),
+              color: goal.displayColor,
+              backgroundColor: goal.displayColor.withValues(alpha: .14),
             ),
           ),
           const SizedBox(height: 10),
@@ -530,17 +530,17 @@ class _GoalTile extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     CircularProgressIndicator(
-                      value: goal.percent / 100,
+                      value: (goal.percent / 100).clamp(0.0, 1.0),
                       strokeWidth: 7,
-                      color: goal.color,
-                      backgroundColor: goal.color.withValues(alpha: .13),
+                      color: goal.displayColor,
+                      backgroundColor: goal.displayColor.withValues(alpha: .13),
                     ),
                     Text(
                       '${goal.percent.round()}%',
                       style: TextStyle(
                         fontFamily: 'Cabin',
                         fontWeight: FontWeight.w700,
-                        color: goal.color,
+                        color: goal.displayColor,
                       ),
                     ),
                   ],
@@ -821,8 +821,12 @@ class _JourneyGoal {
 
   IconData get icon => type.icon;
 
+  bool get isCompleted => percent >= 100;
+
+  Color get displayColor => isCompleted ? const Color(0xFF87C879) : color;
+
   Color get color => switch (type) {
-    GoalType.yogaMeditation => const Color(0xFF87C879),
+    GoalType.yogaMeditation => const Color(0xFF58E8EA),
     GoalType.stepsWalking => _JourneyColors.blue,
     GoalType.activityWalk => _JourneyColors.darkBlue,
     GoalType.unknown => const Color(0xFF6E7B85),

@@ -586,7 +586,7 @@ class _GoalSummaryItem extends StatelessWidget {
     if (title.toLowerCase().contains('exercise') ||
         title.toLowerCase().contains('yoga') ||
         activity?.type == GoalType.yogaMeditation) {
-      color = const Color(0xFF87C879);
+      color = const Color(0xFF58E8EA);
     }
     if (title.toLowerCase().contains('step') ||
         title.toLowerCase().contains('walk') ||
@@ -623,6 +623,11 @@ class _GoalSummaryItem extends StatelessWidget {
       }
     }
 
+    final bool isCompleted = percent >= 100;
+    final Color progressColor = isCompleted ? const Color(0xFF87C879) : color;
+    final Color percentTextColor =
+        isCompleted ? const Color(0xFF87C879) : const Color(0xFF206EB0);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -636,10 +641,10 @@ class _GoalSummaryItem extends StatelessWidget {
                 width: 70,
                 height: 70,
                 child: RoundedCircularProgress(
-                  value: percent / 100,
+                  value: (percent / 100).clamp(0.0, 1.0),
                   strokeWidth: 8,
                   backgroundColor: const Color(0xFFF7F7F7),
-                  color: color,
+                  color: progressColor,
                 ),
               ),
               Column(
@@ -647,22 +652,22 @@ class _GoalSummaryItem extends StatelessWidget {
                 children: [
                   Text(
                     '$percent',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cabin',
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
                       height: 1.0,
-                      color: Color(0xFF206EB0),
+                      color: percentTextColor,
                     ),
                   ),
-                  const Text(
+                  Text(
                     '%',
                     style: TextStyle(
                       fontFamily: 'Cabin',
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                       height: 1.0,
-                      color: Color(0xFF206EB0),
+                      color: percentTextColor,
                     ),
                   ),
                 ],
