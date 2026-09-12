@@ -27,13 +27,21 @@ class ChatMessageBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final senderId = (msg.senderId);
-    final isOwn = senderId.isNotEmpty && currentUserIds.contains(senderId);
+    final normalizedCurrentUserIds = currentUserIds
+        .map((id) => id.trim().toLowerCase())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final isOwn = _isOwnMessage(
+      senderId: msg.senderId,
+      currentUserIds: normalizedCurrentUserIds,
+      currentPatient: patient,
+      role: currentRole,
+    );
     final isSeenByPeer = _isSeenByPeer(
       isOwn: isOwn,
       status: msg.status,
       readByIds: msg.readByIds,
-      currentUserIds: currentUserIds,
+      currentUserIds: normalizedCurrentUserIds,
     );
     final senderName = _senderName(currentPatient: patient, isOwn: isOwn);
     final timeStr = _timeFormatter.format(msg.sentAt);
@@ -117,6 +125,26 @@ class ChatMessageBubble extends ConsumerWidget {
   String _messageText(Message message) {
     final text = message.content.text?.trim() ?? '';
     return text.isNotEmpty ? text : 'Message';
+  }
+
+  bool _isOwnMessage({
+    required String senderId,
+    required Set<String> currentUserIds,
+    required Patient? currentPatient,
+    required UserRole? role,
+  }) {
+    final normalizedSenderId = senderId.trim().toLowerCase();
+    if (normalizedSenderId.isEmpty) return false;
+
+    final patientId = currentPatient?.id.trim().toLowerCase() ?? '';
+    if (patientId.isNotEmpty) {
+      final isPatientMessage = normalizedSenderId == patientId;
+      if (role == UserRole.doctor) return !isPatientMessage;
+      if (role == UserRole.patient) return isPatientMessage;
+      if (isPatientMessage) return false;
+    }
+
+    return currentUserIds.contains(normalizedSenderId);
   }
 
   Widget _buildMessageContent(BuildContext context, Message msg, bool isOwn) {
@@ -242,7 +270,7 @@ class ChatMessageBubble extends ConsumerWidget {
     if (currentUserIds.isEmpty) return false;
 
     for (final id in readByIds) {
-      if (!currentUserIds.contains((id))) {
+      if (!currentUserIds.contains(id.trim().toLowerCase())) {
         return true;
       }
     }

@@ -6,12 +6,16 @@ enum GoalType {
   activityWalk,
   unknown;
 
-  static GoalType fromString(String? value) => switch (value?.trim()) {
-    'Steps/Walking' => GoalType.stepsWalking,
-    'Yoga/Meditation' => GoalType.yogaMeditation,
-    'Activity_Walk' => GoalType.activityWalk,
-    _ => GoalType.unknown,
-  };
+  static GoalType fromString(String? value) =>
+      switch (value?.trim().toLowerCase()) {
+        'steps' || 'steps/walking' || 'walking' => GoalType.stepsWalking,
+        'yoga' || 'yoga/meditation' || 'meditation' => GoalType.yogaMeditation,
+        'walk' ||
+        'activity_walk' ||
+        'activity walk' ||
+        'walking time' => GoalType.activityWalk,
+        _ => GoalType.unknown,
+      };
 
   String toApiString() => switch (this) {
     GoalType.stepsWalking => 'Steps',
@@ -21,16 +25,16 @@ enum GoalType {
   };
 
   String get displayName => switch (this) {
-    GoalType.stepsWalking => 'Steps / Walking',
-    GoalType.yogaMeditation => 'Yoga / Meditation',
-    GoalType.activityWalk => 'Activity Walk',
+    GoalType.stepsWalking => 'Daily Steps',
+    GoalType.yogaMeditation => 'Yoga',
+    GoalType.activityWalk => 'Walking Time',
     GoalType.unknown => 'Unknown',
   };
 
   IconData get icon => switch (this) {
     GoalType.stepsWalking => Icons.directions_walk,
     GoalType.yogaMeditation => Icons.self_improvement,
-    GoalType.activityWalk => Icons.fitness_center,
+    GoalType.activityWalk => Icons.timer_outlined,
     GoalType.unknown => Icons.help_outline,
   };
 }

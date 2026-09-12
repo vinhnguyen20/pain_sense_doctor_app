@@ -1,5 +1,5 @@
+import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
-import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ import 'patient_detail_dialog.dart';
 import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
+import 'package:app_doctor/features/education/presentation/provider/education_provider.dart';
 import 'journey_overview.dart';
 
 class DashboardStyles {
@@ -356,18 +357,19 @@ class AppointmentTimeline extends ConsumerStatefulWidget {
 class _AppointmentTimelineState extends ConsumerState<AppointmentTimeline> {
   @override
   Widget build(BuildContext context) {
-    final trackingAsync = ref.watch(
-      patientTrackingSummary7DaysProvider(widget.patient.id),
-    );
     final sevenDays = dashboardLastSevenDays();
     final lastSevenDays = DateTimeRange(
       start: sevenDays.first,
       end: sevenDays.last,
     );
-    final journeyProgress = dashboardSevenDayAdherenceAverage(
-      trackingAsync.value ?? const [],
-      sevenDays,
+    final progressAsync = ref.watch(
+      patientDiaryProgressProvider((
+        patientId: widget.patient.id,
+        fromDate: DateUtilsHelper.formatDateApi(lastSevenDays.start),
+        toDate: DateUtilsHelper.formatDateApi(lastSevenDays.end),
+      )),
     );
+    final journeyProgress = progressAsync.value ?? 0;
 
     return Container(
       width: double.infinity,
@@ -625,8 +627,9 @@ class _GoalSummaryItem extends StatelessWidget {
 
     final bool isCompleted = percent >= 100;
     final Color progressColor = isCompleted ? const Color(0xFF87C879) : color;
-    final Color percentTextColor =
-        isCompleted ? const Color(0xFF87C879) : const Color(0xFF206EB0);
+    final Color percentTextColor = isCompleted
+        ? const Color(0xFF87C879)
+        : const Color(0xFF206EB0);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -725,87 +728,17 @@ class _TodayExerciseGoalsCardState
     }
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final goalsAsync = ref.watch(patientUserGoalsProvider(widget.patient.id));
-    final diaryState = ref.watch(patientDiaryProvider(widget.patient.id));
-
-    final now = DateTime.now();
-
-    // 1. Get today's diary to check completion
-    PatientDiaryEntry? todayEntry;
-    for (final e in diaryState.entries) {
-      if (_isSameDay(e.date, now)) {
-        todayEntry = e;
-        break;
-      }
-    }
-
-    // 2. Extract today's exercise goals from UserGoals
-    final List<Map<String, dynamic>> todayExercises = [];
-
-    final goalsList = goalsAsync.maybeWhen(
-      data: (list) => list,
-      orElse: () => <UserGoalModel>[],
+    final today = DateUtils.dateOnly(DateTime.now());
+    final exercisesAsync = ref.watch(
+      patientExercisesByPatientDateProvider((
+        patientId: widget.patient.id,
+        date: today,
+      )),
     );
-
-    for (final goal in goalsList) {
-      if (now.isBefore(goal.startDate) ||
-          now.isAfter(goal.endDate.add(const Duration(days: 1)))) {
-        continue;
-      }
-
-      for (final item in goal.goalItems) {
-        // Find exercises
-        if (item.userExercises != null && item.userExercises!.isNotEmpty) {
-          for (final ue in item.userExercises!) {
-            bool hasToday = false;
-            bool slotCompleted = false;
-            for (final sc in ue.scheduleConfig) {
-              if (_isSameDay(sc.exerciseDate, now)) {
-                hasToday = true;
-                if (sc.sessionsCompleted > 0 ||
-                    sc.slots.any((slot) => slot.isCompleted)) {
-                  slotCompleted = true;
-                }
-                break;
-              }
-            }
-            if (hasToday) {
-              final label = ue.name ?? item.label;
-              final matchingActivity = todayEntry?.diary
-                  .where(
-                    (a) =>
-                        a.label.toLowerCase() == label.toLowerCase() ||
-                        (a.userExercises?.any(
-                              (ex) => ex.exerciseId == ue.resolvedExerciseId,
-                            ) ??
-                            false),
-                  )
-                  .firstOrNull;
-              final isCompleted =
-                  slotCompleted ||
-                  (matchingActivity != null &&
-                      matchingActivity.percent >= 100.0);
-              todayExercises.add({'label': label, 'completed': isCompleted});
-            }
-          }
-        } else if (item.type.toApiString() == 'exercise' ||
-            item.label.toLowerCase().contains('exercise')) {
-          // fallback if no userExercises but it's an exercise goal
-          final matchingActivity = todayEntry?.diary
-              .where((a) => a.label.toLowerCase() == item.label.toLowerCase())
-              .firstOrNull;
-          final isCompleted =
-              matchingActivity != null && matchingActivity.percent >= 100.0;
-          todayExercises.add({'label': item.label, 'completed': isCompleted});
-        }
-      }
-    }
+    final todayExercises =
+        exercisesAsync.value ?? const <TodayExerciseGoalItem>[];
 
     // Add dummy scroll listener callback to check scroll size after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -813,9 +746,9 @@ class _TodayExerciseGoalsCardState
     });
 
     Widget contentWidget;
-    if (goalsAsync.isLoading) {
+    if (exercisesAsync.isLoading) {
       contentWidget = const Center(child: CircularProgressIndicator());
-    } else if (goalsAsync.hasError) {
+    } else if (exercisesAsync.hasError) {
       contentWidget = const Text(
         'Unable to load exercise goals.',
         style: TextStyle(
@@ -841,8 +774,8 @@ class _TodayExerciseGoalsCardState
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           final ex = todayExercises[index];
-          final bool isCompleted = ex['completed'];
-          final String label = ex['label'];
+          final isCompleted = ex.isCompleted;
+          final label = ex.label;
 
           return Container(
             width: context.isCompactShell ? double.infinity : 330,
@@ -960,15 +893,16 @@ class _TodayExerciseGoalsCardState
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            width: context.isCompactShell ? double.infinity : 330,
-            height: 260,
-            child: contentWidget,
+          Expanded(
+            child: SizedBox(
+              width: context.isCompactShell ? double.infinity : 330,
+              child: contentWidget,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           SizedBox(
             width: context.isCompactShell ? double.infinity : 330,
-            height: 8,
+            height: 12,
             child: _canScroll
                 ? const Center(
                     child: Icon(
@@ -978,38 +912,6 @@ class _TodayExerciseGoalsCardState
                     ),
                   )
                 : const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: 136,
-              height: 31,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF206EB0),
-                  foregroundColor: const Color(0xFFFFFFFF),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 6,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  minimumSize: const Size(136, 31),
-                ),
-                child: const Text(
-                  'Edit',
-                  style: TextStyle(
-                    fontFamily: 'Cabin',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Color(0xFFFFFFFF),
-                  ),
-                ),
-              ),
-            ),
           ),
         ],
       ),

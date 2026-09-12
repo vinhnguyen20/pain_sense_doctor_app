@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/chats/domain/entites/appointment.dart';
 import 'package:app_doctor/features/chats/presentation/provider/appointment_notifier.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
@@ -10,12 +11,9 @@ import 'package:app_doctor/features/diary/domain/entites/patient_diary_activity.
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_entry.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
-import 'package:app_doctor/features/tracking/presentation/provider/tracking_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'seven_7_day_trend.dart';
 
 Future<void> showPatientJourneyOverview(
   BuildContext context,
@@ -110,8 +108,13 @@ class _PatientJourneyOverviewState
     final appointmentsState = ref.watch(
       appointmentsByPatientProvider(widget.patient.id),
     );
-    final trackingAsync = ref.watch(
-      patientTrackingSummary7DaysProvider(widget.patient.id),
+    final progressQuery = (
+      patientId: widget.patient.id,
+      fromDate: DateUtilsHelper.formatDateApi(_selectedDateRange.start),
+      toDate: DateUtilsHelper.formatDateApi(_selectedDateRange.end),
+    );
+    final progressAsync = ref.watch(
+      patientDiaryProgressProvider(progressQuery),
     );
 
     final goals = _buildDailyGoals(
@@ -119,10 +122,7 @@ class _PatientJourneyOverviewState
       goals: goalsAsync.value ?? const <UserGoalModel>[],
       date: _selectedDateRange.end,
     );
-    final progress = dashboardSevenDayAdherenceAverage(
-      trackingAsync.value ?? const [],
-      dashboardDaysInRange(_selectedDateRange),
-    );
+    final progress = progressAsync.value ?? 0;
     final events = _buildEvents(
       diaryEntries: diaryState.entries,
       appointments: appointmentsState.appointments,
@@ -191,8 +191,13 @@ class _PatientJourneyOverviewState
     await ref
         .read(appointmentsByPatientProvider(widget.patient.id).notifier)
         .refresh();
+    final progressQuery = (
+      patientId: widget.patient.id,
+      fromDate: DateUtilsHelper.formatDateApi(_selectedDateRange.start),
+      toDate: DateUtilsHelper.formatDateApi(_selectedDateRange.end),
+    );
     final _ = await ref.refresh(
-      patientTrackingSummary7DaysProvider(widget.patient.id).future,
+      patientDiaryProgressProvider(progressQuery).future,
     );
   }
 

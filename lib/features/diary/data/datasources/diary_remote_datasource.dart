@@ -9,10 +9,82 @@ import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart'
 import '../../../../core/network/dio/api_response.dart';
 import '../models/diary_model.dart';
 
+class DiaryProgressSnapshot {
+  final double progressScore;
+  final int diaryCount;
+
+  const DiaryProgressSnapshot({
+    required this.progressScore,
+    required this.diaryCount,
+  });
+
+  factory DiaryProgressSnapshot.fromJson(dynamic data) {
+    final dataMap = data is Map
+        ? Map<String, dynamic>.from(data)
+        : const <String, dynamic>{};
+    final rawItems = dataMap['items'];
+    final items = rawItems is Map
+        ? Map<String, dynamic>.from(rawItems)
+        : const <String, dynamic>{};
+    final rawDiaries = items['diaries'];
+    final score = items['progress_score'];
+    return DiaryProgressSnapshot(
+      progressScore: score is num
+          ? score.toDouble()
+          : double.tryParse(score?.toString() ?? '') ?? 0,
+      diaryCount: rawDiaries is List ? rawDiaries.length : 0,
+    );
+  }
+}
+
 class DiaryRemoteDataSource {
   final DioClient _client;
 
   DiaryRemoteDataSource(this._client);
+
+  Future<ApiResponse<DiaryProgressSnapshot>> getDiaryProgress({
+    required String patientId,
+    required String fromDate,
+    required String toDate,
+    int limit = 10,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      'limit': limit,
+      'from_date': fromDate,
+      'to_date': toDate,
+    };
+
+    ApiResponse<DiaryProgressSnapshot> parse(dynamic json) =>
+        ApiResponse<DiaryProgressSnapshot>.fromJson(
+          json as Map<String, dynamic>,
+          DiaryProgressSnapshot.fromJson,
+        );
+
+    try {
+      final currentUserResponse = await _client
+          .get<ApiResponse<DiaryProgressSnapshot>>(
+            '/diary/patient',
+            queryParameters: queryParameters,
+            fromJson: parse,
+          );
+
+      // /diary/patient is the requested endpoint. A doctor token has no own
+      // diary, so use the patient-id variant only when it returns no entries.
+      final normalizedPatientId = patientId.trim();
+      if ((currentUserResponse.data?.diaryCount ?? 0) > 0 ||
+          normalizedPatientId.isEmpty) {
+        return currentUserResponse;
+      }
+
+      return await _client.get<ApiResponse<DiaryProgressSnapshot>>(
+        '/diary/by_patient_id/$normalizedPatientId',
+        queryParameters: queryParameters,
+        fromJson: parse,
+      );
+    } catch (error, stackTrace) {
+      return ApiResponse.failure(error, stackTrace);
+    }
+  }
 
   Future<ApiResponse<PaginatedResponse<DiaryModel>>> getDiaries({
     String? cursor,

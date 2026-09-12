@@ -1,10 +1,10 @@
 import 'package:app_doctor/core/providers/dio_provider.dart';
 import 'package:app_doctor/features/diary/data/datasources/diary_remote_datasource.dart';
 import 'package:app_doctor/features/diary/data/models/diary_adherence_model.dart';
-import 'package:app_doctor/features/diary/data/models/patient_diary_activity_model.dart';
+import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/features/diary/data/repository/diary_repository_impl.dart';
-import 'package:app_doctor/features/diary/domain/entites/diary_current_date.dart';
+import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/domain/repository/diary_repository.dart';
 import 'package:app_doctor/features/diary/domain/usecases/delete_user_goal.dart';
 import 'package:app_doctor/features/diary/domain/usecases/get_diaries_usecase.dart';
@@ -55,6 +55,31 @@ UpdateDiaryUseCase updateDiaryUseCase(Ref ref) {
 GetUserGoalsByPatientIdUseCase getUserGoalsByPatientIdUseCase(Ref ref) {
   return GetUserGoalsByPatientIdUseCase(ref.read(diaryRepositoryProvider));
 }
+
+typedef PatientDiaryProgressQuery = ({
+  String patientId,
+  String fromDate,
+  String toDate,
+});
+
+final patientDiaryProgressProvider =
+    FutureProvider.family<double, PatientDiaryProgressQuery>((
+      ref,
+      query,
+    ) async {
+      final response = await ref
+          .read(diaryRemoteDataSourceProvider)
+          .getDiaryProgress(
+            patientId: query.patientId,
+            fromDate: query.fromDate,
+            toDate: query.toDate,
+            limit: 10,
+          );
+      if (response.isFailure || response.data == null) {
+        throw Exception(response.message);
+      }
+      return response.data!.progressScore.clamp(0, 100).toDouble();
+    }, retry: (retryCount, error) => null);
 
 final diaryAdherenceProvider =
     FutureProvider.family<PatientDiaryAdherenceModel?, String>((
@@ -111,15 +136,89 @@ class PatientUserGoalsNotifier extends _$PatientUserGoalsNotifier {
     try {
       final more = await _fetchPage(cursor: _nextCursor);
       state = AsyncData([...current, ...more]);
-    } catch (e, st) {
+    } catch (e) {
       debugPrint('fetchMore error: $e');
     } finally {
       _isFetchingMore = false;
     }
   }
 
+  void applyUpdate(UpdateUserGoalRequest request) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData(
+      current
+          .map(
+            (goal) => goal.id == request.goalId
+                ? mergeUserGoalUpdate(goal, request)
+                : goal,
+          )
+          .toList(),
+    );
+  }
+
   bool get hasMore => _hasMore;
   bool get isFetchingMore => _isFetchingMore;
+}
+
+UserGoalModel mergeUserGoalUpdate(
+  UserGoalModel current,
+  UpdateUserGoalRequest request,
+) {
+  final previousItems = <String, GoalItemModel>{
+    for (final item in current.goalItems) item.type.toApiString(): item,
+  };
+  final updatedExercises = request.exercises
+      .map(
+        (exercise) => UserExerciseItem(
+          id: exercise.exerciseId,
+          exerciseId: exercise.exerciseId,
+          doctorInstruction: exercise.doctorInstruction,
+          scheduleConfig: exercise.scheduleConfig
+              .map(
+                (schedule) => UserExerciseScheduleConfig(
+                  exerciseDate: schedule.exerciseDate,
+                  sessionsCount: schedule.sessionsCount,
+                  slots: schedule.slots
+                      .map(
+                        (slot) => UserExerciseScheduleSlot(
+                          period: slot.period,
+                          time: slot.time,
+                          instruction: slot.instruction,
+                        ),
+                      )
+                      .toList(),
+                ),
+              )
+              .toList(),
+        ),
+      )
+      .toList();
+
+  return UserGoalModel(
+    id: current.id,
+    patientId: current.patientId,
+    doctorId: current.doctorId,
+    startDate: request.startDate,
+    endDate: request.endDate,
+    goalItems: request.goalItems.map((item) {
+      final previous = previousItems[item.type.toApiString()];
+      return GoalItemModel(
+        type: item.type,
+        minTarget: item.minTarget.round(),
+        unit: item.unit,
+        label: item.label,
+        desc: item.desc,
+        userExerciseIds: item.userExerciseIds,
+        userExercises: item.type.toApiString() == 'Yoga'
+            ? updatedExercises
+            : previous?.userExercises,
+      );
+    }).toList(),
+    createdAt: current.createdAt,
+    createdBy: current.createdBy,
+    updatedAt: DateTime.now(),
+  );
 }
 
 @riverpod

@@ -4,6 +4,7 @@ import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
+import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +84,13 @@ class _UserGoalCardState extends ConsumerState<UserGoalCard> {
       },
     );
     if (result != null) {
-      widget.onDelete();
+      if (result is UpdateUserGoalRequest) {
+        ref
+            .read(patientUserGoalsProvider(widget.patientId).notifier)
+            .applyUpdate(result);
+      } else {
+        widget.onDelete();
+      }
     }
   }
 

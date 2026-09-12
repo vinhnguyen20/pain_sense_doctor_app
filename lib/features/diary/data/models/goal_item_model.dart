@@ -62,12 +62,14 @@ class UserExerciseItem {
   final String id;
   final String? exerciseId;
   final String? name;
+  final String? doctorInstruction;
   final List<UserExerciseScheduleConfig> scheduleConfig;
 
   const UserExerciseItem({
     required this.id,
     this.exerciseId,
     this.name,
+    this.doctorInstruction,
     required this.scheduleConfig,
   });
 
@@ -82,6 +84,7 @@ class UserExerciseItem {
         id: json['id'] as String? ?? '',
         exerciseId: json['exercise_id'] as String?,
         name: json['name'] as String?,
+        doctorInstruction: json['doctor_instruction'] as String?,
         scheduleConfig:
             (json['schedule_config'] as List<dynamic>?)
                 ?.map(

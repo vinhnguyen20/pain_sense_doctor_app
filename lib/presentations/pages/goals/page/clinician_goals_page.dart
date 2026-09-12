@@ -4,6 +4,7 @@ import 'package:app_doctor/common/widgets/app_snackbar.dart';
 import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
+import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/patients_notifier.dart';
@@ -126,6 +127,11 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     );
     if (result != null) {
       ref.invalidate(patientUserGoalsProvider(patient.id));
+      try {
+        await ref.read(patientUserGoalsProvider(patient.id).future);
+      } catch (_) {
+        // The list renders the provider error state and its retry action.
+      }
     }
   }
 
@@ -148,7 +154,13 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       },
     );
     if (result != null && patient != null) {
-      ref.invalidate(patientUserGoalsProvider(patient.id));
+      if (result is UpdateUserGoalRequest) {
+        ref
+            .read(patientUserGoalsProvider(patient.id).notifier)
+            .applyUpdate(result);
+      } else {
+        ref.invalidate(patientUserGoalsProvider(patient.id));
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:app_doctor/features/diary/domain/entites/patient_diary_activity.
 import 'package:app_doctor/features/diary/domain/entites/patient_diary_entry.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/diary/presentation/provider/patient_diary_notifier.dart';
+import 'package:app_doctor/features/education/presentation/provider/education_provider.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_content.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +77,18 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              patientExercisesByPatientDateProvider.overrideWith((
+                ref,
+                query,
+              ) async {
+                return const [
+                  TodayExerciseGoalItem(
+                    id: 'ue-1',
+                    label: 'Morning Stretching',
+                    isCompleted: true,
+                  ),
+                ];
+              }),
               patientUserGoalsProvider(testPatient.id).overrideWith(
                 () => _FakePatientUserGoalsNotifier([completedGoal]),
               ),
@@ -175,6 +188,18 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              patientExercisesByPatientDateProvider.overrideWith((
+                ref,
+                query,
+              ) async {
+                return const [
+                  TodayExerciseGoalItem(
+                    id: 'ue-2',
+                    label: 'Leg Raise',
+                    isCompleted: false,
+                  ),
+                ];
+              }),
               patientUserGoalsProvider(testPatient.id).overrideWith(
                 () => _FakePatientUserGoalsNotifier([uncompletedGoal]),
               ),
@@ -262,9 +287,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              patientUserGoalsProvider(testPatient.id).overrideWith(
-                () => _FakePatientUserGoalsNotifier([dailyGoals]),
-              ),
+              patientUserGoalsProvider(
+                testPatient.id,
+              ).overrideWith(() => _FakePatientUserGoalsNotifier([dailyGoals])),
               patientDiaryProvider(testPatient.id).overrideWithValue(
                 PatientDiaryState(
                   entries: [
@@ -323,78 +348,77 @@ void main() {
       },
     );
 
-    testWidgets(
-      'keeps category colors when Steps and Posture are below 100%',
-      (tester) async {
-        final dailyGoals = UserGoalModel(
-          id: 'goal-daily-2',
-          patientId: testPatient.id,
-          doctorId: 'doc-1',
-          startDate: today.subtract(const Duration(days: 1)),
-          endDate: today.add(const Duration(days: 5)),
-          goalItems: const [
-            GoalItemModel(
-              type: GoalType.stepsWalking,
-              label: 'Steps Walking',
-              desc: 'Walk 10000 steps',
-              minTarget: 10000,
-              unit: 'steps',
+    testWidgets('keeps category colors when Steps and Posture are below 100%', (
+      tester,
+    ) async {
+      final dailyGoals = UserGoalModel(
+        id: 'goal-daily-2',
+        patientId: testPatient.id,
+        doctorId: 'doc-1',
+        startDate: today.subtract(const Duration(days: 1)),
+        endDate: today.add(const Duration(days: 5)),
+        goalItems: const [
+          GoalItemModel(
+            type: GoalType.stepsWalking,
+            label: 'Steps Walking',
+            desc: 'Walk 10000 steps',
+            minTarget: 10000,
+            unit: 'steps',
+          ),
+        ],
+        createdAt: today,
+        createdBy: 'doc-1',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientUserGoalsProvider(
+              testPatient.id,
+            ).overrideWith(() => _FakePatientUserGoalsNotifier([dailyGoals])),
+            patientDiaryProvider(testPatient.id).overrideWithValue(
+              PatientDiaryState(
+                entries: [
+                  PatientDiaryEntry(
+                    id: 'diary-daily-2',
+                    date: today,
+                    diary: const [
+                      PatientDiaryActivity(
+                        label: 'Daily Steps',
+                        type: GoalType.stepsWalking,
+                        desc: 'Walking',
+                        actual: 5000,
+                        minTarget: 10000,
+                        percent: 50.0,
+                        unit: 'steps',
+                        emoji: '🚶',
+                        display: '5000 / 10000 steps',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
-          createdAt: today,
-          createdBy: 'doc-1',
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              patientUserGoalsProvider(testPatient.id).overrideWith(
-                () => _FakePatientUserGoalsNotifier([dailyGoals]),
-              ),
-              patientDiaryProvider(testPatient.id).overrideWithValue(
-                PatientDiaryState(
-                  entries: [
-                    PatientDiaryEntry(
-                      id: 'diary-daily-2',
-                      date: today,
-                      diary: const [
-                        PatientDiaryActivity(
-                          label: 'Daily Steps',
-                          type: GoalType.stepsWalking,
-                          desc: 'Walking',
-                          actual: 5000,
-                          minTarget: 10000,
-                          percent: 50.0,
-                          unit: 'steps',
-                          emoji: '🚶',
-                          display: '5000 / 10000 steps',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: SingleChildScrollView(
-                  child: DailyGoalsCard(patient: testPatient),
-                ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DailyGoalsCard(patient: testPatient),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Steps progress below 100% should use secondary blue Color(0xFF206EB0)
-        final blueProgressFinder = find.byWidgetPredicate((w) {
-          return w is RoundedCircularProgress &&
-              w.color == const Color(0xFF206EB0) &&
-              w.value == 0.5;
-        });
-        expect(blueProgressFinder, findsOneWidget);
-      },
-    );
+      // Steps progress below 100% should use secondary blue Color(0xFF206EB0)
+      final blueProgressFinder = find.byWidgetPredicate((w) {
+        return w is RoundedCircularProgress &&
+            w.color == const Color(0xFF206EB0) &&
+            w.value == 0.5;
+      });
+      expect(blueProgressFinder, findsOneWidget);
+    });
   });
 }

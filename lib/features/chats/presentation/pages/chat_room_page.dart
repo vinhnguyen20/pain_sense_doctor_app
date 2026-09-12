@@ -525,12 +525,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     );
 
     if (isDesktopView) {
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 972),
-          child: listView,
-        ),
-      );
+      return SizedBox(width: double.infinity, child: listView);
     }
 
     return RefreshIndicator(

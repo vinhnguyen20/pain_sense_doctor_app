@@ -87,6 +87,7 @@ class UserGoalModel {
             .toList();
         return GoalExercisePlanDraft(
           exerciseId: realId,
+          doctorInstruction: ue.doctorInstruction ?? '',
           scheduleConfig: scheduleConfig,
         );
       }).toList();

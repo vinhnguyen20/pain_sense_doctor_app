@@ -15,9 +15,9 @@ class GoalCategoryChips extends StatelessWidget {
   });
 
   static const _items = [
-    (GoalCategory.steps, Icons.directions_walk_rounded, 'Steps / Walking'),
-    (GoalCategory.yoga, Icons.self_improvement_rounded, 'Yoga / Meditation'),
-    (GoalCategory.activityTime, Icons.timer_outlined, 'Activity Time'),
+    (GoalCategory.steps, Icons.directions_walk_rounded, 'Daily Steps'),
+    (GoalCategory.yoga, Icons.self_improvement_rounded, 'Yoga'),
+    (GoalCategory.activityTime, Icons.timer_outlined, 'Walking Time'),
   ];
 
   @override

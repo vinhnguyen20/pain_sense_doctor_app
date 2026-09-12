@@ -134,6 +134,7 @@ class AppRouter {
               mode: extra?['mode'] ?? GoalFormMode.create,
               initialGoal: extra?['initialGoal'],
               originalGoalItems: extra?['originalGoalItems'],
+              editGoalType: extra?['editGoalType'],
               patientId: resolvePatientId(extra),
               prefillGoalItems:
                   (extra?['prefillGoalItems'] as List<dynamic>? ?? const [])
@@ -290,6 +291,7 @@ class AppRouter {
                           mode: extra?['mode'] ?? GoalFormMode.create,
                           initialGoal: extra?['initialGoal'],
                           originalGoalItems: extra?['originalGoalItems'],
+                          editGoalType: extra?['editGoalType'],
                           patientId: resolvePatientId(extra),
                           prefillGoalItems:
                               (extra?['prefillGoalItems'] as List<dynamic>? ??
@@ -453,6 +455,7 @@ class AppRouter {
                           mode: extra?['mode'] ?? GoalFormMode.create,
                           initialGoal: extra?['initialGoal'],
                           originalGoalItems: extra?['originalGoalItems'],
+                          editGoalType: extra?['editGoalType'],
                           patientId: resolvePatientId(extra),
                           prefillGoalItems:
                               (extra?['prefillGoalItems'] as List<dynamic>? ??

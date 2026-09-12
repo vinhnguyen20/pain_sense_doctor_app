@@ -3,6 +3,7 @@ import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
+import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
@@ -27,12 +28,20 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final compact = context.isCompactShell;
+    final latestGoal = ref
+        .watch(patientUserGoalsProvider(patient.id))
+        .maybeWhen(
+          data: (goals) =>
+              goals.where((item) => item.id == goal.id).firstOrNull,
+          orElse: () => null,
+        );
+    final displayedGoal = latestGoal ?? goal;
     return Scaffold(
       backgroundColor: AppPalette.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final content = _buildContent(context, ref, compact);
+            final content = _buildContent(context, ref, compact, displayedGoal);
             if (compact) {
               return Padding(
                 padding: const EdgeInsets.all(AppSpacing.s16),
@@ -54,7 +63,12 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, bool compact) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    bool compact,
+    UserGoalModel displayedGoal,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -83,23 +97,23 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(left: 56),
           child: Text(
-            '${DateUtilsHelper.formatDateDMY(goal.startDate)} – ${DateUtilsHelper.formatDateDMY(goal.endDate)}',
+            '${DateUtilsHelper.formatDateDMY(displayedGoal.startDate)} – ${DateUtilsHelper.formatDateDMY(displayedGoal.endDate)}',
             style: AppTypography.defaultBody2.copyWith(
               color: AppPalette.black.withValues(alpha: .58),
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.s20),
-        if (goal.goalItems.isEmpty)
+        if (displayedGoal.goalItems.isEmpty)
           _EmptyGoalItems()
         else
-          ...goal.goalItems.map(
+          ...displayedGoal.goalItems.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.s10),
               child: _GoalItemRow(
                 item: item,
-                onEdit: () => _openEdit(context, ref),
-                onDelete: () => _deleteGoal(context, ref),
+                onEdit: () => _openEdit(context, ref, displayedGoal, item),
+                onDelete: () => _deleteGoal(context, ref, displayedGoal),
               ),
             ),
           ),
@@ -107,7 +121,12 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _openEdit(BuildContext context, WidgetRef ref) async {
+  Future<void> _openEdit(
+    BuildContext context,
+    WidgetRef ref,
+    UserGoalModel displayedGoal,
+    GoalItemModel item,
+  ) async {
     final patientId = patient.id.trim();
     if (patientId.isEmpty) {
       AppSnackbar.error(context, 'Patient id is missing. Cannot edit goal.');
@@ -118,19 +137,30 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
       insidePatientDashboard ? 'patient-goal-form' : 'clinician-goal-form',
       extra: {
         'mode': GoalFormMode.edit,
-        'initialGoal': goal.toGoalModel(),
-        'originalGoalItems': goal.goalItems,
+        'initialGoal': displayedGoal.toGoalModel(),
+        'originalGoalItems': displayedGoal.goalItems,
         'patientId': patientId,
+        'editGoalType': item.type,
       },
     );
 
     if (!context.mounted) return;
     if (result != null) {
-      ref.invalidate(patientUserGoalsProvider(patientId));
+      if (result is UpdateUserGoalRequest) {
+        ref
+            .read(patientUserGoalsProvider(patientId).notifier)
+            .applyUpdate(result);
+      } else {
+        ref.invalidate(patientUserGoalsProvider(patientId));
+      }
     }
   }
 
-  Future<void> _deleteGoal(BuildContext context, WidgetRef ref) async {
+  Future<void> _deleteGoal(
+    BuildContext context,
+    WidgetRef ref,
+    UserGoalModel displayedGoal,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -152,7 +182,7 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
 
     final response = await ref
         .read(deleteUserGoalUseCaseProvider)
-        .call(goal.id);
+        .call(displayedGoal.id);
     if (!context.mounted) return;
 
     if (response.isSuccess) {

@@ -267,16 +267,17 @@ class SelectedExercisesSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: context.onSurface.withValues(alpha: 0.7),
+                      color: AppPalette.secondaryBlue,
                     ),
                   ),
                   if (hasItems) ...[
                     const SizedBox(height: AppSpacing.s2),
                     Text(
                       '${selected.length} exercise${selected.length > 1 ? 's' : ''} · ',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
+                        color: AppPalette.secondaryBlue.withValues(alpha: .72),
                       ),
                     ),
                   ],
@@ -286,6 +287,9 @@ class SelectedExercisesSection extends StatelessWidget {
             if (!readOnly)
               TextButton.icon(
                 onPressed: onPickTap,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppPalette.secondaryBlue,
+                ),
                 icon: Icon(
                   hasItems ? Icons.edit_outlined : Icons.add_rounded,
                   size: 15,
@@ -343,9 +347,11 @@ class _ExerciseChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: context.primary.withValues(alpha: 0.08),
+        color: AppPalette.secondaryBlue.withValues(alpha: 0.08),
         borderRadius: AppCorners.r20,
-        border: Border.all(color: context.primary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppPalette.secondaryBlue.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -359,7 +365,7 @@ class _ExerciseChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: context.primary,
+                color: AppPalette.secondaryBlue,
               ),
             ),
           ),
@@ -368,7 +374,7 @@ class _ExerciseChip extends StatelessWidget {
             '${(exercise.durationSeconds / 60).toStringAsFixed(2)}m',
             style: TextStyle(
               fontSize: 11,
-              color: context.primary.withValues(alpha: 0.65),
+              color: AppPalette.secondaryBlue.withValues(alpha: 0.65),
             ),
           ),
           if (!readOnly) ...[
@@ -378,7 +384,7 @@ class _ExerciseChip extends StatelessWidget {
               child: Icon(
                 Icons.close_rounded,
                 size: 14,
-                color: context.primary.withValues(alpha: 0.7),
+                color: AppPalette.secondaryBlue.withValues(alpha: 0.7),
               ),
             ),
           ],

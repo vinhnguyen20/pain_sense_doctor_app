@@ -50,7 +50,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Daily steps (+1)'), findsOneWidget);
+    expect(find.text('Daily steps · 24/08/2026 – 31/08/2026'), findsOneWidget);
 
     await tester.tap(find.byType(InkWell).first);
     await tester.pumpAndSettle();

@@ -60,6 +60,49 @@ class ExerciseRemoteDataSource {
     }
   }
 
+  Future<ApiResponse<PaginatedResponse<UserExerciseModel>>>
+  getUserExercisesByPatientDate({
+    required String patientId,
+    required String currentDate,
+    String? cursor,
+    int? limit,
+  }) async {
+    try {
+      return await _client
+          .get<ApiResponse<PaginatedResponse<UserExerciseModel>>>(
+            '/user-exercises/patient/$patientId/$currentDate',
+            queryParameters: {
+              if (cursor != null) 'cursor': cursor,
+              if (limit != null) 'limit': limit,
+            },
+            fromJson: (json) =>
+                ApiResponse.fromPaginatedJson<UserExerciseModel>(json, (item) {
+                  final exerciseJson = Map<String, dynamic>.from(item as Map);
+                  final rawScheduleConfig = exerciseJson['schedule_config'];
+
+                  // The endpoint is already scoped by currentDate, so
+                  // schedule entries may omit exercise_date.
+                  if (rawScheduleConfig is List) {
+                    exerciseJson['schedule_config'] = rawScheduleConfig.map((
+                      schedule,
+                    ) {
+                      final scheduleJson = Map<String, dynamic>.from(
+                        schedule as Map,
+                      );
+                      scheduleJson['exercise_date'] ??= currentDate;
+                      return scheduleJson;
+                    }).toList();
+                  }
+
+                  return UserExerciseModel.fromJson(exerciseJson);
+                }),
+          );
+    } catch (e, stackTrace) {
+      debugPrint('getUserExercisesByPatientDate error: $stackTrace');
+      return ApiResponse.failure(e, stackTrace);
+    }
+  }
+
   Future<ApiResponse<ExerciseModel>> getExerciseById(String id) async {
     return await _client.get(
       '/exercises/$id',

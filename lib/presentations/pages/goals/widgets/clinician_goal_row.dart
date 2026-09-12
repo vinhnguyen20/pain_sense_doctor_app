@@ -1,4 +1,5 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_action_button.dart';
 import 'package:flutter/material.dart';
@@ -35,8 +36,10 @@ class ClinicianGoalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstItem = goal.goalItems.firstOrNull;
-    final itemCount = goal.goalItems.length;
     final title = _title();
+    final dateRange =
+        '${DateUtilsHelper.formatDateDMY(goal.startDate)} – '
+        '${DateUtilsHelper.formatDateDMY(goal.endDate)}';
 
     return Material(
       color: AppPalette.surfaceLight,
@@ -61,7 +64,7 @@ class ClinicianGoalRow extends StatelessWidget {
                   const SizedBox(width: AppSpacing.s14),
                   Expanded(
                     child: Text(
-                      itemCount > 1 ? '$title (+${itemCount - 1})' : title,
+                      '$title · $dateRange',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.titleSmall1.copyWith(
