@@ -271,6 +271,7 @@ void main() {
               desc: 'Walk 10000 steps',
               minTarget: 10000,
               unit: 'steps',
+              percent: 100.0,
             ),
             GoalItemModel(
               type: GoalType.activityWalk,
@@ -278,6 +279,7 @@ void main() {
               desc: 'Follow posture',
               minTarget: 100,
               unit: '%',
+              percent: 100.0,
             ),
           ],
           createdAt: today,
@@ -364,6 +366,7 @@ void main() {
             desc: 'Walk 10000 steps',
             minTarget: 10000,
             unit: 'steps',
+            percent: 50.0,
           ),
         ],
         createdAt: today,
@@ -483,10 +486,227 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Daily Steps'), findsOneWidget);
-      expect(find.text('Steps'), findsNothing);
-      expect(find.text('Current target'), findsOneWidget);
-      expect(find.text('Expired target'), findsNothing);
+      expect(find.text('Steps/Walking'), findsOneWidget);
+      expect(find.text('Walk at least 5000 steps per day'), findsOneWidget);
+      expect(find.text('Walk at least 100 steps per day'), findsNothing);
     });
+
+    testWidgets('correctly updates and displays minTarget from API user goal JSON without returning 0', (
+      tester,
+    ) async {
+      final userGoalJson = {
+        'id': '27d7603d-8fc4-480a-ab06-cab5741b95b0_58fa0117-db13-47d4-865c-99ea663e7d47_20260912',
+        'patient_id': testPatient.id,
+        'doctor_id': '58fa0117-db13-47d4-865c-99ea663e7d47',
+        'start_date': '2026-09-12T00:00:00Z',
+        'end_date': '2026-09-30T00:00:00Z',
+        'goal_items': [
+          {
+            'type': 'Steps/Walking',
+            'min_target': 30,
+            'unit': 'steps',
+            'label': 'dsfd',
+            'desc': 'fdfd',
+            'user_exercise_ids': [],
+          },
+          {
+            'type': 'Activity_Walk',
+            'min_target': 50,
+            'unit': 'minutes',
+            'label': 'êr',
+            'desc': 'dfdfd',
+            'user_exercise_ids': [],
+          },
+          {
+            'type': 'Yoga/Meditation',
+            'min_target': 2,
+            'unit': 'exercises',
+            'label': 'êrer',
+            'desc': 'rêrer',
+            'user_exercise_ids': [],
+          },
+        ],
+        'created_at': '2026-09-12T13:24:09Z',
+        'created_by': '58fa0117-db13-47d4-865c-99ea663e7d47',
+        'updated_at': '2026-09-12T13:31:35Z',
+      };
+
+      final parsedGoal = UserGoalModel.fromJson(userGoalJson);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientUserGoalsProvider(testPatient.id).overrideWith(
+              () => _FakePatientUserGoalsNotifier([parsedGoal]),
+            ),
+            patientDiaryProvider(
+              testPatient.id,
+            ).overrideWithValue(const PatientDiaryState()),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DailyGoalsCard(patient: testPatient),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Titles must be the GoalType names:
+      expect(find.text('Steps/Walking'), findsOneWidget);
+      expect(find.text('Activity Walk'), findsOneWidget);
+      expect(find.text('Yoga/Meditation'), findsOneWidget);
+
+      // Descriptions must be the fixed text with minTarget filled in:
+      expect(find.text('Walk at least 30 steps per day'), findsOneWidget);
+      expect(find.text('Walk 50 minutes per day'), findsOneWidget);
+      expect(find.text('Complete 2 yoga and meditation exercises'), findsOneWidget);
+
+      // Labels / random doctor input should NOT override the titles or descriptions:
+      expect(find.text('dsfd'), findsNothing);
+      expect(find.text('fdfd'), findsNothing);
+      expect(find.text('êr'), findsNothing);
+      expect(find.text('dfdfd'), findsNothing);
+      expect(find.text('êrer'), findsNothing);
+      expect(find.text('rêrer'), findsNothing);
+
+      expect(find.text('No goal assigned.'), findsNothing);
+    });
+
+    testWidgets('displays correct minTarget when activity exists or when desc is empty', (
+      tester,
+    ) async {
+      final userGoalJson = {
+        'id': 'goal-2',
+        'patient_id': testPatient.id,
+        'doctor_id': 'doc-1',
+        'start_date': '2026-09-12T00:00:00Z',
+        'end_date': '2026-09-30T00:00:00Z',
+        'goal_items': [
+          {
+            'type': 'Steps/Walking',
+            'min_target': 30,
+            'unit': 'steps',
+            'label': '',
+            'desc': '',
+            'user_exercise_ids': [],
+          },
+          {
+            'type': 'Activity_Walk',
+            'min_target': 50,
+            'unit': 'minutes',
+            'label': '',
+            'desc': '',
+            'user_exercise_ids': [],
+          },
+          {
+            'type': 'Yoga/Meditation',
+            'min_target': 2,
+            'unit': 'exercises',
+            'label': '',
+            'desc': '',
+            'user_exercise_ids': [],
+          },
+        ],
+        'created_at': '2026-09-12T13:24:09Z',
+        'created_by': 'doc-1',
+      };
+
+      final parsedGoal = UserGoalModel.fromJson(userGoalJson);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientUserGoalsProvider(testPatient.id).overrideWith(
+              () => _FakePatientUserGoalsNotifier([parsedGoal]),
+            ),
+            patientDiaryProvider(
+              testPatient.id,
+            ).overrideWithValue(const PatientDiaryState()),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DailyGoalsCard(patient: testPatient),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Walk at least 30 steps per day'), findsOneWidget);
+      expect(find.text('Walk 50 minutes per day'), findsOneWidget);
+      expect(find.text('Complete 2 yoga and meditation exercises'), findsOneWidget);
+      expect(find.text('Walk at least 0 steps per day'), findsNothing);
+      expect(find.text('Walk 0 minutes per day'), findsNothing);
+      expect(find.text('Complete 0 yoga and meditation exercises'), findsNothing);
+    });
+
+    testWidgets(
+      'displays percent directly from API goal_items.percent without recalculation',
+      (tester) async {
+        final userGoalJson = {
+          'id': 'goal-3',
+          'patient_id': testPatient.id,
+          'doctor_id': 'doc-1',
+          'start_date': '2026-09-12T00:00:00Z',
+          'end_date': '2026-09-30T00:00:00Z',
+          'goal_items': [
+            {
+              'type': 'Steps/Walking',
+              'min_target': 30,
+              'percent': 43.3,
+              'unit': 'steps',
+              'label': '',
+              'desc': '',
+              'user_exercise_ids': [],
+            },
+            {
+              'type': 'Activity_Walk',
+              'min_target': 50,
+              'percent': 75.0,
+              'unit': 'minutes',
+              'label': '',
+              'desc': '',
+              'user_exercise_ids': [],
+            },
+          ],
+          'created_at': '2026-09-12T13:24:09Z',
+          'created_by': 'doc-1',
+        };
+
+        final parsedGoal = UserGoalModel.fromJson(userGoalJson);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              patientUserGoalsProvider(testPatient.id).overrideWith(
+                () => _FakePatientUserGoalsNotifier([parsedGoal]),
+              ),
+              patientDiaryProvider(
+                testPatient.id,
+              ).overrideWithValue(const PatientDiaryState()),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: DailyGoalsCard(patient: testPatient),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('43.3'), findsOneWidget);
+        expect(find.text('75'), findsOneWidget);
+      },
+    );
   });
 }

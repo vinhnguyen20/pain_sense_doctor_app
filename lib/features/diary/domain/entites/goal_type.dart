@@ -33,7 +33,7 @@ enum GoalType {
   String get displayName => switch (this) {
     GoalType.stepsWalking => 'Steps/Walking',
     GoalType.yogaMeditation => 'Yoga/Meditation',
-    GoalType.activityWalk => 'Activity_Walk',
+    GoalType.activityWalk => 'Activity Walk',
     GoalType.unknown => 'Unknown',
   };
 

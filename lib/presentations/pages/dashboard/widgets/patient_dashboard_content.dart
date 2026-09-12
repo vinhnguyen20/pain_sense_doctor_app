@@ -1,5 +1,6 @@
 import 'package:app_doctor/core/utils/date_utils_helper.dart';
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
+import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
@@ -463,16 +464,42 @@ class DailyGoalsCard extends ConsumerWidget {
       }
     }
 
-    final today = DateUtils.dateOnly(now);
+    final today = DateTime(now.year, now.month, now.day);
     final goals = goalsAsync.value ?? const [];
-    final goalItems = goals
-        .where(
-          (goal) =>
-              !today.isBefore(goal.startDate) &&
-              today.isBefore(goal.endDate.add(const Duration(days: 1))),
-        )
-        .expand((goal) => goal.goalItems)
-        .toList();
+
+    bool isGoalActiveToday(UserGoalModel goal) {
+      final start = DateTime(
+        goal.startDate.year,
+        goal.startDate.month,
+        goal.startDate.day,
+      );
+      final end = DateTime(
+        goal.endDate.year,
+        goal.endDate.month,
+        goal.endDate.day,
+      );
+      return !today.isBefore(start) && !today.isAfter(end);
+    }
+
+    final activeGoals = goals.where(isGoalActiveToday).toList();
+    final targetGoals = activeGoals.isNotEmpty ? activeGoals : goals;
+    final goalItems = targetGoals.expand((goal) => goal.goalItems).toList();
+
+    GoalItemModel? findGoalItem(GoalType type) {
+      for (final item in goalItems) {
+        if (item.type == type) return item;
+      }
+      final targetApi = type.toApiString().trim().toLowerCase();
+      for (final item in goalItems) {
+        final itemApi = item.type.toApiString().trim().toLowerCase();
+        if (itemApi.isNotEmpty && itemApi == targetApi) return item;
+      }
+      for (final item in goalItems) {
+        if (GoalType.fromString(item.type.toApiString()) == type) return item;
+        if (GoalType.fromString(item.label) == type) return item;
+      }
+      return null;
+    }
 
     if (goalsAsync.isLoading && goals.isEmpty) {
       return Container(
@@ -503,10 +530,19 @@ class DailyGoalsCard extends ConsumerWidget {
       final activity = todayEntry?.diary
           .where((item) => item.type == type)
           .firstOrNull;
-      final goalItem = goalItems.where((item) => item.type == type).firstOrNull;
-      final description = goalItem?.desc.trim().isNotEmpty == true
-          ? goalItem!.desc
-          : 'No goal assigned.';
+      final goalItem = findGoalItem(type);
+      final minTarget = (goalItem != null && goalItem.minTarget > 0)
+          ? goalItem.minTarget
+          : (activity?.minTarget.toInt() ?? 0);
+      final description = switch (type) {
+        GoalType.yogaMeditation =>
+          'Complete $minTarget yoga and meditation exercises',
+        GoalType.stepsWalking =>
+          'Walk at least $minTarget steps per day',
+        GoalType.activityWalk =>
+          'Walk $minTarget minutes per day',
+        _ => 'No goal assigned.',
+      };
 
       children.add(
         Padding(
@@ -523,9 +559,7 @@ class DailyGoalsCard extends ConsumerWidget {
             child: _GoalSummaryItem(
               goalItem: goalItem,
               activity: activity,
-              defaultTitle: goalItem?.label.trim().isNotEmpty == true
-                  ? goalItem!.label
-                  : type.toApiString(),
+              defaultTitle: type.displayName,
               defaultDescription: description,
             ),
           ),
@@ -587,50 +621,58 @@ class _GoalSummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int percent = 0;
+    double percent = goalItem?.percent ?? (activity?.percent ?? 0.0);
     final title = defaultTitle;
     String desc = defaultDescription;
     Color color = const Color(0xFF58E8EA);
 
-    if (title.toLowerCase().contains('exercise') ||
-        title.toLowerCase().contains('yoga') ||
-        activity?.type == GoalType.yogaMeditation) {
-      color = const Color(0xFF58E8EA);
-    }
-    if (title.toLowerCase().contains('step') ||
-        title.toLowerCase().contains('walk') ||
-        activity?.type == GoalType.stepsWalking) {
-      color = const Color(0xFF206EB0);
-    }
-    if (title.toLowerCase().contains('posture') ||
+    final isYoga = goalItem?.type == GoalType.yogaMeditation ||
+        activity?.type == GoalType.yogaMeditation ||
+        title.toLowerCase().contains('exercise') ||
+        title.toLowerCase().contains('yoga');
+    final isSteps = goalItem?.type == GoalType.stepsWalking ||
+        activity?.type == GoalType.stepsWalking ||
+        title.toLowerCase().contains('step') ||
+        title.toLowerCase().contains('walk');
+    final isWalk = goalItem?.type == GoalType.activityWalk ||
+        activity?.type == GoalType.activityWalk ||
+        title.toLowerCase().contains('posture') ||
         title.toLowerCase().contains('pain') ||
-        title.toLowerCase().contains('limit') ||
-        activity?.type == GoalType.activityWalk) {
+        title.toLowerCase().contains('limit');
+
+    if (isYoga) {
+      color = const Color(0xFF58E8EA);
+    } else if (isSteps) {
+      color = const Color(0xFF206EB0);
+    } else if (isWalk) {
       color = const Color(0xFF18588C);
     }
 
-    if (activity != null) {
-      percent = activity!.percent.toInt();
+    final int target = (goalItem != null && goalItem!.minTarget > 0)
+        ? goalItem!.minTarget
+        : (activity?.minTarget.toInt() ?? 0);
 
-      if (title.toLowerCase().contains('exercise') ||
-          title.toLowerCase().contains('yoga') ||
-          activity!.type == GoalType.yogaMeditation) {
+    // percent lấy trực tiếp từ goalItem.percent
+
+    if (activity != null) {
+      if (isYoga) {
         desc =
-            'You have completed\n${activity!.actual.toInt()} out of ${activity!.minTarget.toInt()} exercise goals.';
-      } else if (title.toLowerCase().contains('step') ||
-          title.toLowerCase().contains('walk') ||
-          activity!.type == GoalType.stepsWalking) {
+            'You have completed\n${activity!.actual.toInt()} out of $target exercise goals.';
+      } else if (isSteps) {
         desc =
-            'You have walked\n${activity!.actual.toInt()} of ${activity!.minTarget.toInt()} steps.';
-      } else if (title.toLowerCase().contains('posture') ||
-          title.toLowerCase().contains('pain') ||
-          title.toLowerCase().contains('limit') ||
-          activity!.type == GoalType.activityWalk) {
-        desc = 'How well you are\nfollowing your posture\nguidance.';
+            'You have walked\n${activity!.actual.toInt()} of $target steps.';
+      } else if (isWalk) {
+        desc = target > 0
+            ? 'You have walked\n${activity!.actual.toInt()} of $target minutes.'
+            : 'How well you are\nfollowing your posture\nguidance.';
       } else {
         desc = activity!.desc.isNotEmpty ? activity!.desc : defaultDescription;
       }
     }
+
+    final percentText = percent % 1 == 0
+        ? percent.toInt().toString()
+        : percent.toStringAsFixed(1);
 
     final bool isCompleted = percent >= 100;
     final Color progressColor = isCompleted ? const Color(0xFF87C879) : color;
@@ -661,7 +703,7 @@ class _GoalSummaryItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '$percent',
+                    percentText,
                     style: TextStyle(
                       fontFamily: 'Cabin',
                       fontWeight: FontWeight.bold,

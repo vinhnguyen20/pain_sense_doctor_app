@@ -107,6 +107,9 @@ class GoalItemModel {
   @JsonKey(name: 'min_target', defaultValue: 0)
   final int minTarget;
 
+  @JsonKey(name: 'percent', defaultValue: 0.0)
+  final double percent;
+
   @JsonKey(name: 'unit', defaultValue: '')
   final String unit;
 
@@ -125,6 +128,7 @@ class GoalItemModel {
   const GoalItemModel({
     required this.type,
     required this.minTarget,
+    this.percent = 0.0,
     required this.unit,
     required this.label,
     required this.desc,

@@ -874,14 +874,38 @@ List<_JourneyGoal> _buildDailyGoals({
     }
   }
 
-  final goalItems = goals
-      .where(
-        (goal) =>
-            !date.isBefore(goal.startDate) &&
-            date.isBefore(goal.endDate.add(const Duration(days: 1))),
-      )
-      .expand((goal) => goal.goalItems)
-      .toList();
+  final targetDay = DateTime(date.year, date.month, date.day);
+  final activeGoals = goals.where((goal) {
+    final start = DateTime(
+      goal.startDate.year,
+      goal.startDate.month,
+      goal.startDate.day,
+    );
+    final end = DateTime(
+      goal.endDate.year,
+      goal.endDate.month,
+      goal.endDate.day,
+    );
+    return !targetDay.isBefore(start) && !targetDay.isAfter(end);
+  }).toList();
+  final targetGoals = activeGoals.isNotEmpty ? activeGoals : goals;
+  final goalItems = targetGoals.expand((goal) => goal.goalItems).toList();
+
+  GoalItemModel? findGoalItem(GoalType type) {
+    for (final item in goalItems) {
+      if (item.type == type) return item;
+    }
+    final targetApi = type.toApiString().trim().toLowerCase();
+    for (final item in goalItems) {
+      final itemApi = item.type.toApiString().trim().toLowerCase();
+      if (itemApi.isNotEmpty && itemApi == targetApi) return item;
+    }
+    for (final item in goalItems) {
+      if (GoalType.fromString(item.type.toApiString()) == type) return item;
+      if (GoalType.fromString(item.label) == type) return item;
+    }
+    return null;
+  }
 
   const types = [
     GoalType.yogaMeditation,
@@ -892,20 +916,28 @@ List<_JourneyGoal> _buildDailyGoals({
     final activity = entry?.diary
         .where((item) => item.type == type)
         .firstOrNull;
-    final goalItem = goalItems.where((item) => item.type == type).firstOrNull;
+    final goalItem = findGoalItem(type);
     final title = switch (type) {
       GoalType.yogaMeditation => 'Exercise',
       GoalType.stepsWalking => 'Steps',
       GoalType.activityWalk => 'Posture',
       GoalType.unknown => 'Goal',
     };
+    final target = (goalItem != null && goalItem.minTarget > 0)
+        ? goalItem.minTarget.toDouble()
+        : (activity?.minTarget ?? 0);
+    final actual = activity?.actual ?? 0;
+    final percent = target > 0
+        ? ((actual / target) * 100).clamp(0, 100).toDouble()
+        : (activity?.percent ?? 0).clamp(0, 100).toDouble();
+
     return _JourneyGoal(
       type: type,
       title: title,
       description: _goalDescription(type, activity, goalItem),
-      percent: (activity?.percent ?? 0).clamp(0, 100).toDouble(),
-      actual: activity?.actual ?? 0,
-      target: activity?.minTarget ?? goalItem?.minTarget.toDouble() ?? 0,
+      percent: percent,
+      actual: actual,
+      target: target,
       unit: activity?.unit ?? goalItem?.unit ?? '',
     );
   }).toList();
@@ -916,14 +948,17 @@ String _goalDescription(
   PatientDiaryActivity? activity,
   GoalItemModel? goal,
 ) {
+  final target = (goal != null && goal.minTarget > 0)
+      ? goal.minTarget
+      : (activity?.minTarget.toInt() ?? 0);
   if (activity != null) {
     return switch (type) {
       GoalType.yogaMeditation =>
         'You have completed ${activity.actual.toInt()} of '
-            '${activity.minTarget.toInt()} exercise goals.',
+            '$target exercise goals.',
       GoalType.stepsWalking =>
         'You have walked ${activity.actual.toInt()} of '
-            '${activity.minTarget.toInt()} steps.',
+            '$target steps.',
       GoalType.activityWalk =>
         activity.desc.isEmpty
             ? 'How well you are following your posture guidance.'

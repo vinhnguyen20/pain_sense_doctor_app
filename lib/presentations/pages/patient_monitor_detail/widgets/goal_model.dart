@@ -44,7 +44,7 @@ extension GoalCategoryUi on GoalCategory {
 
   String get label => switch (this) {
     GoalCategory.steps => 'Steps/Walking',
-    GoalCategory.activityTime => 'Activity_Walk',
+    GoalCategory.activityTime => 'Activity Walk',
     GoalCategory.yoga => 'Yoga/Meditation',
   };
 

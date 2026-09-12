@@ -17,7 +17,7 @@ class GoalCategoryChips extends StatelessWidget {
   static const _items = [
     (GoalCategory.steps, Icons.directions_walk_rounded, 'Steps/Walking'),
     (GoalCategory.yoga, Icons.self_improvement_rounded, 'Yoga/Meditation'),
-    (GoalCategory.activityTime, Icons.timer_outlined, 'Activity_Walk'),
+    (GoalCategory.activityTime, Icons.timer_outlined, 'Activity Walk'),
   ];
 
   @override
