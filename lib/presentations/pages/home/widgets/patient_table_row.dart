@@ -14,7 +14,8 @@ class PatientTableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = colorFromHex(patient.trackingLogs?.color);
-    final painType = (patient.painType != null && patient.painType!.trim().isNotEmpty)
+    final painType =
+        (patient.painType != null && patient.painType!.trim().isNotEmpty)
         ? patient.painType!
         : '—';
 
@@ -93,11 +94,16 @@ class PatientTableRow extends StatelessWidget {
                     () {
                       context.goNamed(
                         'patient-dashboard',
+                        queryParameters: {'patientId': patient.id},
                         extra: patient,
                       );
-                },
+                    },
                 onDashboard: () {
-                  context.goNamed('patient-dashboard', extra: patient);
+                  context.goNamed(
+                    'patient-dashboard',
+                    queryParameters: {'patientId': patient.id},
+                    extra: patient,
+                  );
                 },
               ),
             ),

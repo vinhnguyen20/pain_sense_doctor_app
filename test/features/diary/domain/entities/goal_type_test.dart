@@ -7,6 +7,13 @@ void main() {
     expect(GoalType.fromString('Steps'), GoalType.stepsWalking);
     expect(GoalType.fromString('Walk'), GoalType.activityWalk);
     expect(GoalType.fromString('Yoga'), GoalType.yogaMeditation);
+    expect(GoalType.fromString('Steps/Walking'), GoalType.stepsWalking);
+    expect(GoalType.fromString('Activity_Walk'), GoalType.activityWalk);
+    expect(GoalType.fromString('Yoga/Meditation'), GoalType.yogaMeditation);
+
+    expect(GoalType.stepsWalking.toApiString(), 'Steps/Walking');
+    expect(GoalType.activityWalk.toApiString(), 'Activity_Walk');
+    expect(GoalType.yogaMeditation.toApiString(), 'Yoga/Meditation');
 
     expect(GoalType.fromString('Steps').icon, Icons.directions_walk);
     expect(GoalType.fromString('Walk').icon, Icons.timer_outlined);

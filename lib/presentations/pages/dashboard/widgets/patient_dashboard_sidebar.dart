@@ -1,16 +1,34 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class PatientDashboardSidebar extends StatelessWidget {
+class PatientDashboardSidebar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const PatientDashboardSidebar({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void openBranch(int index) {
       FocusManager.instance.primaryFocus?.unfocus();
+      final patient = ref.read(selectedPatientProvider);
+      const routeNames = [
+        'patient-dashboard',
+        'patient-connect',
+        'patient-exercises',
+        'patient-goals',
+        'patient-settings',
+      ];
+      if (patient != null && patient.id.trim().isNotEmpty) {
+        context.goNamed(
+          routeNames[index],
+          queryParameters: {'patientId': patient.id.trim()},
+          extra: patient,
+        );
+        return;
+      }
       navigationShell.goBranch(index, initialLocation: true);
     }
 

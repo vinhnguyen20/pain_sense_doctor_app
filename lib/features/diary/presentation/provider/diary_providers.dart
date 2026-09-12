@@ -4,6 +4,7 @@ import 'package:app_doctor/features/diary/data/models/diary_adherence_model.dart
 import 'package:app_doctor/features/diary/data/models/goal_item_model.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
 import 'package:app_doctor/features/diary/data/repository/diary_repository_impl.dart';
+import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/domain/repository/diary_repository.dart';
 import 'package:app_doctor/features/diary/domain/usecases/delete_user_goal.dart';
@@ -210,7 +211,7 @@ UserGoalModel mergeUserGoalUpdate(
         label: item.label,
         desc: item.desc,
         userExerciseIds: item.userExerciseIds,
-        userExercises: item.type.toApiString() == 'Yoga'
+        userExercises: item.type == GoalType.yogaMeditation
             ? updatedExercises
             : previous?.userExercises,
       );

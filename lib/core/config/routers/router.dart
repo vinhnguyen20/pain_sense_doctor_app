@@ -4,8 +4,11 @@ import 'package:app_doctor/features/auth/presentation/pages/patient_onboarding_p
 import 'package:app_doctor/features/auth/presentation/provider/auth_notifier.dart';
 import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
 import 'package:app_doctor/features/chats/presentation/pages/chat_room_page.dart';
+import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/chats/presentation/pages/image_viewer_page.dart';
 import 'package:app_doctor/features/diary/data/models/user_goal_model.dart';
+import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
+import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
@@ -35,9 +38,52 @@ class AppRouter {
   static GoRouter createRouter(WidgetRef ref) {
     final notifier = ref.read(routerProvider.notifier);
 
-    String resolvePatientId(Map<String, dynamic>? extra) {
+    Patient? resolvePatient(GoRouterState state) {
+      Patient? patient;
+      if (state.extra is Patient) {
+        patient = state.extra as Patient;
+      } else if (state.extra is Map) {
+        patient = (state.extra as Map)['patient'] as Patient?;
+      }
+
+      final patientId =
+          state.uri.queryParameters['patientId']?.trim() ?? patient?.id.trim();
+      final selectedPatient = ref.read(selectedPatientProvider);
+      if (patient == null &&
+          patientId != null &&
+          patientId.isNotEmpty &&
+          selectedPatient?.id.trim() == patientId) {
+        patient = selectedPatient;
+      }
+      return patient;
+    }
+
+    String resolvePatientId(
+      Map<String, dynamic>? extra, [
+      GoRouterState? state,
+    ]) {
+      final urlId = state?.uri.queryParameters['patientId']?.trim();
+      if (urlId != null && urlId.isNotEmpty) return urlId;
+      final stateExtra = state?.extra;
+      if (stateExtra is Patient && stateExtra.id.trim().isNotEmpty) {
+        return stateExtra.id.trim();
+      }
+      if (stateExtra is Map) {
+        final stateExtraId = (stateExtra['patientId'] as String?)?.trim();
+        if (stateExtraId != null && stateExtraId.isNotEmpty) {
+          return stateExtraId;
+        }
+        final statePatient = stateExtra['patient'] as Patient?;
+        if (statePatient != null && statePatient.id.trim().isNotEmpty) {
+          return statePatient.id.trim();
+        }
+      }
       final explicitId = (extra?['patientId'] as String?)?.trim();
       if (explicitId != null && explicitId.isNotEmpty) return explicitId;
+      final patient = extra?['patient'] as Patient?;
+      if (patient != null && patient.id.trim().isNotEmpty) {
+        return patient.id.trim();
+      }
       return ref.read(selectedPatientProvider)?.id.trim() ?? '';
     }
 
@@ -135,7 +181,7 @@ class AppRouter {
               initialGoal: extra?['initialGoal'],
               originalGoalItems: extra?['originalGoalItems'],
               editGoalType: extra?['editGoalType'],
-              patientId: resolvePatientId(extra),
+              patientId: resolvePatientId(extra, state),
               prefillGoalItems:
                   (extra?['prefillGoalItems'] as List<dynamic>? ?? const [])
                       .whereType<Map<String, dynamic>>()
@@ -174,21 +220,12 @@ class AppRouter {
                   path: '/patient-dashboard',
                   name: 'patient-dashboard',
                   builder: (context, state) {
-                    Patient? patient;
-                    if (state.extra is Patient) {
-                      patient = state.extra as Patient;
-                    } else if (state.extra is Map) {
-                      patient = (state.extra as Map)['patient'] as Patient?;
-                    }
-                    patient ??= ref.read(selectedPatientProvider);
-
-                    if (patient == null) {
-                      return const Scaffold(
-                        body: Center(child: Text('Patient not found')),
-                      );
-                    }
-
-                    return PatientDashboardPage(patient: patient);
+                    return _PatientRoute(
+                      patientId: resolvePatientId(null, state),
+                      initialPatient: resolvePatient(state),
+                      builder: (patient) =>
+                          PatientDashboardPage(patient: patient),
+                    );
                   },
                 ),
               ],
@@ -199,14 +236,12 @@ class AppRouter {
                   path: '/patient-connect',
                   name: 'patient-connect',
                   builder: (context, state) {
-                    Patient? patient;
-                    if (state.extra is Patient) {
-                      patient = state.extra as Patient;
-                    } else if (state.extra is Map) {
-                      patient = (state.extra as Map)['patient'] as Patient?;
-                    }
-                    patient ??= ref.read(selectedPatientProvider);
-                    return PatientConnectPage(patient: patient);
+                    return _PatientRoute(
+                      patientId: resolvePatientId(null, state),
+                      initialPatient: resolvePatient(state),
+                      builder: (patient) =>
+                          PatientConnectPage(patient: patient),
+                    );
                   },
                   routes: [
                     GoRoute(
@@ -222,17 +257,15 @@ class AppRouter {
                         } else if (state.extra is Conversation) {
                           conversation = state.extra as Conversation;
                         }
-                        patient ??= ref.read(selectedPatientProvider);
-
-                        if (conversation == null) {
-                          return const Scaffold(
-                            body: Center(child: Text('Conversation not found')),
-                          );
-                        }
-
-                        return ChatRoomPage(
-                          conversation: conversation,
-                          patient: patient,
+                        return _PatientChatRoute(
+                          patientId: resolvePatientId(null, state),
+                          conversationId:
+                              state.uri.queryParameters['conversationId']
+                                  ?.trim() ??
+                              conversation?.id ??
+                              '',
+                          initialPatient: patient ?? resolvePatient(state),
+                          initialConversation: conversation,
                         );
                       },
                     ),
@@ -246,14 +279,12 @@ class AppRouter {
                   path: '/patient-exercises',
                   name: 'patient-exercises',
                   builder: (context, state) {
-                    Patient? patient;
-                    if (state.extra is Patient) {
-                      patient = state.extra as Patient;
-                    } else if (state.extra is Map) {
-                      patient = (state.extra as Map)['patient'] as Patient?;
-                    }
-                    patient ??= ref.read(selectedPatientProvider);
-                    return PatientExercisesPage(patient: patient);
+                    return _PatientRoute(
+                      patientId: resolvePatientId(null, state),
+                      initialPatient: resolvePatient(state),
+                      builder: (patient) =>
+                          PatientExercisesPage(patient: patient),
+                    );
                   },
                 ),
               ],
@@ -264,21 +295,11 @@ class AppRouter {
                   path: '/patient-goals',
                   name: 'patient-goals',
                   builder: (context, state) {
-                    Patient? patient;
-                    if (state.extra is Patient) {
-                      patient = state.extra as Patient;
-                    } else if (state.extra is Map) {
-                      patient = (state.extra as Map)['patient'] as Patient?;
-                    }
-                    patient ??= ref.read(selectedPatientProvider);
-
-                    if (patient == null) {
-                      return const Scaffold(
-                        body: Center(child: Text('Patient not found')),
-                      );
-                    }
-
-                    return PatientGoalsPage(patient: patient);
+                    return _PatientRoute(
+                      patientId: resolvePatientId(null, state),
+                      initialPatient: resolvePatient(state),
+                      builder: (patient) => PatientGoalsPage(patient: patient),
+                    );
                   },
                   routes: [
                     GoRoute(
@@ -286,20 +307,19 @@ class AppRouter {
                       name: 'patient-goal-form',
                       builder: (context, state) {
                         final extra = state.extra as Map<String, dynamic>?;
-
-                        return GoalFormPage(
-                          mode: extra?['mode'] ?? GoalFormMode.create,
-                          initialGoal: extra?['initialGoal'],
-                          originalGoalItems: extra?['originalGoalItems'],
-                          editGoalType: extra?['editGoalType'],
-                          patientId: resolvePatientId(extra),
-                          prefillGoalItems:
-                              (extra?['prefillGoalItems'] as List<dynamic>? ??
-                                      const [])
-                                  .whereType<Map<String, dynamic>>()
-                                  .toList(),
-                          useClinicianLayout: true,
-                          showClinicianHeader: false,
+                        final patientId = resolvePatientId(extra, state);
+                        return _PatientRoute(
+                          patientId: patientId,
+                          initialPatient: resolvePatient(state),
+                          builder: (patient) => _PatientGoalFormContent(
+                            patientId: patient.id,
+                            goalId:
+                                state.uri.queryParameters['goalId']?.trim() ??
+                                '',
+                            goalType: state.uri.queryParameters['goalType']
+                                ?.trim(),
+                            extra: extra,
+                          ),
                         );
                       },
                     ),
@@ -310,15 +330,17 @@ class AppRouter {
                         final extra = state.extra as Map<String, dynamic>?;
                         final goal = extra?['goal'] as UserGoalModel?;
                         final patient = extra?['patient'] as Patient?;
-                        if (goal == null || patient == null) {
-                          return const Scaffold(
-                            body: Center(child: Text('Goal not found')),
-                          );
-                        }
-                        return ClinicianGoalDetailPage(
-                          goal: goal,
-                          patient: patient,
-                          insidePatientDashboard: true,
+                        return _PatientRoute(
+                          patientId: resolvePatientId(extra, state),
+                          initialPatient: patient ?? resolvePatient(state),
+                          builder: (loadedPatient) => _PatientGoalDetailContent(
+                            patient: loadedPatient,
+                            goalId:
+                                state.uri.queryParameters['goalId']?.trim() ??
+                                goal?.id ??
+                                '',
+                            initialGoal: goal,
+                          ),
                         );
                       },
                     ),
@@ -331,7 +353,11 @@ class AppRouter {
                 GoRoute(
                   path: '/patient-settings',
                   name: 'patient-settings',
-                  builder: (context, state) => const SettingsPage(),
+                  builder: (context, state) => _PatientRoute(
+                    patientId: resolvePatientId(null, state),
+                    initialPatient: resolvePatient(state),
+                    builder: (_) => const SettingsPage(),
+                  ),
                 ),
               ],
             ),
@@ -456,7 +482,7 @@ class AppRouter {
                           initialGoal: extra?['initialGoal'],
                           originalGoalItems: extra?['originalGoalItems'],
                           editGoalType: extra?['editGoalType'],
-                          patientId: resolvePatientId(extra),
+                          patientId: resolvePatientId(extra, state),
                           prefillGoalItems:
                               (extra?['prefillGoalItems'] as List<dynamic>? ??
                                       const [])
@@ -534,6 +560,263 @@ class AppRouter {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _PatientRoute extends ConsumerWidget {
+  final String patientId;
+  final Patient? initialPatient;
+  final Widget Function(Patient patient) builder;
+
+  const _PatientRoute({
+    required this.patientId,
+    required this.initialPatient,
+    required this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (patientId.isEmpty) {
+      return const Scaffold(body: Center(child: Text('Patient not found')));
+    }
+
+    final patient = initialPatient;
+    if (patient != null && patient.id == patientId) {
+      _rememberPatient(ref, patient);
+      return builder(patient);
+    }
+
+    final patientAsync = ref.watch(patientDetailProvider(patientId));
+    return patientAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Unable to load patient information.'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () =>
+                    ref.invalidate(patientDetailProvider(patientId)),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (loadedPatient) {
+        if (loadedPatient == null) {
+          return const Scaffold(body: Center(child: Text('Patient not found')));
+        }
+        _rememberPatient(ref, loadedPatient);
+        return builder(loadedPatient);
+      },
+    );
+  }
+
+  void _rememberPatient(WidgetRef ref, Patient patient) {
+    if (ref.read(selectedPatientProvider)?.id == patient.id) return;
+    Future.microtask(() {
+      ref.read(selectedPatientProvider.notifier).setPatient(patient);
+    });
+  }
+}
+
+class _PatientChatRoute extends ConsumerWidget {
+  final String patientId;
+  final String conversationId;
+  final Patient? initialPatient;
+  final Conversation? initialConversation;
+
+  const _PatientChatRoute({
+    required this.patientId,
+    required this.conversationId,
+    required this.initialPatient,
+    required this.initialConversation,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _PatientRoute(
+      patientId: patientId,
+      initialPatient: initialPatient,
+      builder: (patient) {
+        final conversationState = ref.watch(conversationsProvider);
+        Conversation? conversation = initialConversation;
+        if (conversation == null ||
+            (conversationId.isNotEmpty && conversation.id != conversationId)) {
+          for (final item in conversationState.conversations) {
+            final matchesConversation =
+                conversationId.isNotEmpty && item.id == conversationId;
+            final matchesPatient = item.participants.contains(patient.id);
+            if (matchesConversation || matchesPatient) {
+              conversation = item;
+              break;
+            }
+          }
+        }
+
+        if (conversation != null) {
+          return ChatRoomPage(conversation: conversation, patient: patient);
+        }
+        if (conversationState.error != null) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Unable to load conversation.'),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => ref
+                        .read(conversationsProvider.notifier)
+                        .fetchConversations(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+    );
+  }
+}
+
+class _PatientGoalFormContent extends ConsumerWidget {
+  final String patientId;
+  final String goalId;
+  final String? goalType;
+  final Map<String, dynamic>? extra;
+
+  const _PatientGoalFormContent({
+    required this.patientId,
+    required this.goalId,
+    required this.goalType,
+    required this.extra,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final initialGoal = extra?['initialGoal'];
+    final hasInitialGoal = initialGoal != null;
+    if (goalId.isEmpty || hasInitialGoal) {
+      return _buildForm();
+    }
+
+    final goalsAsync = ref.watch(patientUserGoalsProvider(patientId));
+    return goalsAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => _GoalLoadError(
+        onRetry: () => ref.invalidate(patientUserGoalsProvider(patientId)),
+      ),
+      data: (goals) {
+        final goal = goals.where((item) => item.id == goalId).firstOrNull;
+        if (goal == null) {
+          return const Scaffold(body: Center(child: Text('Goal not found')));
+        }
+        return GoalFormPage(
+          mode: GoalFormMode.edit,
+          initialGoal: goal.toGoalModel(),
+          originalGoalItems: goal.goalItems,
+          editGoalType: _resolvedGoalType,
+          patientId: patientId,
+          useClinicianLayout: true,
+          showClinicianHeader: false,
+        );
+      },
+    );
+  }
+
+  GoalType? get _resolvedGoalType {
+    final type = GoalType.fromString(goalType);
+    return type == GoalType.unknown ? null : type;
+  }
+
+  Widget _buildForm() {
+    return GoalFormPage(
+      mode: extra?['mode'] ?? GoalFormMode.create,
+      initialGoal: extra?['initialGoal'],
+      originalGoalItems: extra?['originalGoalItems'],
+      editGoalType: extra?['editGoalType'],
+      patientId: patientId,
+      prefillGoalItems:
+          (extra?['prefillGoalItems'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .toList(),
+      useClinicianLayout: true,
+      showClinicianHeader: false,
+    );
+  }
+}
+
+class _PatientGoalDetailContent extends ConsumerWidget {
+  final Patient patient;
+  final String goalId;
+  final UserGoalModel? initialGoal;
+
+  const _PatientGoalDetailContent({
+    required this.patient,
+    required this.goalId,
+    required this.initialGoal,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goal = initialGoal;
+    if (goal != null && (goalId.isEmpty || goal.id == goalId)) {
+      return ClinicianGoalDetailPage(
+        goal: goal,
+        patient: patient,
+        insidePatientDashboard: true,
+      );
+    }
+
+    final goalsAsync = ref.watch(patientUserGoalsProvider(patient.id));
+    return goalsAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => _GoalLoadError(
+        onRetry: () => ref.invalidate(patientUserGoalsProvider(patient.id)),
+      ),
+      data: (goals) {
+        final loadedGoal = goals.where((item) => item.id == goalId).firstOrNull;
+        if (loadedGoal == null) {
+          return const Scaffold(body: Center(child: Text('Goal not found')));
+        }
+        return ClinicianGoalDetailPage(
+          goal: loadedGoal,
+          patient: patient,
+          insidePatientDashboard: true,
+        );
+      },
+    );
+  }
+}
+
+class _GoalLoadError extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _GoalLoadError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Unable to load goal.'),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
     );
   }
 }

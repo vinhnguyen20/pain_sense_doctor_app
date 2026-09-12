@@ -7,7 +7,7 @@ abstract final class AppPalette {
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color primaryBlue = Color(0xFF18588C);
-  static const Color medGray = Color(0xFFC8C8C8);
+  static const Color medGray = Color.fromARGB(255, 162, 161, 161);
 
   // Secondary
   static const Color green = Color(0xFF87C879);

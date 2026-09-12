@@ -420,5 +420,73 @@ void main() {
       });
       expect(blueProgressFinder, findsOneWidget);
     });
+
+    testWidgets('uses the goal active today, matching the Journey overview', (
+      tester,
+    ) async {
+      final expiredGoal = UserGoalModel(
+        id: 'expired-goal',
+        patientId: testPatient.id,
+        doctorId: 'doc-1',
+        startDate: today.subtract(const Duration(days: 20)),
+        endDate: today.subtract(const Duration(days: 10)),
+        goalItems: const [
+          GoalItemModel(
+            type: GoalType.stepsWalking,
+            label: 'Daily Steps',
+            desc: 'Expired target',
+            minTarget: 100,
+            unit: 'steps',
+          ),
+        ],
+        createdAt: today.subtract(const Duration(days: 20)),
+        createdBy: 'doc-1',
+      );
+      final activeGoal = UserGoalModel(
+        id: 'active-goal',
+        patientId: testPatient.id,
+        doctorId: 'doc-1',
+        startDate: today.subtract(const Duration(days: 1)),
+        endDate: today.add(const Duration(days: 5)),
+        goalItems: const [
+          GoalItemModel(
+            type: GoalType.stepsWalking,
+            label: 'Daily Steps',
+            desc: 'Current target',
+            minTarget: 5000,
+            unit: 'steps',
+          ),
+        ],
+        createdAt: today.subtract(const Duration(days: 1)),
+        createdBy: 'doc-1',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientUserGoalsProvider(testPatient.id).overrideWith(
+              () => _FakePatientUserGoalsNotifier([expiredGoal, activeGoal]),
+            ),
+            patientDiaryProvider(
+              testPatient.id,
+            ).overrideWithValue(const PatientDiaryState()),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DailyGoalsCard(patient: testPatient),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daily Steps'), findsOneWidget);
+      expect(find.text('Steps'), findsNothing);
+      expect(find.text('Current target'), findsOneWidget);
+      expect(find.text('Expired target'), findsNothing);
+    });
   });
 }

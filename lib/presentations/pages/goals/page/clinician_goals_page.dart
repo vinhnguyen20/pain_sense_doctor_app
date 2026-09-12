@@ -11,6 +11,7 @@ import 'package:app_doctor/features/user/presentation/provider/patients_notifier
 import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/goals/widgets/clinician_goal_row.dart';
+import 'package:app_doctor/presentations/pages/goals/utils/patient_goal_overview_sync.dart';
 import 'package:app_doctor/presentations/pages/home/page/home_page.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/ai_goal_suggestion.dart';
@@ -103,6 +104,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
 
     context.pushNamed(
       routeName,
+      queryParameters: widget.insidePatientDashboard
+          ? {'patientId': patient.id, 'goalId': goal.id}
+          : const {},
       extra: {
         'goal': goal,
         'patient': patient,
@@ -123,10 +127,13 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       widget.insidePatientDashboard
           ? 'patient-goal-form'
           : 'clinician-goal-form',
+      queryParameters: widget.insidePatientDashboard
+          ? {'patientId': patientId}
+          : const {},
       extra: {'mode': GoalFormMode.create, 'patientId': patientId},
     );
     if (result != null) {
-      ref.invalidate(patientUserGoalsProvider(patient.id));
+      refreshPatientGoalOverview(ref, patient.id);
       try {
         await ref.read(patientUserGoalsProvider(patient.id).future);
       } catch (_) {
@@ -146,6 +153,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
       widget.insidePatientDashboard
           ? 'patient-goal-form'
           : 'clinician-goal-form',
+      queryParameters: widget.insidePatientDashboard
+          ? {'patientId': resolvedPatientId, 'goalId': goal.id}
+          : const {},
       extra: {
         'mode': GoalFormMode.edit,
         'initialGoal': goal.toGoalModel(),
@@ -155,11 +165,9 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
     );
     if (result != null && patient != null) {
       if (result is UpdateUserGoalRequest) {
-        ref
-            .read(patientUserGoalsProvider(patient.id).notifier)
-            .applyUpdate(result);
+        applyPatientGoalUpdateToOverview(ref, result);
       } else {
-        ref.invalidate(patientUserGoalsProvider(patient.id));
+        refreshPatientGoalOverview(ref, patient.id);
       }
     }
   }
@@ -190,7 +198,7 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
         .call(goal.id);
     if (!mounted) return;
     if (response.isSuccess) {
-      ref.invalidate(patientUserGoalsProvider(patient.id));
+      refreshPatientGoalOverview(ref, patient.id);
     } else {
       AppSnackbar.error(context, response.message);
     }

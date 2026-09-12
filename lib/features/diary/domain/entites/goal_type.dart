@@ -8,8 +8,14 @@ enum GoalType {
 
   static GoalType fromString(String? value) =>
       switch (value?.trim().toLowerCase()) {
-        'steps' || 'steps/walking' || 'walking' => GoalType.stepsWalking,
-        'yoga' || 'yoga/meditation' || 'meditation' => GoalType.yogaMeditation,
+        'steps' ||
+        'steps/walking' ||
+        'steps / walking' ||
+        'walking' => GoalType.stepsWalking,
+        'yoga' ||
+        'yoga/meditation' ||
+        'yoga / meditation' ||
+        'meditation' => GoalType.yogaMeditation,
         'walk' ||
         'activity_walk' ||
         'activity walk' ||
@@ -18,16 +24,16 @@ enum GoalType {
       };
 
   String toApiString() => switch (this) {
-    GoalType.stepsWalking => 'Steps',
-    GoalType.yogaMeditation => 'Yoga',
-    GoalType.activityWalk => 'Walk',
+    GoalType.stepsWalking => 'Steps/Walking',
+    GoalType.yogaMeditation => 'Yoga/Meditation',
+    GoalType.activityWalk => 'Activity_Walk',
     GoalType.unknown => '',
   };
 
   String get displayName => switch (this) {
-    GoalType.stepsWalking => 'Daily Steps',
-    GoalType.yogaMeditation => 'Yoga',
-    GoalType.activityWalk => 'Walking Time',
+    GoalType.stepsWalking => 'Steps/Walking',
+    GoalType.yogaMeditation => 'Yoga/Meditation',
+    GoalType.activityWalk => 'Activity_Walk',
     GoalType.unknown => 'Unknown',
   };
 

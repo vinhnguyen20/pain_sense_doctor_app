@@ -463,9 +463,16 @@ class DailyGoalsCard extends ConsumerWidget {
       }
     }
 
-    final goals = goalsAsync.value ?? [];
-    final activeGoal = goals.isNotEmpty ? goals.first : null;
-    final goalItems = activeGoal?.goalItems ?? [];
+    final today = DateUtils.dateOnly(now);
+    final goals = goalsAsync.value ?? const [];
+    final goalItems = goals
+        .where(
+          (goal) =>
+              !today.isBefore(goal.startDate) &&
+              today.isBefore(goal.endDate.add(const Duration(days: 1))),
+        )
+        .expand((goal) => goal.goalItems)
+        .toList();
 
     if (goalsAsync.isLoading && goals.isEmpty) {
       return Container(
@@ -516,9 +523,9 @@ class DailyGoalsCard extends ConsumerWidget {
             child: _GoalSummaryItem(
               goalItem: goalItem,
               activity: activity,
-              // Keep the three Daily Goals labels stable even when a goal
-              // uses a custom label in the API response.
-              defaultTitle: type.toApiString(),
+              defaultTitle: goalItem?.label.trim().isNotEmpty == true
+                  ? goalItem!.label
+                  : type.toApiString(),
               defaultDescription: description,
             ),
           ),

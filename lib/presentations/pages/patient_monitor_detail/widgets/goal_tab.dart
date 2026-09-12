@@ -6,6 +6,7 @@ import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/go
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart'
     as goal_form;
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/user_goal_card.dart';
+import 'package:app_doctor/presentations/pages/goals/utils/patient_goal_overview_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,7 +62,7 @@ class _GoalsTabState extends ConsumerState<GoalsTab> {
     );
 
     if (result != null) {
-      ref.invalidate(patientUserGoalsProvider(widget.patientId));
+      refreshPatientGoalOverview(ref, widget.patientId);
     }
   }
 
@@ -99,9 +100,8 @@ class _GoalsTabState extends ConsumerState<GoalsTab> {
               GoalActionButton(
                 label: 'Suggest Goal',
                 width: 240,
-                onPressed: () => setState(
-                  () => _showAiSuggestions = !_showAiSuggestions,
-                ),
+                onPressed: () =>
+                    setState(() => _showAiSuggestions = !_showAiSuggestions),
               ),
             ],
           ),
@@ -180,9 +180,8 @@ class _GoalsTabState extends ConsumerState<GoalsTab> {
                 child: UserGoalCard(
                   goal: goal,
                   patientId: widget.patientId,
-                  onDelete: () => ref.invalidate(
-                    patientUserGoalsProvider(widget.patientId),
-                  ),
+                  onDelete: () =>
+                      refreshPatientGoalOverview(ref, widget.patientId),
                 ),
               ),
             ),

@@ -7,6 +7,7 @@ import 'package:app_doctor/features/diary/domain/entites/goal_type.dart';
 import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart';
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
+import 'package:app_doctor/presentations/pages/goals/utils/patient_goal_overview_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,12 +65,11 @@ class _UserGoalCardState extends ConsumerState<UserGoalCard> {
         .read(deleteUserGoalUseCaseProvider)
         .call(widget.goal.id);
 
+    if (!mounted) return;
     if (response.isSuccess) {
       widget.onDelete();
     } else {
-      if (context.mounted) {
-        AppSnackbar.error(context, response.message);
-      }
+      AppSnackbar.error(context, response.message);
     }
   }
 
@@ -85,9 +85,7 @@ class _UserGoalCardState extends ConsumerState<UserGoalCard> {
     );
     if (result != null) {
       if (result is UpdateUserGoalRequest) {
-        ref
-            .read(patientUserGoalsProvider(widget.patientId).notifier)
-            .applyUpdate(result);
+        applyPatientGoalUpdateToOverview(ref, result);
       } else {
         widget.onDelete();
       }

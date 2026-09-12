@@ -37,8 +37,13 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
   }
 
   void _openChat(Conversation conversation, Patient? patient) {
-    context.go(
-      '/patient-connect/chat',
+    final patientId = patient?.id.trim() ?? '';
+    context.goNamed(
+      'patient-connect-chat',
+      queryParameters: {
+        if (patientId.isNotEmpty) 'patientId': patientId,
+        'conversationId': conversation.id,
+      },
       extra: {'conversation': conversation, 'patient': patient},
     );
   }

@@ -32,14 +32,14 @@ void main() {
     expect(find.text('Start Date...'), findsOneWidget);
     expect(find.text('End Date...'), findsOneWidget);
 
-    await tester.tap(find.text('Daily Steps'));
-    await tester.tap(find.text('Yoga'));
-    await tester.tap(find.text('Walking Time'));
+    await tester.tap(find.text('Steps/Walking'));
+    await tester.tap(find.text('Yoga/Meditation'));
+    await tester.tap(find.text('Activity_Walk'));
     await tester.pump();
 
-    expect(find.text('Daily Steps'), findsWidgets);
-    expect(find.text('Yoga'), findsWidgets);
-    expect(find.text('Walking Time'), findsWidgets);
+    expect(find.text('Steps/Walking'), findsWidgets);
+    expect(find.text('Yoga/Meditation'), findsWidgets);
+    expect(find.text('Activity_Walk'), findsWidgets);
     expect(find.text('Yoga Exercises Setup'), findsOneWidget);
     expect(find.text('Title'), findsNWidgets(3));
     expect(find.text('Description'), findsNWidgets(3));

@@ -134,6 +134,7 @@ class PatientCard extends StatelessWidget {
                       onDetails ??
                       () => context.goNamed(
                         'patient-dashboard',
+                        queryParameters: {'patientId': patient.id},
                         extra: patient,
                       ),
                   child: const Text('View Details'),
@@ -144,8 +145,11 @@ class PatientCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed:
                       onDashboard ??
-                      () =>
-                          context.goNamed('patient-dashboard', extra: patient),
+                      () => context.goNamed(
+                        'patient-dashboard',
+                        queryParameters: {'patientId': patient.id},
+                        extra: patient,
+                      ),
                   icon: const Icon(Icons.bar_chart, size: AppSize.iconSm),
                   label: const Text('Dashboard'),
                 ),

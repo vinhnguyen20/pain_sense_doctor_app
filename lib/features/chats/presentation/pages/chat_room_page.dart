@@ -177,8 +177,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
     final currentCount = next.messages.length;
     if (currentCount == 0) return;
 
-    final previousLastId =
-        previousCount == 0 ? '' : previous!.messages.last.id;
+    final previousLastId = previousCount == 0 ? '' : previous!.messages.last.id;
     final currentLastId = next.messages.last.id;
     final hasNewTailMessage =
         currentCount > previousCount && currentLastId != previousLastId;
@@ -245,7 +244,11 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                   onBack: () {
                     FocusManager.instance.primaryFocus?.unfocus();
                     if (isPatientDashboardChat) {
-                      context.go('/patient-connect', extra: activePatient);
+                      context.goNamed(
+                        'patient-connect',
+                        queryParameters: {'patientId': activePatient.id},
+                        extra: activePatient,
+                      );
                     } else {
                       context.go('/connect');
                     }
@@ -333,8 +336,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                     : 'Realtime Off',
                 style: context.labelSmall?.copyWith(
                   color: chatState.isWsConnected
-                    ? context.chatColors.online
-                    : context.chatColors.offline,
+                      ? context.chatColors.online
+                      : context.chatColors.offline,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -573,10 +576,7 @@ class _ScrollToBottomButton extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutBack,
       builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: child,
-        );
+        return Transform.scale(scale: scale, child: child);
       },
       child: Material(
         elevation: 6,

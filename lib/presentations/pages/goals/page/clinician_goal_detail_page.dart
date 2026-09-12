@@ -7,6 +7,7 @@ import 'package:app_doctor/features/diary/domain/entites/user_goal_request.dart'
 import 'package:app_doctor/features/diary/presentation/provider/diary_providers.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
+import 'package:app_doctor/presentations/pages/goals/utils/patient_goal_overview_sync.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_action_button.dart';
 import 'package:app_doctor/presentations/pages/patient_monitor_detail/widgets/goal_model.dart';
 import 'package:flutter/material.dart';
@@ -135,6 +136,13 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
 
     final result = await context.pushNamed(
       insidePatientDashboard ? 'patient-goal-form' : 'clinician-goal-form',
+      queryParameters: insidePatientDashboard
+          ? {
+              'patientId': patientId,
+              'goalId': displayedGoal.id,
+              'goalType': item.type.toApiString(),
+            }
+          : const {},
       extra: {
         'mode': GoalFormMode.edit,
         'initialGoal': displayedGoal.toGoalModel(),
@@ -147,11 +155,9 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
     if (!context.mounted) return;
     if (result != null) {
       if (result is UpdateUserGoalRequest) {
-        ref
-            .read(patientUserGoalsProvider(patientId).notifier)
-            .applyUpdate(result);
+        applyPatientGoalUpdateToOverview(ref, result);
       } else {
-        ref.invalidate(patientUserGoalsProvider(patientId));
+        refreshPatientGoalOverview(ref, patientId);
       }
     }
   }
@@ -186,7 +192,7 @@ class ClinicianGoalDetailPage extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (response.isSuccess) {
-      ref.invalidate(patientUserGoalsProvider(patient.id));
+      refreshPatientGoalOverview(ref, patient.id);
       context.pop();
     } else {
       AppSnackbar.error(context, response.message);
