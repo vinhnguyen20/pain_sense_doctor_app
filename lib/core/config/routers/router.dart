@@ -13,6 +13,7 @@ import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/appointments_page.dart';
 import 'package:app_doctor/presentations/pages/appointments/page/patient_appointments_page.dart';
+import 'package:app_doctor/presentations/pages/account/page/clinician_account_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/page/patient_dashboard_page.dart';
 import 'package:app_doctor/presentations/pages/dashboard/widgets/patient_dashboard_scaffold.dart';
 import 'package:app_doctor/presentations/pages/goals/page/clinician_goals_page.dart';
@@ -541,10 +542,27 @@ class AppRouter {
                           );
                         }
 
-                        return PatientAppointmentsPage(patient: patient);
+                        final startWithCreateForm = state.extra is Map
+                            ? (state.extra as Map)['startWithCreateForm']
+                                      as bool? ??
+                                  false
+                            : false;
+                        return PatientAppointmentsPage(
+                          patient: patient,
+                          startWithCreateForm: startWithCreateForm,
+                        );
                       },
                     ),
                   ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/account',
+                  name: 'clinician-account',
+                  builder: (context, state) => const ClinicianAccountPage(),
                 ),
               ],
             ),

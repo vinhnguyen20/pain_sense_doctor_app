@@ -137,16 +137,123 @@ class AppTheme {
     );
   }
 
+  static TimePickerThemeData _timePickerTheme(
+    ColorScheme cs,
+    Color surfaceColor,
+  ) {
+    return TimePickerThemeData(
+      backgroundColor: surfaceColor,
+      shape: const RoundedRectangleBorder(borderRadius: AppCorners.r16),
+      hourMinuteColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.primary;
+        }
+        return AppPalette.surfaceLight;
+      }),
+      hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.onPrimary;
+        }
+        return cs.onSurface;
+      }),
+      dayPeriodColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.secondary.withValues(alpha: 0.2);
+        }
+        return Colors.transparent;
+      }),
+      dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.primary;
+        }
+        return cs.onSurface;
+      }),
+      dialHandColor: cs.primary,
+      dialBackgroundColor: AppPalette.surfaceLight,
+      dialTextColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.onPrimary;
+        }
+        return cs.onSurface;
+      }),
+      entryModeIconColor: cs.primary,
+      cancelButtonStyle: _textButtonStyle(cs),
+      confirmButtonStyle: _textButtonStyle(cs),
+    );
+  }
+
+  static DatePickerThemeData _datePickerTheme(
+    ColorScheme cs,
+    Color surfaceColor,
+  ) {
+    return DatePickerThemeData(
+      headerBackgroundColor: cs.primary,
+      headerForegroundColor: cs.onPrimary,
+      backgroundColor: surfaceColor,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: AppCorners.r16),
+      todayForegroundColor: const WidgetStatePropertyAll(
+        AppPalette.primaryBlue,
+      ),
+      todayBackgroundColor: const WidgetStatePropertyAll(AppPalette.white),
+      todayBorder: const BorderSide(color: AppPalette.primaryBlue),
+      dayForegroundColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.onPrimary;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return AppPalette.medGray;
+        }
+        return cs.onSurface;
+      }),
+      dayBackgroundColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppPalette.primaryBlue;
+        }
+        return Colors.transparent;
+      }),
+      yearForegroundColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.onPrimary;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return AppPalette.medGray;
+        }
+        return cs.onSurface;
+      }),
+      yearBackgroundColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppPalette.primaryBlue;
+        }
+        return Colors.transparent;
+      }),
+      cancelButtonStyle: _textButtonStyle(cs),
+      confirmButtonStyle: _textButtonStyle(cs),
+    );
+  }
+
+  static DialogThemeData _dialogTheme(Color surfaceColor) {
+    return DialogThemeData(
+      backgroundColor: surfaceColor,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: AppCorners.r16),
+    );
+  }
+
   static const ColorScheme _lightColorScheme = ColorScheme.light(
     primary: lightPrimary,
     secondary: lightSecondary,
     surface: lightSurface,
     error: lightError,
     onPrimary: AppPalette.white,
-    onSecondary: AppPalette.black,
+    onSecondary: AppPalette.white,
     onSurface: AppPalette.black,
     onError: AppPalette.white,
     outline: lightBorder,
+    primaryContainer: Color(0xFFE2ECF8),
+    onPrimaryContainer: Color(0xFF0F3B60),
+    secondaryContainer: Color(0xFFE8F1FA),
+    onSecondaryContainer: Color(0xFF134670),
   );
 
   static const ColorScheme _darkColorScheme = ColorScheme.dark(
@@ -159,6 +266,10 @@ class AppTheme {
     onSurface: AppPalette.white,
     onError: AppPalette.black,
     outline: darkBorder,
+    primaryContainer: Color(0xFF1A3E5C),
+    onPrimaryContainer: Color(0xFFD6E8F7),
+    secondaryContainer: Color(0xFF1E486D),
+    onSecondaryContainer: Color(0xFFDCEAF5),
   );
 
   // Light Theme
@@ -232,6 +343,9 @@ class AppTheme {
       hintStyle: TextStyle(fontSize: 14),
       isDense: true,
     ),
+    dialogTheme: _dialogTheme(lightSurface),
+    timePickerTheme: _timePickerTheme(_lightColorScheme, lightSurface),
+    datePickerTheme: _datePickerTheme(_lightColorScheme, lightSurface),
   );
 
   // Dark Theme
@@ -305,5 +419,8 @@ class AppTheme {
       hintStyle: TextStyle(fontSize: 14),
       isDense: true,
     ),
+    dialogTheme: _dialogTheme(darkSurface),
+    timePickerTheme: _timePickerTheme(_darkColorScheme, darkSurface),
+    datePickerTheme: _datePickerTheme(_darkColorScheme, darkSurface),
   );
 }

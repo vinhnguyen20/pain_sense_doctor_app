@@ -19,7 +19,7 @@ class AppointmentModel extends Appointment
   @override
   final String description;
 
-  @JsonKey(name: 'patient_id')
+  @JsonKey(name: 'patient_id', defaultValue: '')
   @override
   final String patientId;
 
@@ -27,7 +27,7 @@ class AppointmentModel extends Appointment
   @override
   final String patientName;
 
-  @JsonKey(name: 'doctor_id')
+  @JsonKey(name: 'doctor_id', defaultValue: '')
   @override
   final String doctorId;
 

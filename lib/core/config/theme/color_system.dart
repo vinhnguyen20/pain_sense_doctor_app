@@ -32,8 +32,8 @@ abstract final class AppPalette {
 }
 
 abstract final class AppLightColors {
-  static const Color primary = AppPalette.primaryTeal;
-  static const Color secondary = AppPalette.secondaryMint;
+  static const Color primary = AppPalette.primaryBlue;
+  static const Color secondary = AppPalette.secondaryBlue;
   static const Color background = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFF5F5F5);
   static const Color error = Color(0xFFB00020);
@@ -41,8 +41,8 @@ abstract final class AppLightColors {
 }
 
 abstract final class AppDarkColors {
-  static const Color primary = Color(0xFF4DB6AC);
-  static const Color secondary = Color(0xFF80CBC4);
+  static const Color primary = Color(0xFF5B9CD6);
+  static const Color secondary = Color(0xFF90CAF9);
   static const Color background = Color(0xFF121212);
   static const Color surface = Color(0xFF1E1E1E);
   static const Color error = Color(0xFFCF6679);

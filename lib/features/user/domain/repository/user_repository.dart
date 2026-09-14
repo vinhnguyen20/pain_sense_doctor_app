@@ -6,6 +6,10 @@ import 'package:app_doctor/features/user/domain/entities/user.dart';
 abstract class UserRepository {
   Future<ApiResponse<User?>> getCurrentUser();
   Future<ApiResponse<User>> updateUser(User user);
+  Future<ApiResponse<void>> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  });
   Future<ApiResponse<PaginatedResponse<Patient>>> getAllPatients({
     String? cursor,
     int? limit,

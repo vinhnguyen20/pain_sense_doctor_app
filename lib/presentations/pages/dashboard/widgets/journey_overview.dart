@@ -153,13 +153,6 @@ class _PatientJourneyOverviewState
                       const SizedBox(height: 14),
                       _JourneyProgress(progress: progress),
                       const SizedBox(height: 20),
-                      _DailyGoalsCard(
-                        goals: goals,
-                        compact: compact,
-                        isLoading: goalsAsync.isLoading,
-                        onTap: _showGoalDetails,
-                      ),
-                      const SizedBox(height: 20),
                       _TimelineCard(
                         events: events,
                         filters: _filters,
@@ -254,36 +247,6 @@ class _PatientJourneyOverviewState
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGoalDetails(_JourneyGoal goal) {
-    _showDetails(
-      title: goal.title,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(goal.description),
-          const SizedBox(height: 18),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: LinearProgressIndicator(
-              value: (goal.percent / 100).clamp(0.0, 1.0),
-              minHeight: 9,
-              color: goal.displayColor,
-              backgroundColor: goal.displayColor.withValues(alpha: .14),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${goal.actual.toStringAsFixed(0)} of '
-                    '${goal.target.toStringAsFixed(0)} ${goal.unit}'
-                .trim(),
-            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -436,153 +399,6 @@ class _JourneyProgress extends StatelessWidget {
         minHeight: 10,
         color: _JourneyColors.blue,
         backgroundColor: const Color(0xFFE9ECEF),
-      ),
-    );
-  }
-}
-
-class _DailyGoalsCard extends StatelessWidget {
-  final List<_JourneyGoal> goals;
-  final bool compact;
-  final bool isLoading;
-  final ValueChanged<_JourneyGoal> onTap;
-
-  const _DailyGoalsCard({
-    required this.goals,
-    required this.compact,
-    required this.isLoading,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _JourneyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.flag_outlined, color: _JourneyColors.blue),
-              SizedBox(width: 8),
-              Text(
-                'Daily Goals',
-                style: TextStyle(
-                  fontFamily: 'Cabin',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                  color: _JourneyColors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (compact)
-            Column(
-              children: [
-                for (var index = 0; index < goals.length; index++) ...[
-                  _GoalTile(
-                    goal: goals[index],
-                    onTap: () => onTap(goals[index]),
-                  ),
-                  if (index < goals.length - 1) const SizedBox(height: 14),
-                ],
-              ],
-            )
-          else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var index = 0; index < goals.length; index++) ...[
-                  Expanded(
-                    child: _GoalTile(
-                      goal: goals[index],
-                      onTap: () => onTap(goals[index]),
-                    ),
-                  ),
-                  if (index < goals.length - 1) const SizedBox(width: 16),
-                ],
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalTile extends StatelessWidget {
-  final _JourneyGoal goal;
-  final VoidCallback onTap;
-
-  const _GoalTile({required this.goal, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 66,
-                height: 66,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: (goal.percent / 100).clamp(0.0, 1.0),
-                      strokeWidth: 7,
-                      color: goal.displayColor,
-                      backgroundColor: goal.displayColor.withValues(alpha: .13),
-                    ),
-                    Text(
-                      '${goal.percent.round()}%',
-                      style: TextStyle(
-                        fontFamily: 'Cabin',
-                        fontWeight: FontWeight.w700,
-                        color: goal.displayColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      goal.title,
-                      style: const TextStyle(
-                        fontFamily: 'Cabin',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: _JourneyColors.blue,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      goal.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Cabin',
-                        fontSize: 12,
-                        color: _JourneyColors.darkBlue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: _JourneyColors.blue),
-            ],
-          ),
-        ),
       ),
     );
   }

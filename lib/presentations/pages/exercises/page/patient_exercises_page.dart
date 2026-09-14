@@ -1,4 +1,6 @@
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
+import 'package:app_doctor/features/education/domain/entites/exercise.dart';
+import 'package:app_doctor/features/education/presentation/provider/education_provider.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_providers.dart';
 import 'package:app_doctor/presentations/pages/patient_connect/widgets/patient_connect_header.dart';
@@ -17,37 +19,41 @@ class PatientExercisesPage extends ConsumerStatefulWidget {
 }
 
 class _PatientExercisesPageState extends ConsumerState<PatientExercisesPage> {
-  final Set<String> _assignedExercises = {'30 Minute Yoga', 'Front Plank'};
   bool _showLibrary = false;
+  final DateTime _today = DateUtils.dateOnly(DateTime.now());
+  List<_ExerciseItem> _library = const [];
+  bool _isLoadingLibrary = true;
+  String? _libraryError;
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(_loadLibrary);
   }
 
-  void _toggleExercise(String title) {
+  Future<void> _loadLibrary() async {
+    final response = await ref
+        .read(getExercisesUseCaseProvider)
+        .call(limit: 100);
+    if (!mounted) return;
     setState(() {
-      if (_assignedExercises.contains(title)) {
-        _assignedExercises.remove(title);
+      _isLoadingLibrary = false;
+      if (response.isSuccess && response.data != null) {
+        _library = response.data!.items.map(_fromExercise).toList();
+        _libraryError = null;
       } else {
-        _assignedExercises.add(title);
+        _libraryError = response.message;
       }
     });
   }
 
-  List<_ExerciseItem> _itemsForTitles(Iterable<String> titles) {
-    return titles
-        .map(
-          (title) => _ExerciseItem(
-            title: title,
-            description: title == '30 Minute Yoga'
-                ? 'A yoga program built\njust for you'
-                : null,
-            asset: _assetForExercise(title),
-          ),
-        )
-        .toList();
-  }
+  _ExerciseItem _fromExercise(Exercise exercise) => _ExerciseItem(
+    title: exercise.title,
+    description: exercise.description.trim().isEmpty
+        ? null
+        : exercise.description,
+    asset: _assetForExercise(exercise.title),
+  );
 
   String _assetForExercise(String title) {
     final normalized = title.toLowerCase();
@@ -61,22 +67,6 @@ class _PatientExercisesPageState extends ConsumerState<PatientExercisesPage> {
     if (normalized.contains('lunge')) return 'lunges.svg';
     if (normalized.contains('run')) return 'running.svg';
     return 'side_stretch.svg';
-  }
-
-  List<_ExerciseItem> _libraryItems() {
-    return _itemsForTitles(const [
-      '30 Minute Yoga',
-      'Shoulder Shrugs',
-      'Bridges',
-      'Front Plank',
-      'Side Stretch',
-      'Lunges',
-      'Running',
-    ]);
-  }
-
-  List<_ExerciseItem> _assignedItems() {
-    return _itemsForTitles(_assignedExercises);
   }
 
   bool _isStretching(_ExerciseItem item) {
@@ -104,6 +94,69 @@ class _PatientExercisesPageState extends ConsumerState<PatientExercisesPage> {
     final selectedPatient =
         widget.patient ?? ref.watch(selectedPatientProvider);
     final patient = selectedPatient;
+    final assignedAsync = patient == null
+        ? null
+        : ref.watch(
+            patientExercisesByPatientDateProvider((
+              patientId: patient.id,
+              date: _today,
+            )),
+          );
+    final assignedItems =
+        assignedAsync?.value
+            ?.map(
+              (item) => _ExerciseItem(
+                title: item.label,
+                asset: _assetForExercise(item.label),
+              ),
+            )
+            .toList() ??
+        const <_ExerciseItem>[];
+    final assignedTitles = assignedItems.map((item) => item.title).toSet();
+    final stretchingItems = assignedItems.where(_isStretching).toList();
+    final strengthItems = assignedItems.where(_isStrengthTraining).toList();
+    final generalItems = assignedItems
+        .where(
+          (item) =>
+              !stretchingItems.contains(item) && !strengthItems.contains(item),
+        )
+        .toList();
+    final assignedSections = <Widget>[];
+
+    void addAssignedSection({
+      required String title,
+      required IconData icon,
+      required List<_ExerciseItem> exercises,
+    }) {
+      if (exercises.isEmpty) return;
+      if (assignedSections.isNotEmpty) {
+        assignedSections.add(const SizedBox(height: 24));
+      }
+      assignedSections.add(
+        _ExerciseSection(
+          title: title,
+          icon: icon,
+          exercises: exercises,
+          assignedExercises: assignedTitles,
+        ),
+      );
+    }
+
+    addAssignedSection(
+      title: 'Stretching',
+      icon: Icons.accessibility_new_rounded,
+      exercises: stretchingItems,
+    );
+    addAssignedSection(
+      title: 'Strength Training',
+      icon: Icons.fitness_center_rounded,
+      exercises: strengthItems,
+    );
+    addAssignedSection(
+      title: 'General',
+      icon: Icons.fitness_center_rounded,
+      exercises: generalItems,
+    );
 
     return Scaffold(
       backgroundColor: context.background,
@@ -135,39 +188,26 @@ class _PatientExercisesPageState extends ConsumerState<PatientExercisesPage> {
                       ),
                       const SizedBox(height: 22),
                       if (!_showLibrary) ...[
-                        const _AddExerciseTile(),
-                        const SizedBox(height: 24),
-                        _ExerciseSection(
-                          title: 'Stretching',
-                          icon: Icons.accessibility_new_rounded,
-                          exercises: _assignedItems()
-                              .where(_isStretching)
-                              .toList(),
-                          assignedExercises: _assignedExercises,
-                          onToggle: _toggleExercise,
-                        ),
-                        const SizedBox(height: 24),
-                        _ExerciseSection(
-                          title: 'Strength Training',
-                          icon: Icons.fitness_center_rounded,
-                          exercises: _assignedItems()
-                              .where(_isStrengthTraining)
-                              .toList(),
-                          assignedExercises: _assignedExercises,
-                          onToggle: _toggleExercise,
-                        ),
-                        const SizedBox(height: 24),
-                        const _ExerciseSectionLabel(title: 'General'),
-                        const SizedBox(height: 20),
-                        const _EmptyExerciseMessage(),
+                        if (assignedAsync?.isLoading == true)
+                          const LinearProgressIndicator(minHeight: 2),
+                        if (assignedAsync?.hasError == true)
+                          const Text('Unable to load assigned exercises.'),
+                        if (assignedSections.isEmpty &&
+                            assignedAsync?.isLoading != true &&
+                            assignedAsync?.hasError != true)
+                          const _EmptyExerciseMessage(),
+                        ...assignedSections,
                       ] else ...[
                         _ExerciseSection(
                           title: 'Exercise Library',
                           icon: Icons.menu_book_outlined,
-                          exercises: _libraryItems(),
-                          assignedExercises: _assignedExercises,
-                          onToggle: _toggleExercise,
+                          exercises: _library,
+                          assignedExercises: assignedTitles,
                         ),
+                        if (_isLoadingLibrary)
+                          const LinearProgressIndicator(minHeight: 2),
+                        if (_libraryError != null)
+                          const Text('Unable to load exercise library.'),
                       ],
                     ],
                   ),
@@ -257,53 +297,17 @@ class _TabButton extends StatelessWidget {
   }
 }
 
-class _AddExerciseTile extends StatelessWidget {
-  const _AddExerciseTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 124,
-      height: 134,
-      child: Material(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.add, size: 42, color: Color(0xFFC9C9C9)),
-              const SizedBox(height: 2),
-              Text(
-                'Add\nExercise',
-                textAlign: TextAlign.center,
-                style: AppTypography.titleBig1.copyWith(
-                  color: const Color(0xFFC9C9C9),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ExerciseSection extends StatelessWidget {
   final String title;
   final IconData icon;
   final List<_ExerciseItem> exercises;
   final Set<String> assignedExercises;
-  final ValueChanged<String> onToggle;
 
   const _ExerciseSection({
     required this.title,
     required this.icon,
     required this.exercises,
     required this.assignedExercises,
-    required this.onToggle,
   });
 
   @override
@@ -324,7 +328,7 @@ class _ExerciseSection extends StatelessWidget {
                   (exercise) => _ExerciseCard(
                     item: exercise,
                     selected: assignedExercises.contains(exercise.title),
-                    onTap: () => onToggle(exercise.title),
+                    onTap: () {},
                   ),
                 )
                 .toList(),

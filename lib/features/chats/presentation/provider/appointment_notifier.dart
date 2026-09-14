@@ -41,7 +41,6 @@ class AppointmentState {
 class AppointmentNotifier extends _$AppointmentNotifier {
   @override
   AppointmentState build() {
-    Future.microtask(fetchAppointments);
     return const AppointmentState();
   }
 
@@ -54,23 +53,28 @@ class AppointmentNotifier extends _$AppointmentNotifier {
       state = state.copyWith(isLoading: true, error: null);
     }
 
-    final response = await ref.read(getAppointmentsUseCaseProvider)(
-      cursor: refresh ? null : state.nextCursor,
-      limit: AppConstants.defaultPageSize,
-    );
-
-    if (response.isSuccess && response.data != null) {
-      final paginated = response.data!;
-      state = state.copyWith(
-        appointments: refresh
-            ? paginated.items
-            : [...state.appointments, ...paginated.items],
-        isLoading: false,
-        nextCursor: paginated.nextCursor,
-        hasMore: paginated.nextCursor != null,
+    try {
+      final response = await ref.read(getAppointmentsUseCaseProvider)(
+        cursor: refresh ? null : state.nextCursor,
+        limit: AppConstants.defaultPageSize,
       );
-    } else {
-      state = state.copyWith(isLoading: false, error: response.message);
+
+      if (response.isSuccess && response.data != null) {
+        final paginated = response.data!;
+        final nextCursor = paginated.nextCursor?.trim();
+        state = state.copyWith(
+          appointments: refresh
+              ? paginated.items
+              : [...state.appointments, ...paginated.items],
+          isLoading: false,
+          nextCursor: nextCursor?.isEmpty == true ? null : nextCursor,
+          hasMore: nextCursor != null && nextCursor.isNotEmpty,
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: response.message);
+      }
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: error.toString());
     }
   }
 
@@ -79,6 +83,37 @@ class AppointmentNotifier extends _$AppointmentNotifier {
   Future<void> loadMore() async {
     if (!state.hasMore || state.isLoading) return;
     await fetchAppointments();
+  }
+
+  Future<void> loadAllUpcoming() async {
+    if (state.appointments.isEmpty) {
+      await refresh();
+    }
+
+    final seenCursors = <String>{};
+    var pageCount = 0;
+
+    while (state.hasMore && pageCount < 50) {
+      final cursor = state.nextCursor;
+      if (cursor == null || cursor.isEmpty || !seenCursors.add(cursor)) return;
+      await loadMore();
+      pageCount++;
+    }
+  }
+
+  void upsertAppointment(Appointment appointment) {
+    final appointments = [...state.appointments];
+    final index = appointments.indexWhere((item) => item.id == appointment.id);
+    if (index >= 0) {
+      appointments[index] = appointment;
+    } else {
+      appointments.add(appointment);
+    }
+    state = state.copyWith(
+      appointments: appointments,
+      isLoading: false,
+      error: null,
+    );
   }
 }
 
@@ -107,13 +142,14 @@ class AppointmentsByPatientNotifier extends _$AppointmentsByPatientNotifier {
 
     if (response.isSuccess && response.data != null) {
       final paginated = response.data!;
+      final nextCursor = paginated.nextCursor?.trim();
       state = state.copyWith(
         appointments: refresh
             ? paginated.items
             : [...state.appointments, ...paginated.items],
         isLoading: false,
-        nextCursor: paginated.nextCursor,
-        hasMore: paginated.nextCursor != null,
+        nextCursor: nextCursor?.isEmpty == true ? null : nextCursor,
+        hasMore: nextCursor != null && nextCursor.isNotEmpty,
       );
     } else {
       state = state.copyWith(isLoading: false, error: response.message);
@@ -125,5 +161,20 @@ class AppointmentsByPatientNotifier extends _$AppointmentsByPatientNotifier {
   Future<void> loadMore() async {
     if (!state.hasMore || state.isLoading) return;
     await fetchAppointments();
+  }
+
+  void upsertAppointment(Appointment appointment) {
+    final appointments = [...state.appointments];
+    final index = appointments.indexWhere((item) => item.id == appointment.id);
+    if (index >= 0) {
+      appointments[index] = appointment;
+    } else {
+      appointments.add(appointment);
+    }
+    state = state.copyWith(
+      appointments: appointments,
+      isLoading: false,
+      error: null,
+    );
   }
 }

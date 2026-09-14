@@ -1209,27 +1209,6 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
       initialDate: current ?? (isStartDate ? now : (_goal.startDate ?? now)),
       firstDate: firstDate,
       lastDate: DateTime(2035),
-      builder: (pickerContext, child) {
-        final theme = Theme.of(pickerContext);
-        return Theme(
-          data: theme.copyWith(
-            colorScheme: theme.colorScheme.copyWith(
-              primary: AppPalette.secondaryBlue,
-              onPrimary: AppPalette.white,
-              secondary: AppPalette.secondaryBlue,
-            ),
-            datePickerTheme: DatePickerThemeData(
-              headerBackgroundColor: AppPalette.secondaryBlue,
-              headerForegroundColor: AppPalette.white,
-              todayForegroundColor: const WidgetStatePropertyAll(
-                AppPalette.secondaryBlue,
-              ),
-              todayBorder: const BorderSide(color: AppPalette.secondaryBlue),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked == null) return;
     if (isStartDate) {

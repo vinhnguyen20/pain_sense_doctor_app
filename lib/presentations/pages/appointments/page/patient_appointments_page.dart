@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:app_doctor/common/widgets/clinician_header.dart';
 import 'package:app_doctor/core/config/theme/theme_extension.dart';
 import 'package:app_doctor/features/chats/domain/entites/appointment.dart';
+import 'package:app_doctor/features/chats/domain/entites/conversation.dart';
 import 'package:app_doctor/features/chats/presentation/provider/appointment_notifier.dart';
 import 'package:app_doctor/features/chats/presentation/provider/chat_providers.dart';
+import 'package:app_doctor/features/chats/presentation/provider/conversation_notifier.dart';
 import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,8 +14,13 @@ import 'package:app_doctor/features/user/presentation/provider/user_notifier.dar
 
 class PatientAppointmentsPage extends ConsumerStatefulWidget {
   final Patient patient;
+  final bool startWithCreateForm;
 
-  const PatientAppointmentsPage({super.key, required this.patient});
+  const PatientAppointmentsPage({
+    super.key,
+    required this.patient,
+    this.startWithCreateForm = false,
+  });
 
   @override
   ConsumerState<PatientAppointmentsPage> createState() =>
@@ -44,12 +51,6 @@ class _PatientAppointmentsContentState
         ? _CreateAppointmentForm(
             patient: widget.patient,
             onCreated: () async {
-              await ref
-                  .read(
-                    appointmentsByPatientProvider(widget.patient.id).notifier,
-                  )
-                  .refresh();
-
               if (!mounted) return;
               setState(() => _showCreateForm = false);
             },
@@ -58,7 +59,7 @@ class _PatientAppointmentsContentState
               setState(() => _showCreateForm = false);
             },
           )
-        : _PatientScheduleContent(
+        : AppointmentScheduleContent(
             state: appointmentState,
             onCreateAppointment: () {
               setState(() => _showCreateForm = true);
@@ -66,17 +67,53 @@ class _PatientAppointmentsContentState
             onRefresh: () => ref
                 .read(appointmentsByPatientProvider(widget.patient.id).notifier)
                 .refresh(),
+            onOpenChat: (_) => openPatientChat(
+              context: context,
+              ref: ref,
+              patient: widget.patient,
+            ),
           );
   }
 }
 
+Future<void> openPatientChat({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Patient patient,
+}) async {
+  final conversations = ref.read(conversationsProvider.notifier);
+  final existing = await conversations.getConversationWithParticipant(
+    participantId: patient.id,
+  );
+  if (!context.mounted) return;
+
+  final conversation =
+      existing ??
+      Conversation(
+        id: '',
+        name: patient.fullName.isEmpty ? 'Patient' : patient.fullName,
+        participants: [patient.id],
+        status: 'active',
+        unreadCountDoctor: 0,
+        unreadCountPatient: 0,
+        unreadInfo: const [],
+      );
+
+  conversations.clearUnreadCount(conversation.id, patient.id);
+  context.goNamed(
+    'clinician-chat',
+    extra: {'conversation': conversation, 'patient': patient},
+  );
+}
+
 class _PatientAppointmentsPageState
     extends ConsumerState<PatientAppointmentsPage> {
-  bool _showCreateForm = false;
+  late bool _showCreateForm;
 
   @override
   void initState() {
     super.initState();
+    _showCreateForm = widget.startWithCreateForm;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusManager.instance.primaryFocus?.unfocus();
     });
@@ -139,13 +176,6 @@ class _PatientAppointmentsPageState
                           ? _CreateAppointmentForm(
                               patient: widget.patient,
                               onCreated: () async {
-                                await ref
-                                    .read(
-                                      appointmentsByPatientProvider(
-                                        widget.patient.id,
-                                      ).notifier,
-                                    )
-                                    .refresh();
                                 if (!mounted) return;
                                 setState(() => _showCreateForm = false);
                               },
@@ -154,7 +184,7 @@ class _PatientAppointmentsPageState
                                 setState(() => _showCreateForm = false);
                               },
                             )
-                          : _PatientScheduleContent(
+                          : AppointmentScheduleContent(
                               state: appointmentState,
                               onCreateAppointment: () {
                                 setState(() => _showCreateForm = true);
@@ -166,6 +196,11 @@ class _PatientAppointmentsPageState
                                     ).notifier,
                                   )
                                   .refresh(),
+                              onOpenChat: (_) => openPatientChat(
+                                context: context,
+                                ref: ref,
+                                patient: widget.patient,
+                              ),
                             ),
                     ),
                   ],
@@ -226,16 +261,7 @@ class _PatientAppointmentsPageState
                             ? _CreateAppointmentForm(
                                 patient: widget.patient,
                                 onCreated: () async {
-                                  await ref
-                                      .read(
-                                        appointmentsByPatientProvider(
-                                          widget.patient.id,
-                                        ).notifier,
-                                      )
-                                      .refresh();
-
                                   if (!mounted) return;
-
                                   setState(() {
                                     _showCreateForm = false;
                                   });
@@ -247,7 +273,7 @@ class _PatientAppointmentsPageState
                                   });
                                 },
                               )
-                            : _PatientScheduleContent(
+                            : AppointmentScheduleContent(
                                 state: appointmentState,
                                 onCreateAppointment: () {
                                   setState(() {
@@ -261,6 +287,11 @@ class _PatientAppointmentsPageState
                                       ).notifier,
                                     )
                                     .refresh(),
+                                onOpenChat: (_) => openPatientChat(
+                                  context: context,
+                                  ref: ref,
+                                  patient: widget.patient,
+                                ),
                               ),
                       ),
                     ],
@@ -275,15 +306,20 @@ class _PatientAppointmentsPageState
   }
 }
 
-class _PatientScheduleContent extends StatelessWidget {
+class AppointmentScheduleContent extends StatelessWidget {
   final AppointmentState state;
   final VoidCallback onCreateAppointment;
   final Future<void> Function() onRefresh;
+  final bool showPatientName;
+  final Future<void> Function(Appointment appointment)? onOpenChat;
 
-  const _PatientScheduleContent({
+  const AppointmentScheduleContent({
+    super.key,
     required this.state,
     required this.onCreateAppointment,
     required this.onRefresh,
+    this.showPatientName = false,
+    this.onOpenChat,
   });
 
   @override
@@ -305,20 +341,14 @@ class _PatientScheduleContent extends StatelessWidget {
           ..sort((a, b) => a.dateTime!.compareTo(b.dateTime!));
 
     final now = DateTime.now();
-
-    Appointment? lastAppointment;
-    Appointment? nextAppointment;
-
-    for (final item in datedAppointments) {
-      if (item.dateTime!.isBefore(now)) {
-        lastAppointment = item.appointment;
-      } else {
-        nextAppointment ??= item.appointment;
-      }
-    }
+    final today = _dateOnly(now);
+    final rangeEnd = today.add(const Duration(days: 6));
 
     final upcoming = datedAppointments
-        .where((item) => !_dateOnly(item.dateTime!).isBefore(_dateOnly(now)))
+        .where((item) {
+          final date = _dateOnly(item.dateTime!);
+          return !date.isBefore(today) && !date.isAfter(rangeEnd);
+        })
         .map((item) => item.appointment)
         .toList();
 
@@ -366,7 +396,13 @@ class _PatientScheduleContent extends StatelessWidget {
         sections.add(const SizedBox(height: 10));
 
         for (var i = 0; i < group.appointments.length; i++) {
-          sections.add(_ScheduleCard(appointment: group.appointments[i]));
+          sections.add(
+            _ScheduleCard(
+              appointment: group.appointments[i],
+              showPatientName: showPatientName,
+              onOpenChat: onOpenChat,
+            ),
+          );
           if (i < group.appointments.length - 1) {
             sections.add(const SizedBox(height: 10));
           }
@@ -382,14 +418,10 @@ class _PatientScheduleContent extends StatelessWidget {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.only(top: 43, bottom: 30),
+          padding: const EdgeInsets.only(top: 24, bottom: 30),
           children: [
-            _AppointmentTimeline(
-              appointments: state.appointments,
-              lastAppointment: lastAppointment,
-              nextAppointment: nextAppointment,
-            ),
-            const SizedBox(height: 23),
+            _AppointmentTimeline(appointments: state.appointments),
+            const SizedBox(height: 14),
             Center(
               child: _PrimaryButton(
                 label: 'Create An Appointment',
@@ -397,7 +429,7 @@ class _PatientScheduleContent extends StatelessWidget {
                 onTap: onCreateAppointment,
               ),
             ),
-            const SizedBox(height: 23),
+            const SizedBox(height: 18),
             ...sections,
           ],
         ),
@@ -408,20 +440,13 @@ class _PatientScheduleContent extends StatelessWidget {
 
 class _AppointmentTimeline extends StatelessWidget {
   final List<Appointment> appointments;
-  final Appointment? lastAppointment;
-  final Appointment? nextAppointment;
 
-  const _AppointmentTimeline({
-    required this.appointments,
-    required this.lastAppointment,
-    required this.nextAppointment,
-  });
+  const _AppointmentTimeline({required this.appointments});
 
   @override
   Widget build(BuildContext context) {
     final today = _dateOnly(DateTime.now());
-    final start = today.subtract(const Duration(days: 6));
-    final days = List.generate(13, (index) => start.add(Duration(days: index)));
+    final days = List.generate(7, (index) => today.add(Duration(days: index)));
 
     final appointmentDays = appointments
         .where(
@@ -432,148 +457,116 @@ class _AppointmentTimeline extends StatelessWidget {
         .map(_dateOnly)
         .toSet();
 
-    return SizedBox(
-      width: context.isCompactShell ? double.infinity : 586,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: context.isCompactShell ? double.infinity : 443.522,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 46.553,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: days.map((day) {
-                      final isToday = _sameDay(day, today);
-                      final hasAppointment = appointmentDays.any(
-                        (appointmentDate) => _sameDay(appointmentDate, day),
-                      );
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 46.553,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: days.map((day) {
+                        final isToday = _sameDay(day, today);
+                        final hasAppointment = appointmentDays.any(
+                          (appointmentDate) => _sameDay(appointmentDate, day),
+                        );
 
-                      final height = isToday
-                          ? 38.089
-                          : hasAppointment
-                          ? 46.553
-                          : 16.928;
+                        final height = isToday
+                            ? 38.089
+                            : hasAppointment
+                            ? 46.553
+                            : 16.928;
 
-                      final color = isToday
-                          ? AppPalette.cyan
-                          : hasAppointment
-                          ? AppPalette.secondaryBlue
-                          : AppPalette.backgroundLight;
+                        final color = isToday
+                            ? AppPalette.cyan
+                            : hasAppointment
+                            ? AppPalette.secondaryBlue
+                            : AppPalette.backgroundLight;
 
-                      return Container(
-                        width: 16.928,
-                        height: height,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(41.474),
-                        ),
-                      );
-                    }).toList(),
+                        return Container(
+                          width: 16.928,
+                          height: height,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(41.474),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5.078),
-                SizedBox(
-                  height: 13,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: days
-                        .map(
-                          (day) => SizedBox(
-                            width: 16.928,
-                            child: Text(
-                              _weekdayLetter(day),
-                              textAlign: TextAlign.center,
-                              style: AppTypography.captionBody2.copyWith(
-                                color: AppPalette.primaryBlue,
-                                height: 1,
+                  const SizedBox(height: 5.078),
+                  SizedBox(
+                    height: 13,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: days
+                          .map(
+                            (day) => SizedBox(
+                              width: 16.928,
+                              child: Text(
+                                _weekdayLetter(day),
+                                textAlign: TextAlign.center,
+                                style: AppTypography.captionBody2.copyWith(
+                                  color: AppPalette.primaryBlue,
+                                  height: 1,
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 5),
-          SizedBox(
-            height: 41,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _AppointmentDateLabel(
-                    appointment: lastAppointment,
-                    caption: 'Last Appt.',
-                  ),
-                ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topCenter,
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  Expanded(
                     child: Text(
-                      'Today',
+                      _monthDay(today),
+                      textAlign: TextAlign.center,
                       style: _title20(AppPalette.secondaryBlue),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: _AppointmentDateLabel(
-                    appointment: nextAppointment,
-                    caption: 'Next Appt.',
+                  const Expanded(child: SizedBox.shrink()),
+                  Expanded(
+                    child: Text(
+                      _monthDay(today.add(const Duration(days: 6))),
+                      textAlign: TextAlign.center,
+                      style: _title20(AppPalette.secondaryBlue),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-}
-
-class _AppointmentDateLabel extends StatelessWidget {
-  final Appointment? appointment;
-  final String caption;
-
-  const _AppointmentDateLabel({
-    required this.appointment,
-    required this.caption,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final date = appointment == null
-        ? null
-        : _appointmentDateTime(appointment!);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          date == null ? '—' : _monthDay(date),
-          style: _title20(AppPalette.secondaryBlue),
-        ),
-        Text(
-          caption,
-          style: AppTypography.defaultBody2.copyWith(
-            color: AppPalette.primaryBlue,
-            height: 1,
-          ),
-        ),
-      ],
     );
   }
 }
 
 class _ScheduleCard extends StatelessWidget {
   final Appointment appointment;
+  final bool showPatientName;
+  final Future<void> Function(Appointment appointment)? onOpenChat;
 
-  const _ScheduleCard({required this.appointment});
+  const _ScheduleCard({
+    required this.appointment,
+    required this.showPatientName,
+    this.onOpenChat,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -581,9 +574,13 @@ class _ScheduleCard extends StatelessWidget {
     final title = appointment.title.trim().isEmpty
         ? 'Appointment'
         : appointment.title.trim();
-    final doctor = appointment.doctorName.trim().isEmpty
-        ? 'Doctor'
-        : appointment.doctorName.trim();
+    final identity = showPatientName
+        ? (appointment.patientName.trim().isEmpty
+              ? 'Patient'
+              : appointment.patientName.trim())
+        : (appointment.doctorName.trim().isEmpty
+              ? 'Doctor'
+              : appointment.doctorName.trim());
 
     if (context.isCompactShell) {
       return Container(
@@ -599,7 +596,7 @@ class _ScheduleCard extends StatelessWidget {
             Text(title, style: _title20(AppPalette.secondaryBlue)),
             const SizedBox(height: AppSpacing.s8),
             Text(
-              doctor,
+              identity,
               style: AppTypography.titleBig2.copyWith(
                 color: AppPalette.secondaryBlue,
               ),
@@ -630,15 +627,7 @@ class _ScheduleCard extends StatelessWidget {
             _PrimaryButton(
               label: 'Message',
               width: double.infinity,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Messaging from Schedule is not connected yet.',
-                    ),
-                  ),
-                );
-              },
+              onTap: onOpenChat == null ? null : () => onOpenChat!(appointment),
             ),
             const SizedBox(height: AppSpacing.s8),
             _PrimaryButton(
@@ -646,18 +635,7 @@ class _ScheduleCard extends StatelessWidget {
                   ? 'Join Call'
                   : 'View Details',
               width: double.infinity,
-              onTap: () {
-                final hasLink =
-                    appointment.meetingLink?.trim().isNotEmpty == true;
-                final message = appointment.type == AppointmentType.videoCall
-                    ? hasLink
-                          ? 'Meeting link is available.'
-                          : 'No meeting link is available yet.'
-                    : 'In-person appointment.';
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(message)));
-              },
+              onTap: onOpenChat == null ? null : () => onOpenChat!(appointment),
             ),
           ],
         ),
@@ -683,7 +661,7 @@ class _ScheduleCard extends StatelessWidget {
                     Text(title, style: _title20(AppPalette.secondaryBlue)),
                     const SizedBox(height: 9),
                     Text(
-                      doctor,
+                      identity,
                       style: AppTypography.titleBig2.copyWith(
                         color: AppPalette.secondaryBlue,
                         height: 1,
@@ -741,15 +719,9 @@ class _ScheduleCard extends StatelessWidget {
               _PrimaryButton(
                 label: 'Message',
                 width: 240,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Messaging from Schedule is not connected yet.',
-                      ),
-                    ),
-                  );
-                },
+                onTap: onOpenChat == null
+                    ? null
+                    : () => onOpenChat!(appointment),
               ),
               const SizedBox(width: 20),
               _PrimaryButton(
@@ -757,20 +729,9 @@ class _ScheduleCard extends StatelessWidget {
                     ? 'Join Call'
                     : 'View Details',
                 width: 240,
-                onTap: () {
-                  final hasLink =
-                      appointment.meetingLink?.trim().isNotEmpty == true;
-
-                  final message = appointment.type == AppointmentType.videoCall
-                      ? hasLink
-                            ? 'Meeting link is available.'
-                            : 'No meeting link is available yet.'
-                      : 'In-person appointment.';
-
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(message)));
-                },
+                onTap: onOpenChat == null
+                    ? null
+                    : () => onOpenChat!(appointment),
               ),
             ],
           ),
@@ -1021,13 +982,23 @@ class _CreateAppointmentFormState
           context,
         ).showSnackBar(const SnackBar(content: Text('Appointment created.')));
 
+        final created = response.data!.copyWith(
+          patientId: response.data!.patientId.trim().isEmpty
+              ? widget.patient.id
+              : response.data!.patientId,
+          patientName: response.data!.patientName.trim().isEmpty
+              ? patientName
+              : response.data!.patientName,
+        );
+        ref.read(appointmentProvider.notifier).upsertAppointment(created);
+        ref
+            .read(appointmentsByPatientProvider(widget.patient.id).notifier)
+            .upsertAppointment(created);
         await widget.onCreated();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.message ?? 'Unable to create appointment.'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(response.message)));
       }
     } catch (_) {
       if (!mounted) return;
@@ -1153,37 +1124,6 @@ class _PrimaryButton extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: _title20(AppPalette.white),
                   ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryButton extends StatelessWidget {
-  final String label;
-  final double width;
-  final VoidCallback onTap;
-
-  const _SecondaryButton({
-    required this.label,
-    required this.width,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppPalette.backgroundLight,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: width,
-          height: 50,
-          child: Center(
-            child: Text(label, style: _title20(AppPalette.secondaryBlue)),
           ),
         ),
       ),

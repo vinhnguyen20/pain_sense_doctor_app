@@ -33,8 +33,10 @@ class UserRemoteDataSource {
   }) async {
     try {
       final isSearching = search != null && search.trim().isNotEmpty;
-      final endpoint = isSearching ? '/users/patients/search' : '/users/patients/all';
-      
+      final endpoint = isSearching
+          ? '/users/patients/search'
+          : '/users/patients/all';
+
       final queryParams = <String, dynamic>{
         if (isSearching) 'q': search.trim(),
         if (cursor != null) 'cursor': cursor,
@@ -76,7 +78,9 @@ class UserRemoteDataSource {
     try {
       final userId = user.id.trim();
       if (userId.isEmpty) {
-        throw ArgumentError('user_id (path parameter) is required to update user.');
+        throw ArgumentError(
+          'user_id (path parameter) is required to update user.',
+        );
       }
       final result = await _client.put<ApiResponse<UserModel>>(
         '/users/$userId',
@@ -90,5 +94,21 @@ class UserRemoteDataSource {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<ApiResponse<void>> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) {
+    return _client.post<ApiResponse<void>>(
+      '/users/update-password',
+      data: {'old_password': oldPassword, 'new_password': newPassword},
+      fromJson: (json) => ApiResponse<void>(
+        code: 0,
+        message:
+            (json as Map<String, dynamic>)['message'] as String? ??
+            'Password updated',
+      ),
+    );
   }
 }

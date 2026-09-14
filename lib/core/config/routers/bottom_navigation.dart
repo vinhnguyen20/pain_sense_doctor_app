@@ -27,9 +27,9 @@ class _BottomNavigationScaffoldState
     Future.microtask(() {
       final state = ref.read(conversationsProvider);
       if (state.conversations.isEmpty && !state.isLoading) {
-        ref.read(conversationsProvider.notifier).fetchConversations(
-          showLoading: false,
-        );
+        ref
+            .read(conversationsProvider.notifier)
+            .fetchConversations(showLoading: false);
       }
     });
   }
@@ -108,9 +108,14 @@ class _BottomNavigationScaffoldState
               branchIndex: 2,
             ),
             CompactNavDestination(
+              icon: Icons.account_circle_outlined,
+              label: 'Account',
+              branchIndex: 5,
+            ),
+            CompactNavDestination(
               icon: Icons.settings_outlined,
               label: 'Settings',
-              branchIndex: 5,
+              branchIndex: 6,
             ),
           ],
           onSelectBranch: _openBranch,

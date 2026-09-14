@@ -20,7 +20,7 @@ class AppointmentRemoteDataSource {
 
       return await _client
           .get<ApiResponse<PaginatedResponse<AppointmentModel>>>(
-            '/appointments/patient',
+            '/appointments/doctor/upcoming',
             queryParameters: queryParams,
 
             fromJson: (json) => ApiResponse.fromPaginatedJson<AppointmentModel>(

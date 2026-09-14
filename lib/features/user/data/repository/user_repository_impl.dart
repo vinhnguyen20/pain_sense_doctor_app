@@ -79,4 +79,19 @@ class UserRepositoryImpl implements UserRepository {
       return ApiResponse.failure(e, stackTrace);
     }
   }
+
+  @override
+  Future<ApiResponse<void>> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      return await _dataSource.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+    } catch (e, stackTrace) {
+      return ApiResponse.failure(e, stackTrace);
+    }
+  }
 }

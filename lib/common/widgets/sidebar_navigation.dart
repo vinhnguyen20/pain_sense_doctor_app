@@ -88,12 +88,22 @@ class SidebarNavigation extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
                     _NavItem(
-                      icon: Icons.settings_outlined,
-                      label: 'Settings',
+                      icon: Icons.account_circle_outlined,
+                      label: 'Account',
                       isSelected: navigationShell?.currentIndex == 5,
                       onTap: () {
                         FocusManager.instance.primaryFocus?.unfocus();
                         navigationShell?.goBranch(5, initialLocation: true);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _NavItem(
+                      icon: Icons.settings_outlined,
+                      label: 'Settings',
+                      isSelected: navigationShell?.currentIndex == 6,
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        navigationShell?.goBranch(6, initialLocation: true);
                       },
                     ),
                   ],
