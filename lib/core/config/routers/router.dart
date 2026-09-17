@@ -194,25 +194,19 @@ class AppRouter {
           path: '/patient-monitor-detail',
           name: 'patient-monitor-detail',
           builder: (context, state) {
-            Patient? patient;
-            if (state.extra is Patient) {
-              patient = state.extra as Patient;
-            } else if (state.extra is Map) {
-              patient = (state.extra as Map)['patient'] as Patient?;
-            }
-
-            if (patient == null) {
-              return const Scaffold(
-                body: Center(child: Text('Patient not found')),
-              );
-            }
-
-            return PatientMonitorDetail(patient: patient);
+            return _PatientRoute(
+              patientId: resolvePatientId(null, state),
+              initialPatient: resolvePatient(state),
+              builder: (patient) => PatientMonitorDetail(patient: patient),
+            );
           },
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
-            return PatientDashboardScaffold(navigationShell: navigationShell);
+            return PatientDashboardScaffold(
+              navigationShell: navigationShell,
+              patientId: state.uri.queryParameters['patientId'],
+            );
           },
           branches: [
             StatefulShellBranch(
@@ -670,11 +664,8 @@ class _PatientChatRoute extends ConsumerWidget {
     return _PatientRoute(
       patientId: patientId,
       initialPatient: initialPatient,
-      builder: (patient) => _buildConversationContent(
-        context,
-        ref,
-        patient: patient,
-      ),
+      builder: (patient) =>
+          _buildConversationContent(context, ref, patient: patient),
     );
   }
 
@@ -724,7 +715,8 @@ class _PatientChatRoute extends ConsumerWidget {
       for (final item in conversations) {
         final matchesConversation =
             conversationId.isNotEmpty && item.id == conversationId;
-        final matchesPatient = patientIdForMatch != null &&
+        final matchesPatient =
+            patientIdForMatch != null &&
             item.participants.contains(patientIdForMatch);
         if (matchesConversation || matchesPatient) {
           conversation = item;
@@ -744,9 +736,8 @@ class _PatientChatRoute extends ConsumerWidget {
             const Text('Unable to load conversation.'),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () => ref
-                  .read(conversationsProvider.notifier)
-                  .fetchConversations(),
+              onPressed: () =>
+                  ref.read(conversationsProvider.notifier).fetchConversations(),
               child: const Text('Retry'),
             ),
           ],

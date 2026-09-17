@@ -8,8 +8,13 @@ import 'package:go_router/go_router.dart';
 
 class PatientDashboardScaffold extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
+  final String? patientId;
 
-  const PatientDashboardScaffold({super.key, required this.navigationShell});
+  const PatientDashboardScaffold({
+    super.key,
+    required this.navigationShell,
+    this.patientId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +61,7 @@ class PatientDashboardScaffold extends ConsumerWidget {
           onSelectBranch: (branchIndex) {
             FocusManager.instance.primaryFocus?.unfocus();
             final patient = ref.read(selectedPatientProvider);
+            final routePatientId = patientId?.trim();
             const routeNames = [
               'patient-dashboard',
               'patient-connect',
@@ -63,11 +69,14 @@ class PatientDashboardScaffold extends ConsumerWidget {
               'patient-goals',
               'patient-settings',
             ];
-            if (patient != null && patient.id.trim().isNotEmpty) {
+            final id = routePatientId?.isNotEmpty == true
+                ? routePatientId!
+                : patient?.id.trim() ?? '';
+            if (id.isNotEmpty) {
               context.goNamed(
                 routeNames[branchIndex],
-                queryParameters: {'patientId': patient.id.trim()},
-                extra: patient,
+                queryParameters: {'patientId': id},
+                extra: patient?.id.trim() == id ? patient : null,
               );
               return;
             }
@@ -84,7 +93,10 @@ class PatientDashboardScaffold extends ConsumerWidget {
       backgroundColor: context.background,
       body: Row(
         children: [
-          PatientDashboardSidebar(navigationShell: navigationShell),
+          PatientDashboardSidebar(
+            navigationShell: navigationShell,
+            patientId: patientId,
+          ),
           Expanded(child: navigationShell),
         ],
       ),

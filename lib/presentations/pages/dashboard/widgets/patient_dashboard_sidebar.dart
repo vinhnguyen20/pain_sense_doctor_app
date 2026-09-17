@@ -6,8 +6,13 @@ import 'package:go_router/go_router.dart';
 
 class PatientDashboardSidebar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
+  final String? patientId;
 
-  const PatientDashboardSidebar({super.key, required this.navigationShell});
+  const PatientDashboardSidebar({
+    super.key,
+    required this.navigationShell,
+    this.patientId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,11 +26,15 @@ class PatientDashboardSidebar extends ConsumerWidget {
         'patient-goals',
         'patient-settings',
       ];
-      if (patient != null && patient.id.trim().isNotEmpty) {
+      final routePatientId = patientId?.trim();
+      final id = routePatientId?.isNotEmpty == true
+          ? routePatientId!
+          : patient?.id.trim() ?? '';
+      if (id.isNotEmpty) {
         context.goNamed(
           routeNames[index],
-          queryParameters: {'patientId': patient.id.trim()},
-          extra: patient,
+          queryParameters: {'patientId': id},
+          extra: patient?.id.trim() == id ? patient : null,
         );
         return;
       }

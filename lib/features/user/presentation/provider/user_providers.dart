@@ -63,14 +63,38 @@ GetPatientByIdUseCase getPatientByIdUseCase(Ref ref) {
   return GetPatientByIdUseCase(ref.read(userRepositoryProvider));
 }
 
-final patientDetailProvider =
-    FutureProvider.autoDispose.family<Patient?, String>((ref, patientId) async {
+final patientDetailProvider = FutureProvider.autoDispose
+    .family<Patient?, String>((ref, patientId) async {
       final normalizedId = patientId.trim();
       if (normalizedId.isEmpty) return null;
-      final response =
-          await ref.read(getPatientByIdUseCaseProvider).call(normalizedId);
-      if (response.isSuccess) {
-        return response.data;
+
+      // This provider is used when a patient dashboard is opened from a URL
+      // after a browser reload. The per-patient endpoint can time out, while
+      // the clinician's patient list is the source used throughout the app.
+      // Resolve the patient from that list so every dashboard branch can be
+      // restored from its `patientId` query parameter.
+      String? cursor;
+      final visitedCursors = <String>{};
+
+      for (var page = 0; page < 20; page++) {
+        final response = await ref
+            .read(getAllPatientsUseCaseProvider)
+            .call(cursor: cursor, limit: 100);
+        if (!response.isSuccess || response.data == null) {
+          throw Exception(response.message);
+        }
+
+        final patients = response.data!;
+        for (final patient in patients.items) {
+          if (patient.id.trim() == normalizedId) return patient;
+        }
+
+        final nextCursor = patients.nextCursor;
+        if (nextCursor == null || !visitedCursors.add(nextCursor)) {
+          return null;
+        }
+        cursor = nextCursor;
       }
-      throw Exception(response.message);
+
+      return null;
     });
