@@ -259,13 +259,16 @@ class AppRouter {
                           conversation = state.extra as Conversation;
                         }
                         return _PatientChatRoute(
-                          patientId: resolvePatientId(null, state),
+                          patientId:
+                              state.uri.queryParameters['patientId']?.trim() ??
+                              patient?.id.trim() ??
+                              '',
                           conversationId:
                               state.uri.queryParameters['conversationId']
                                   ?.trim() ??
                               conversation?.id ??
                               '',
-                          initialPatient: patient ?? resolvePatient(state),
+                          initialPatient: patient,
                           initialConversation: conversation,
                         );
                       },
@@ -658,49 +661,97 @@ class _PatientChatRoute extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // When patientId is empty (e.g. clinician-to-clinician chat),
+    // skip _PatientRoute and resolve the conversation directly.
+    if (patientId.isEmpty) {
+      return _buildWithoutPatient(context, ref);
+    }
+
     return _PatientRoute(
       patientId: patientId,
       initialPatient: initialPatient,
-      builder: (patient) {
-        final conversationState = ref.watch(conversationsProvider);
-        Conversation? conversation = initialConversation;
-        if (conversation == null ||
-            (conversationId.isNotEmpty && conversation.id != conversationId)) {
-          for (final item in conversationState.conversations) {
-            final matchesConversation =
-                conversationId.isNotEmpty && item.id == conversationId;
-            final matchesPatient = item.participants.contains(patient.id);
-            if (matchesConversation || matchesPatient) {
-              conversation = item;
-              break;
-            }
-          }
-        }
+      builder: (patient) => _buildConversationContent(
+        context,
+        ref,
+        patient: patient,
+      ),
+    );
+  }
 
-        if (conversation != null) {
-          return ChatRoomPage(conversation: conversation, patient: patient);
+  Widget _buildWithoutPatient(BuildContext context, WidgetRef ref) {
+    final conversationState = ref.watch(conversationsProvider);
+    Conversation? conversation = _resolveConversation(
+      conversationState.conversations,
+      patientIdForMatch: null,
+    );
+
+    if (conversation != null) {
+      return ChatRoomPage(conversation: conversation);
+    }
+    if (conversationState.error != null) {
+      return _buildErrorWidget(ref);
+    }
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+
+  Widget _buildConversationContent(
+    BuildContext context,
+    WidgetRef ref, {
+    required Patient patient,
+  }) {
+    final conversationState = ref.watch(conversationsProvider);
+    Conversation? conversation = _resolveConversation(
+      conversationState.conversations,
+      patientIdForMatch: patient.id,
+    );
+
+    if (conversation != null) {
+      return ChatRoomPage(conversation: conversation, patient: patient);
+    }
+    if (conversationState.error != null) {
+      return _buildErrorWidget(ref);
+    }
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+
+  Conversation? _resolveConversation(
+    List<Conversation> conversations, {
+    required String? patientIdForMatch,
+  }) {
+    Conversation? conversation = initialConversation;
+    if (conversation == null ||
+        (conversationId.isNotEmpty && conversation.id != conversationId)) {
+      for (final item in conversations) {
+        final matchesConversation =
+            conversationId.isNotEmpty && item.id == conversationId;
+        final matchesPatient = patientIdForMatch != null &&
+            item.participants.contains(patientIdForMatch);
+        if (matchesConversation || matchesPatient) {
+          conversation = item;
+          break;
         }
-        if (conversationState.error != null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Unable to load conversation.'),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => ref
-                        .read(conversationsProvider.notifier)
-                        .fetchConversations(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+      }
+    }
+    return conversation;
+  }
+
+  Widget _buildErrorWidget(WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Unable to load conversation.'),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => ref
+                  .read(conversationsProvider.notifier)
+                  .fetchConversations(),
+              child: const Text('Retry'),
             ),
-          );
-        }
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      },
+          ],
+        ),
+      ),
     );
   }
 }

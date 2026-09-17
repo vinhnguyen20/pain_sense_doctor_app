@@ -62,14 +62,24 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
     final patientConversation = patient == null
         ? null
         : _conversationForPatient(patient, conversationsState.conversations);
-    final otherConversations = patient == null
-        ? conversationsState.conversations
-        : conversationsState.conversations
-              .where(
-                (conversation) =>
-                    !conversation.participants.contains(patient.id),
-              )
-              .toList();
+
+    // Other conversations = those that do NOT belong to the selected patient.
+    // For each, try to find the matching patient from the patients list so we
+    // can pass patientId when navigating to the chat room.
+    final allPatients = patientsState.patients;
+    final otherConversationEntries = (patient == null
+            ? conversationsState.conversations
+            : conversationsState.conversations
+                  .where((c) => !c.participants.contains(patient.id))
+                  .toList())
+        .map((conv) {
+          // Find a patient whose ID appears in this conversation's participants.
+          final matched = allPatients.where(
+            (p) => conv.participants.contains(p.id) && p.id != patient?.id,
+          ).firstOrNull;
+          return (conv, matched);
+        })
+        .toList();
 
     return Scaffold(
       backgroundColor: AppPalette.white,
@@ -110,7 +120,7 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                                   : PatientChatContent(
                                       patient: patient,
                                       patientConversation: patientConversation,
-                                      otherConversations: otherConversations,
+                                      otherConversationEntries: otherConversationEntries,
                                       onChat: _openChat,
                                     ),
                             ),
@@ -162,8 +172,8 @@ class _PatientConnectPageState extends ConsumerState<PatientConnectPage> {
                                           patient: patient,
                                           patientConversation:
                                               patientConversation,
-                                          otherConversations:
-                                              otherConversations,
+                                          otherConversationEntries:
+                                              otherConversationEntries,
                                           onChat: _openChat,
                                         ),
                                 ),

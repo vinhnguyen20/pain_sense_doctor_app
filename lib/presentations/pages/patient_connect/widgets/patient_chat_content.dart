@@ -8,14 +8,14 @@ import 'package:intl/intl.dart';
 class PatientChatContent extends StatelessWidget {
   final Patient? patient;
   final Conversation? patientConversation;
-  final List<Conversation> otherConversations;
+  final List<(Conversation, Patient?)> otherConversationEntries;
   final void Function(Conversation, Patient?) onChat;
 
   const PatientChatContent({
     super.key,
     required this.patient,
     required this.patientConversation,
-    required this.otherConversations,
+    required this.otherConversationEntries,
     required this.onChat,
   });
 
@@ -48,7 +48,7 @@ class PatientChatContent extends StatelessWidget {
           ),
         const SizedBox(height: 10),
         Text(
-          'Other Clinicians',
+          'Other Patients',
           style: AppTypography.titleSmall1.copyWith(
             color: AppPalette.secondaryBlue,
             height: 1,
@@ -57,18 +57,24 @@ class PatientChatContent extends StatelessWidget {
         const SizedBox(height: 8),
         const Divider(height: 1, thickness: 1, color: AppPalette.secondaryBlue),
         const SizedBox(height: 10),
-        ...otherConversations.map(
-          (conversation) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: ChatSummaryCard(
-              avatarAsset: 'assets/images/avatar/avatar.png',
-              name: conversation.name,
-              role: 'Clinician',
-              message: _messageText(conversation),
-              conversation: conversation,
-              onChat: () => onChat(conversation, null),
-            ),
-          ),
+        ...otherConversationEntries.map(
+          ((Conversation, Patient?) entry) {
+            final (conversation, entryPatient) = entry;
+            final displayName = entryPatient?.fullName.isNotEmpty == true
+                ? entryPatient!.fullName
+                : conversation.name;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ChatSummaryCard(
+                avatarAsset: 'assets/images/avatar/avatar.png',
+                name: displayName,
+                role: 'Patient',
+                message: _messageText(conversation),
+                conversation: conversation,
+                onChat: () => onChat(conversation, entryPatient),
+              ),
+            );
+          },
         ),
       ],
     );
