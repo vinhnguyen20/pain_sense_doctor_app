@@ -1687,7 +1687,7 @@ class _GoalFormPageState extends ConsumerState<GoalFormPage>
     final createButton = GoalActionButton(
       label: _isSubmitting
           ? (_isCreating ? 'Creating...' : 'Updating...')
-          : (_isCreating ? 'Create Goal' : 'Update Goal'),
+          : (_isCreating ? 'Create Goal and Assign' : 'Update Goal and Assign'),
       width: double.infinity,
       onPressed: _isSubmitting ? null : _onSubmit,
     );

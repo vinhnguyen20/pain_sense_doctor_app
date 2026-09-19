@@ -484,7 +484,6 @@ class _ClinicianGoalsPageState extends ConsumerState<ClinicianGoalsPage> {
           ClinicianGoalRow(
             goal: goal,
             onOpen: () => _openGoalDetail(goal),
-            onAssign: _openCreateGoal,
             onEdit: () => _editGoal(goal),
             onDelete: () => _deleteGoal(goal),
           ),

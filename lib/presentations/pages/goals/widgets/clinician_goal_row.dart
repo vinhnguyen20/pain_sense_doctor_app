@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 class ClinicianGoalRow extends StatelessWidget {
   final UserGoalModel goal;
   final VoidCallback? onOpen;
-  final VoidCallback onAssign;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -19,7 +18,6 @@ class ClinicianGoalRow extends StatelessWidget {
     super.key,
     required this.goal,
     this.onOpen,
-    required this.onAssign,
     required this.onEdit,
     required this.onDelete,
   });
@@ -79,11 +77,6 @@ class ClinicianGoalRow extends StatelessWidget {
                 spacing: AppSpacing.s10,
                 runSpacing: AppSpacing.s10,
                 children: [
-                  GoalActionButton(
-                    label: 'Assign',
-                    width: 137,
-                    onPressed: onAssign,
-                  ),
                   GoalActionButton(
                     label: 'Edit',
                     width: 137,

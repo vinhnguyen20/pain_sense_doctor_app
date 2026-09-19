@@ -11,6 +11,7 @@ import 'package:app_doctor/features/user/domain/entities/patient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_doctor/features/user/presentation/provider/user_notifier.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PatientAppointmentsPage extends ConsumerStatefulWidget {
   final Patient patient;
@@ -72,6 +73,7 @@ class _PatientAppointmentsContentState
               ref: ref,
               patient: widget.patient,
             ),
+            resolvePatient: (_) async => widget.patient,
           );
   }
 }
@@ -201,6 +203,7 @@ class _PatientAppointmentsPageState
                                 ref: ref,
                                 patient: widget.patient,
                               ),
+                              resolvePatient: (_) async => widget.patient,
                             ),
                     ),
                   ],
@@ -292,6 +295,7 @@ class _PatientAppointmentsPageState
                                   ref: ref,
                                   patient: widget.patient,
                                 ),
+                                resolvePatient: (_) async => widget.patient,
                               ),
                       ),
                     ],
@@ -312,6 +316,7 @@ class AppointmentScheduleContent extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final bool showPatientName;
   final Future<void> Function(Appointment appointment)? onOpenChat;
+  final Future<Patient?> Function(Appointment appointment)? resolvePatient;
 
   const AppointmentScheduleContent({
     super.key,
@@ -320,6 +325,7 @@ class AppointmentScheduleContent extends StatelessWidget {
     required this.onRefresh,
     this.showPatientName = false,
     this.onOpenChat,
+    this.resolvePatient,
   });
 
   @override
@@ -401,6 +407,7 @@ class AppointmentScheduleContent extends StatelessWidget {
               appointment: group.appointments[i],
               showPatientName: showPatientName,
               onOpenChat: onOpenChat,
+              resolvePatient: resolvePatient,
             ),
           );
           if (i < group.appointments.length - 1) {
@@ -561,11 +568,13 @@ class _ScheduleCard extends StatelessWidget {
   final Appointment appointment;
   final bool showPatientName;
   final Future<void> Function(Appointment appointment)? onOpenChat;
+  final Future<Patient?> Function(Appointment appointment)? resolvePatient;
 
   const _ScheduleCard({
     required this.appointment,
     required this.showPatientName,
     this.onOpenChat,
+    this.resolvePatient,
   });
 
   @override
@@ -635,7 +644,9 @@ class _ScheduleCard extends StatelessWidget {
                   ? 'Join Call'
                   : 'View Details',
               width: double.infinity,
-              onTap: onOpenChat == null ? null : () => onOpenChat!(appointment),
+              onTap: appointment.type == AppointmentType.videoCall
+                  ? () => _joinAppointmentCall(context, appointment, onOpenChat, resolvePatient)
+                  : (onOpenChat == null ? null : () => onOpenChat!(appointment)),
             ),
           ],
         ),
@@ -729,9 +740,9 @@ class _ScheduleCard extends StatelessWidget {
                     ? 'Join Call'
                     : 'View Details',
                 width: 240,
-                onTap: onOpenChat == null
-                    ? null
-                    : () => onOpenChat!(appointment),
+                onTap: appointment.type == AppointmentType.videoCall
+                    ? () => _joinAppointmentCall(context, appointment, onOpenChat, resolvePatient)
+                    : (onOpenChat == null ? null : () => onOpenChat!(appointment)),
               ),
             ],
           ),
@@ -760,6 +771,7 @@ class _CreateAppointmentForm extends ConsumerStatefulWidget {
 class _CreateAppointmentFormState
     extends ConsumerState<_CreateAppointmentForm> {
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _meetingLinkController = TextEditingController();
 
   DateTime? _date;
   TimeOfDay? _time;
@@ -769,6 +781,7 @@ class _CreateAppointmentFormState
   @override
   void dispose() {
     _notesController.dispose();
+    _meetingLinkController.dispose();
     super.dispose();
   }
 
@@ -840,6 +853,44 @@ class _CreateAppointmentFormState
                       ),
                     ],
                   ),
+                  if (_type == AppointmentType.videoCall) ...[
+                    const SizedBox(height: 23),
+                    Text(
+                      'Google Meet Link (optional)',
+                      style: _title20(AppPalette.secondaryBlue),
+                    ),
+                    const SizedBox(height: 15),
+                    FractionallySizedBox(
+                      widthFactor: 0.93,
+                      child: Container(
+                        width: double.infinity,
+                        height: 54,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: AppPalette.backgroundLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: TextField(
+                          controller: _meetingLinkController,
+                          onTapOutside: (_) =>
+                              FocusManager.instance.primaryFocus?.unfocus(),
+                          keyboardType: TextInputType.url,
+                          cursorColor: AppPalette.secondaryBlue,
+                          style: _title20(AppPalette.secondaryBlue),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            hintText: 'https://meet.google.com/...',
+                            hintStyle: _title20(AppPalette.medGray),
+                            isCollapsed: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 23),
                   Text(
                     'Reason For Appointment',
@@ -966,7 +1017,9 @@ class _CreateAppointmentFormState
         'timezone': 'Asia/Ho_Chi_Minh',
       },
       'status': 'scheduled',
-      'meeting_link': '',
+      'meeting_link': _type == AppointmentType.videoCall
+          ? _meetingLinkController.text.trim()
+          : '',
       'meeting_meta': {'access_token': '', 'recording_url': ''},
     };
 
@@ -1297,6 +1350,62 @@ String _formatTime(TimeOfDay time) {
   final parts = _formatTimeParts(time);
 
   return '${parts.clock} ${parts.suffix}';
+}
+
+Future<void> _joinAppointmentCall(
+  BuildContext context,
+  Appointment appointment,
+  Future<void> Function(Appointment appointment)? onOpenChat,
+  Future<Patient?> Function(Appointment appointment)? resolvePatient,
+) async {
+  final link = appointment.meetingLink?.trim() ?? '';
+  if (link.isNotEmpty) {
+    final uri = Uri.tryParse(link);
+    if (uri != null) {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (launched) return;
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open the meeting link.')));
+    }
+    return;
+  }
+
+  // No meeting link on file: fall back to calling the patient's phone number.
+  final patient = await resolvePatient?.call(appointment);
+  final telUri = _buildTelUri(patient?.countryCode, patient?.phone);
+  if (telUri != null) {
+    final launched = await launchUrl(telUri, mode: LaunchMode.externalApplication);
+    if (launched) return;
+  }
+
+  if (!context.mounted) return;
+  if (onOpenChat != null) {
+    await onOpenChat(appointment);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No phone number on file for this patient.')),
+    );
+  }
+}
+
+Uri? _buildTelUri(String? countryCode, String? rawPhone) {
+  final phone = rawPhone?.trim() ?? '';
+  if (phone.isEmpty) return null;
+
+  var number = phone;
+  final code = countryCode?.trim() ?? '';
+  if (code.isNotEmpty && !phone.startsWith('+')) {
+    final normalizedCode = code.startsWith('+') ? code : '+$code';
+    final localDigits = phone.startsWith('0') ? phone.substring(1) : phone;
+    number = '$normalizedCode$localDigits';
+  }
+
+  final sanitized = number.replaceAll(RegExp(r'[^0-9+]'), '');
+  if (sanitized.isEmpty) return null;
+  return Uri.parse('tel:$sanitized');
 }
 
 String _appointmentTypeLabel(AppointmentType type) {

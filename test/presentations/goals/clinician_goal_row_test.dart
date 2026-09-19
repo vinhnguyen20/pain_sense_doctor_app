@@ -42,7 +42,6 @@ void main() {
           body: ClinicianGoalRow(
             goal: goal,
             onOpen: () => opened = true,
-            onAssign: () {},
             onEdit: () {},
             onDelete: () {},
           ),
